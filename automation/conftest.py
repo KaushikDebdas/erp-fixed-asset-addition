@@ -343,6 +343,69 @@ def profile_assets(browser):
 
 
 @pytest.fixture
+def shipment_page(assignee_logged_in_page):
+    """Asset Shipment page object (the second user's tab), ready to use."""
+    from pages.asset_shipment_page import AssetShipmentPage
+    return AssetShipmentPage(assignee_logged_in_page)
+
+
+@pytest.fixture
+def challan_page(assignee_logged_in_page):
+    """Transfer Challan page object (the Challan tab and popups of a shipment), ready to use."""
+    from pages.shipment_challan_page import ShipmentChallanPage
+    return ShipmentChallanPage(assignee_logged_in_page)
+
+
+@pytest.fixture
+def challan_approval_page(assignee_logged_in_page):
+    """Asset Shipment Challan Approval List page object, ready to use."""
+    from pages.shipment_challan_approval_page import ShipmentChallanApprovalPage
+    return ShipmentChallanApprovalPage(assignee_logged_in_page)
+
+
+@pytest.fixture
+def in_challan_page(assignee_logged_in_page):
+    """Asset Shipment In-Challan page object, ready to use."""
+    from pages.shipment_in_challan_page import ShipmentInChallanPage
+    return ShipmentInChallanPage(assignee_logged_in_page)
+
+
+@pytest.fixture
+def gate_pass_page(assignee_logged_in_page):
+    """Gate Pass Generation page object, ready to use."""
+    from pages.gate_pass_page import GatePassPage
+    return GatePassPage(assignee_logged_in_page)
+
+
+@pytest.fixture(scope="session")
+def shared_transfer():
+    """
+    The Asset Shipment flow of this run (shipment, challan, serial, ...), shared
+    by every test file so one test can reuse what an earlier test did. Used by
+    the `transfer` fixture below; tests do not read it directly.
+    """
+    return {}
+
+
+@pytest.fixture
+def transfer(
+    registrations, shipment_page, challan_page, challan_approval_page, in_challan_page, shared_transfer
+):
+    """
+    Carries one Asset Shipment through its stages:
+        flow = transfer.reach("draft_challan")
+    It returns what an earlier test did, or does the missing stages now when
+    the test runs on its own. See utils/transfer_helper.py.
+    """
+    from utils.transfer_helper import TransferHelper
+
+    return TransferHelper(
+        registrations, shipment_page, challan_page,
+        challan_approval_page, in_challan_page, shared_transfer,
+    )
+
+
+@pytest.fixture
 def assign_page(page):
     """Asset Assign page object, ready to use."""
     from pages.asset_assign_page import AssetAssignPage
