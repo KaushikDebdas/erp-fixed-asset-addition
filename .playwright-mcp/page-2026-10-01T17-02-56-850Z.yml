@@ -1,0 +1,65 @@
+- generic [active] [ref=f3e1]:
+  - generic [ref=f3e4]:
+    - generic [ref=f3e6]:
+      - generic [ref=f3e7]:
+        - link [ref=f3e9] [cursor=pointer]:
+          - /url: /
+          - img "Logo" [ref=f3e10]
+        - list [ref=f3e12]:
+          - listitem [ref=f3e13]:
+            - link "Dashboard" [ref=f3e14] [cursor=pointer]:
+              - /url: /addons/fin/dashboard
+          - listitem [ref=f3e16]:
+            - link "Settings " [ref=f3e17] [cursor=pointer]:
+              - /url: "javascript:"
+              - generic [ref=f3e18]: Settings
+              - generic [ref=f3e19]: 
+            - text:    
+          - listitem [ref=f3e20]:
+            - link "Consolidation " [ref=f3e21] [cursor=pointer]:
+              - /url: "javascript:"
+              - generic [ref=f3e22]: Consolidation
+              - generic [ref=f3e23]: 
+            - text:                  
+          - listitem [ref=f3e24]:
+            - link "Reports " [ref=f3e25] [cursor=pointer]:
+              - /url: "javascript:"
+              - generic [ref=f3e26]: Reports
+              - generic [ref=f3e27]: 
+            - text:                          
+      - generic [ref=f3e28]:
+        - generic [ref=f3e29]: 
+        - generic [ref=f3e36]:
+          - generic [ref=f3e37]: Hi,
+          - generic [ref=f3e38]: Abu Shoaib Asik
+          - generic [ref=f3e39]: (abushoaib.asik - Head Office [BDHO] )
+          - generic [ref=f3e40]: AA
+        - link "" [ref=f3e43] [cursor=pointer]:
+          - /url: /addons/logout
+    - generic [ref=f3e45]:
+      - generic [ref=f3e47]:
+        - heading "Dashboard" [level=5] [ref=f3e49]
+        - generic [ref=f3e50]:
+          - link "" [ref=f3e51] [cursor=pointer]:
+            - /url: "#"
+          - text: 
+      - generic [ref=f3e55]:
+        - generic [ref=f3e58]:
+          - generic [ref=f3e59]: ERP September 2026 close status
+          - generic [ref=f3e60]: 0% 7 of 3987
+          - generic [ref=f3e61]:
+            - progressbar
+          - generic [ref=f3e62]: "Consolidation status: pending"
+        - heading "Welcome, Abu Shoaib Asik" [level=3] [ref=f3e66]
+    - generic [ref=f3e68]:
+      - generic [ref=f3e69]:
+        - text: Copyright © 2019
+        - link "BRAC, Bangladesh" [ref=f3e70] [cursor=pointer]:
+          - /url: http://www.brac.net
+      - generic [ref=f3e71]:
+        - text: "Developed By:"
+        - link [ref=f3e72] [cursor=pointer]:
+          - /url: https://www.bracits.com
+          - img "BRAC IT" [ref=f3e73]
+  - text:           
+  - generic [ref=f3e75]: Please wait...

@@ -1,0 +1,17 @@
+project_name: Addons
+domain: Finance
+sub_domain: Fixed Asset
+application_url: https://erpstaging.brac.net/
+environment: QA
+knowledge_file: knowledge/erp-fixedasset.md
+active_cr:                                 # fill in when a CR is chosen
+created: 2026-09-17
+notes: >
+  Playwright+Python scaffold with a login test and an Income Statement
+  navigation test still exist from the project's earlier Income
+  Statement/Balance Sheet sub-domain work, and that sub-domain's
+  knowledge file (knowledge/erp-finance.md) is preserved unchanged.
+  The project's active knowledge target is now Fixed Asset
+  (knowledge/erp-fixedasset.md), built from domain-docs only; no live
+  UI exploration, automation, or test-case Excel exists yet for Fixed
+  Asset. No CR has been chosen for this sub-domain yet.

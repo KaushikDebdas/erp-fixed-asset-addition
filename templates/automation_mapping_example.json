@@ -1,0 +1,37 @@
+{
+  "scenario_name": "Login with valid credentials",
+  "page": "LoginPage",
+  "steps": [
+    {
+      "step_no": 1,
+      "business_action": "Enter valid User ID",
+      "action": "fill",
+      "target": "User ID field",
+      "test_data": "valid_user",
+      "locator_strategy": "get_by_label",
+      "locator": "User ID",
+      "status": "VERIFIED"
+    },
+    {
+      "step_no": 2,
+      "business_action": "Enter valid Password",
+      "action": "fill",
+      "target": "Password field",
+      "test_data": "valid_password",
+      "locator_strategy": "get_by_label",
+      "locator": "Password",
+      "status": "VERIFIED"
+    },
+    {
+      "step_no": 3,
+      "business_action": "Click Login",
+      "action": "click",
+      "target": "Login button",
+      "locator_strategy": "get_by_role",
+      "locator": "button:Login",
+      "status": "VERIFIED"
+    }
+  ],
+  "overall_status": "READY_FOR_AUTOMATION",
+  "note": "Temporary review artifact — once the POM class is written, this file's locators are no longer the source of truth. See skills/automation-mapping.md. For a multi-role flow shape, see the same skill file's 'Format — end-to-end flow' example."
+}

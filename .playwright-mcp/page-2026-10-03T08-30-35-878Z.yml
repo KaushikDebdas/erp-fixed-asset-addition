@@ -1,0 +1,1411 @@
+- generic [active] [ref=f11e1]:
+  - generic [ref=f11e3]:
+    - generic [ref=f11e4]:
+      - list [ref=f11e6]:
+        - listitem [ref=f11e7]:
+          - link "Settings" [ref=f11e8] [cursor=pointer]:
+            - /url: /myDashboard
+        - listitem [ref=f11e9]:
+          - link "HRM" [ref=f11e10] [cursor=pointer]:
+            - /url: /hrDashboard/dashboard
+        - listitem [ref=f11e11]:
+          - link "EDMS" [ref=f11e12] [cursor=pointer]:
+            - /url: /hrDashboard/dashboard#!/edms/index
+        - listitem [ref=f11e13]:
+          - link "ePMS" [ref=f11e14] [cursor=pointer]:
+            - /url: /hrDashboard/pmsMenuBoard#!/hrDashboard/pmsDashboard
+        - listitem [ref=f11e15]:
+          - link "Procurement" [ref=f11e16] [cursor=pointer]:
+            - /url: /procurementDashboard/myDashboard
+        - listitem [ref=f11e17]:
+          - link "eTender" [ref=f11e18] [cursor=pointer]:
+            - /url: javascript:void(0);
+        - listitem [ref=f11e19]:
+          - link "Fixed Asset" [ref=f11e20] [cursor=pointer]:
+            - /url: /nodef/fixedasset
+        - listitem [ref=f11e21]:
+          - link "Microfinance" [ref=f11e22] [cursor=pointer]:
+            - /url: /node/mfDashboard
+        - listitem [ref=f11e23]:
+          - link "Accounting" [ref=f11e24] [cursor=pointer]:
+            - /url: /nodef/accounting
+        - listitem [ref=f11e25]:
+          - link "Budget" [ref=f11e26] [cursor=pointer]:
+            - /url: javascript:void(0);
+      - generic [ref=f11e27]:
+        - list [ref=f11e28]:
+          - listitem [ref=f11e29]:
+            - link [ref=f11e30] [cursor=pointer]:
+              - /url: javascript:void(0)
+        - generic "Welcome Abu Shoaib Asik (abushoaib.asik-INVENTORY_SA,SA- Head Office [ BDHO ])" [ref=f11e31]
+    - heading [level=1] [ref=f11e33]:
+      - link [ref=f11e34] [cursor=pointer]:
+        - /url: /myDashboard/myDashboard?flag=false
+        - img "Logo" [ref=f11e35]
+    - generic [ref=f11e36]:
+      - text: "Accounting Date : 20-09-2026"
+      - link "[DAY OPEN]" [ref=f11e37] [cursor=pointer]:
+        - /url: /nodef/accounting#!accBusinessDate/showDayClose
+    - generic [ref=f11e39]:
+      - list [ref=f11e41]:
+        - listitem [ref=f11e42]:
+          - generic [ref=f11e43]: RequestMap Resolve
+        - listitem [ref=f11e44]
+        - listitem [ref=f11e45]:
+          - generic [ref=f11e46]: HR
+        - listitem [ref=f11e47]
+        - listitem [ref=f11e48]:
+          - generic [ref=f11e49]: Setup
+        - listitem [ref=f11e50]
+        - listitem [ref=f11e51]:
+          - generic [ref=f11e52]: Menu
+        - listitem [ref=f11e53]
+        - listitem [ref=f11e54]:
+          - generic [ref=f11e55]: User
+        - listitem [ref=f11e56]
+        - listitem [ref=f11e57]:
+          - generic [ref=f11e58]: Programme
+        - listitem [ref=f11e59]
+        - listitem [ref=f11e60]:
+          - generic [ref=f11e61]: Office
+        - listitem [ref=f11e62]
+        - listitem [ref=f11e63]:
+          - generic [ref=f11e64]: Table Of Authority
+        - listitem [ref=f11e65]
+        - listitem [ref=f11e66]:
+          - generic [ref=f11e67]: Admin Report
+        - listitem [ref=f11e68]
+      - generic [ref=f11e69]:
+        - generic [ref=f11e70]:
+          - generic [ref=f11e71]:
+            - link "Logo":
+              - /url: javascript:void(0);
+              - img "Logo" [ref=f11e72] [cursor=pointer]
+          - generic [ref=f11e73]:
+            - link "Logo":
+              - /url: "#"
+              - img "Logo" [ref=f11e74] [cursor=pointer]
+          - paragraph [ref=f11e77]: Welcome Abu Shoaib Asik [abushoaib.asik]
+        - list [ref=f11e78]:
+          - listitem [ref=f11e79]:
+            - link "RequestMap Resolve" [ref=f11e80] [cursor=pointer]:
+              - /url: javascript:void(0)
+          - listitem [ref=f11e81]:
+            - link "HR" [ref=f11e82] [cursor=pointer]:
+              - /url: javascript:void(0)
+          - listitem [ref=f11e83]:
+            - link "Setup" [ref=f11e84] [cursor=pointer]:
+              - /url: javascript:void(0)
+          - listitem [ref=f11e85]:
+            - link "Menu" [ref=f11e86] [cursor=pointer]:
+              - /url: javascript:void(0)
+          - listitem [ref=f11e87]:
+            - link "User" [ref=f11e88] [cursor=pointer]:
+              - /url: javascript:void(0)
+          - listitem [ref=f11e89]:
+            - link "Programme" [ref=f11e90] [cursor=pointer]:
+              - /url: javascript:void(0)
+          - listitem [ref=f11e91]:
+            - link "Office" [ref=f11e92] [cursor=pointer]:
+              - /url: javascript:void(0)
+          - listitem [ref=f11e93]:
+            - link "Table Of Authority" [ref=f11e94] [cursor=pointer]:
+              - /url: javascript:void(0)
+          - listitem [ref=f11e95]:
+            - link "Admin Report" [ref=f11e96] [cursor=pointer]:
+              - /url: javascript:void(0)
+      - link:
+        - /url: "#!hrLetter/showConfirmationEmpLetter/:params"
+      - link:
+        - /url: "#!hrLetter/hrLetterIssuedEmployeeList/:params"
+      - link:
+        - /url: "#!hrLetter/confirmationEmpList/:params"
+      - link:
+        - /url: "#!hrLetter/showTransferOrderLetter/:params"
+      - link:
+        - /url: "#!hrLetter/transferOrderEmployeeList/:params"
+      - link:
+        - /url: "#!hrLetter/showTransferCancellationLetter/:params"
+      - link:
+        - /url: "#!hrLetter/transferCanceledEmployeeList/:params"
+      - link:
+        - /url: "#!hrLetter/showJobSeparationOrderedLetter/:params"
+      - link:
+        - /url: "#!hrLetter/jobSeparationOrderedEmployeeList/:params"
+      - link:
+        - /url: "#!hrLetter/showJobSeparationCancellationLetter/:params"
+      - link:
+        - /url: "#!hrLetter/jobSeparationCanceledEmployeeList/:params"
+      - link:
+        - /url: "#!hrLetter/showRetirementLetter/:params"
+      - link:
+        - /url: "#!hrLetter/jobSeparationRetirementList/:params"
+      - link:
+        - /url: "#!hrLetter/showCustomLetter/:params"
+      - link:
+        - /url: "#!hrLetter/editCustomLetter/:params"
+      - link:
+        - /url: "#!hrLetter/customLetterList/:params"
+      - link:
+        - /url: "#!hrLetter/pmsBulkLetterList/:params"
+      - link:
+        - /url: "#!hrLetter/showPMSLetter/:params"
+      - link:
+        - /url: "#!hrLetter/showAppointmentLetter/:params"
+      - link:
+        - /url: "#!hrLetter/showContractRenewLetter/:params"
+      - link:
+        - /url: "#!hrLetter/showBulkTransferOrderLetter"
+      - link:
+        - /url: "#!hrLetter/showBulkJobSeparationOrderedLetter"
+      - link:
+        - /url: "#!hrLetter/showBulkExperienceLetter"
+      - link:
+        - /url: "#!hrLetter/showBulkReleaseLetter"
+      - link:
+        - /url: "#!hrLetter/showBulkReleaseConditionLetter"
+      - link:
+        - /url: "#!hrAssessmentGroupEmpMapping/show/:params"
+      - link:
+        - /url: "#!empDevelopmentConcernLog/createForSupervisor/:params"
+      - link:
+        - /url: "#!empDevelopmentConcernLog/empListForSupervisor/:params"
+      - link:
+        - /url: "#!empDevelopmentConcernLog/empListForDelegate/:params"
+      - link:
+        - /url: "#!empDevelopmentConcernLog/createForDelegate/:params"
+      - link:
+        - /url: "#!empDevelopmentConcernLog/empListForSupDelegate/:params"
+      - link:
+        - /url: "#!empDevelopmentConcernLog/createForSupDelegate/:params"
+      - link:
+        - /url: "#!empObjectiveConcernLog/empListForSupervisorObjectiveConcernLog/:params"
+      - link:
+        - /url: "#!empObjectiveConcernLog/empListForSupervisorObjectiveConcernNote/:params"
+      - link:
+        - /url: "#!empYearlyAssessment/showBothForMidYear/:params"
+      - link:
+        - /url: "#!empYearlyAssessment/reviewBoth/:params"
+      - link:
+        - /url: "#!empYearlyAssessment/beginningYearReviewList/:params"
+      - link:
+        - /url: "#!empYearlyAssessment/midYearReviewList/:params"
+      - link:
+        - /url: "#!empYearlyAssessment/reviewBothForMidYear/:params"
+      - link:
+        - /url: "#!empObjectiveDelegation/delegatedListForObjectiveDelegate/:params"
+      - link:
+        - /url: "#!empObjectiveDelegation/showForDelegated/:params"
+      - link:
+        - /url: "#!empObjectiveDelegation/show/:params"
+      - link:
+        - /url: "#!empExitInterviewForm/show/:params"
+      - link:
+        - /url: "#!empExitInterviewForm/jobSeparationProposalList/:params"
+      - link:
+        - /url: "#!trainingOffering/editBldTraining/:params"
+      - link:
+        - /url: "#!trainingOffering/list/:params"
+      - link:
+        - /url: "#!trainingAttendance/show/:params"
+      - link:
+        - /url: "#!trainingAttendance/showTrainingList/:params"
+      - link:
+        - /url: "#!trainingAttendance/edit/:params"
+      - link:
+        - /url: "#!trainingAttendance/editAttendance/:params"
+      - link:
+        - /url: "#!joinAfterTransfer/accountsForm/:params"
+      - link:
+        - /url: "#!joinAfterTransfer/combinedClearanceForm/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/listForAuthorization/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/verifyProposal/:params"
+      - link:
+        - /url: "#!hrGrievanceInfo/show/:params"
+      - link:
+        - /url: "#!grievanceForum/forumListForEdit/:params"
+      - link:
+        - /url: "#!hrGrievanceActionTaken/grievanceActionTakenList/:params"
+      - link:
+        - /url: "#!hrGrievanceInfo/grievanceDetails/:params"
+      - link:
+        - /url: "#!hrGrievanceInfo/grievanceList/:params"
+      - link:
+        - /url: "#!whistleblower/whistleBlowerList/:params"
+      - link:
+        - /url: "#!whistleBlower/removeWhistleBlower/:params"
+      - link:
+        - /url: "#!confirmationAssessmentComment/verifyProposal/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/edit/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/createOrder/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/createTransferOrder/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/showReviseTransferOrder/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/showCancelTransferOrder/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/bulkTransferCancelDetails/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/editDraft/:params"
+      - link:
+        - /url: "#!higherStudiesApplication/allHigherStudiesView/:params"
+      - link:
+        - /url: "#!higherStudiesApplication/associatedHigherStudiesView/:params"
+      - link:
+        - /url: "#!higherStudyBondSign/show/:params"
+      - link:
+        - /url: "#!higherStudyBondSign/edit/:params"
+      - link:
+        - /url: "#!trainingNeedAnalysis/viewTnaDetail/:params"
+      - link:
+        - /url: "#!trainingNeedAnalysis/verifyProposal/:params"
+      - link:
+        - /url: "#!trainingNeedAnalysis/verifyCancelOrder/:params"
+      - link:
+        - /url: "#!tnaMultipleEmployee/verifyProposal/:params"
+      - link:
+        - /url: "#!tnaMultipleEmployee/verifyCancelOrder/:params"
+      - link:
+        - /url: "#!tnaMultipleEmployee/editRequest/:params"
+      - link:
+        - /url: "#!tnaMultipleEmployee/associatedList/:params"
+      - link:
+        - /url: "#!tnaMultipleEmployee/viewTrainingDetail/:params"
+      - link:
+        - /url: "#!employeeHrDocuments/show/:params"
+      - link:
+        - /url: "#!employeeCoreInfo/empNotVerifyList/:params"
+      - link:
+        - /url: "#!employeeCoreInfo/notVerifiedEmployee/:params"
+      - link:
+        - /url: "#!employeeHrDocuments/editEmpDocumentUpload/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/edit/:params"
+      - link:
+        - /url: "#!employeeHrDocuments/show/:params"
+      - link:
+        - /url: "#!employeeCoreInfo/showEmpDetailsForBd/:params"
+      - link:
+        - /url: "#!employeeCoreInfo/empNotVerifyList/:params"
+      - link:
+        - /url: "#!employeeCoreInfo/notVerifiedEmployee/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/updateTransferOrder/:params"
+      - link:
+        - /url: "#!employeeProbationInfo/probationExtension/:params"
+      - link:
+        - /url: "#!employeeProbationInfo/probationConfirmation/:params"
+      - link:
+        - /url: "#!empChangeDesignation/allList/:params"
+      - link:
+        - /url: "#!empChangeDesignation/associatedList/:params"
+      - link:
+        - /url: "#!employeeDetail/show/:params"
+      - link:
+        - /url: "#!employeeDetail/showEmployeeHierarchy"
+      - link:
+        - /url: "#!employeeDetail/updateDetail/:params"
+      - link:
+        - /url: "#!employeeDetail/supervisorAssignmentIssues"
+      - link:
+        - /url: "#!empPersonalFileAccessControl/approvedHrList/:params"
+      - link:
+        - /url: "#!employeeContractRenew/contractRenewList"
+      - link:
+        - /url: "#!employeeContractRenew/verifyProposal/:params"
+      - link:
+        - /url: "#!employeeContractRenew/verifyCancelOrder/:params"
+      - link:
+        - /url: "#!employeeContractRenew/edit/:params"
+      - link:
+        - /url: "#!employeeContractRenew/contractRenewOrder/:params"
+      - link:
+        - /url: "#!employeeContractRenew/allContractRenewList/:params"
+      - link:
+        - /url: "#!employeeContractRenew/associateContractRenewList/:params"
+      - link:
+        - /url: "#!employeeContractRenew/contractRenewResultView/:params"
+      - link:
+        - /url: "#!employeeContractRenew/associatedContractRenewView/:params"
+      - link:
+        - /url: "#!employeeValidation/create/:params"
+      - link:
+        - /url: "#!employeeValidation/createVerified/:params"
+      - link:
+        - /url: "#!employeeValidation/validationDetails/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/listTransferOrderForUpdate/:params"
+      - link:
+        - /url: "#!joinAfterTransfer/transferDetails/:params"
+      - link:
+        - /url: "#!empResponsibilityHandover/showForSupervisor/:params"
+      - link:
+        - /url: "#!joinAfterTransfer/employeeTransferListBeforeJoinForSupervisor/:params"
+      - link:
+        - /url: "#!joinAfterTransfer/telephoneForm/:params"
+      - link:
+        - /url: "#!joinAfterTransfer/transportForm/:params"
+      - link:
+        - /url: "#!joinAfterTransfer/create/:params"
+      - link:
+        - /url: "#!joinAfterTransfer/employeeTransferOrderListBeforeJoin/:params"
+      - link:
+        - /url: "#!joinAfterTransfer/showReceiveJATForSupervisor/:params"
+      - link:
+        - /url: "#!joinAfterTransfer/listReceiveJATForSupervisor/:params"
+      - link:
+        - /url: "#!joinAfterTransfer/showReceiveJoinAfterTransfer/:params"
+      - link:
+        - /url: "#!joinAfterTransfer/listReceiveJoinAfterTransfer/:params"
+      - link:
+        - /url: "#!joinAfterTransfer/updateJoinAfterTransfer/:params"
+      - link:
+        - /url: "#!joinAfterTransfer/listJoinAfterTransferForUpdate/:params"
+      - link:
+        - /url: "#!joinAfterTransfer/showReceiveJoinAfterTransferEdit/:params"
+      - link:
+        - /url: "#!joinAfterTransfer/listReceiveJoinAfterTransferForEdit/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/associatedProposalDetails/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/associatedTransferProposalList/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/transferDetails/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/allTransferList/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/lifecycleReportPage"
+      - link:
+        - /url: "#!employeeTransferProposal/listForAuthorizationBulk/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/bulkEmpTransfer/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/editProposalBulk/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/listDraftBulkTransferProposal/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/verifyCancelOrder/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/verifyProposalBulk/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/createBulkTransferOrder/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/listBulkTransferOrderForUpdate/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/listBulkTransferProposalForOrder/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/associatedBulkTransferDetails/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/associatedBulkTransferList/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/bulkTransferDetails/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/bulkTransferInitiatorDetails/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/allBulkTransferList/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/allBulkTransferListForInitiator/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/approvalDetails/:params"
+      - link:
+        - /url: "#!travelApplication/listForAuthorization/:params"
+      - link:
+        - /url: "#!travelApplication/verifyProposal/:params"
+      - link:
+        - /url: "#!travelApplication/verifyCancelOrder/:params"
+      - link:
+        - /url: "#!travelApplication/edit/:params"
+      - link:
+        - /url: "#!travelApplication/showAfterTravel/:params"
+      - link:
+        - /url: "#!travelApplication/showAfterTravelList/:params"
+      - link:
+        - /url: "#!travelApplication/showTravelApplicationDetail/:params"
+      - link:
+        - /url: "#!travelApplication/transferDetails/:params"
+      - link:
+        - /url: "#!travelApplication/associatedTravelApplicationList/:params"
+      - link:
+        - /url: "#!travelApplication/associatedProposalDetails/:params"
+      - link:
+        - /url: "#!travelApplication/allTravelApplicationList/:params"
+      - link:
+        - /url: "#!travelApplication/showTicketIssueDetail/:params"
+      - link:
+        - /url: "#!travelApplication/showDoneTicketIssueDetail/:params"
+      - link:
+        - /url: "#!empPersonalFileAccessControl/approvedHrList/:params"
+      - link:
+        - /url: "#!employeeContractRenew/contractRenewList"
+      - link:
+        - /url: "#!employeeContractRenew/verifyProposal/:params"
+      - link:
+        - /url: "#!employeeContractRenew/verifyCancelOrder/:params"
+      - link:
+        - /url: "#!employeeContractRenew/edit/:params"
+      - link:
+        - /url: "#!employeeContractRenew/contractRenewOrder/:params"
+      - link:
+        - /url: "#!employeeContractRenew/allContractRenewList/:params"
+      - link:
+        - /url: "#!employeeContractRenew/associateContractRenewList/:params"
+      - link:
+        - /url: "#!employeeContractRenew/contractRenewResultView/:params"
+      - link:
+        - /url: "#!employeeValidation/create/:params"
+      - link:
+        - /url: "#!employeeValidation/createVerified/:params"
+      - link:
+        - /url: "#!employeeValidation/validationDetails/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/listTransferOrderForUpdate/:params"
+      - link:
+        - /url: "#!jobSeparationProposal/empResignation/:params"
+      - link:
+        - /url: "#!jobSeparationClearance/listForAuthorization/:params"
+      - link:
+        - /url: "#!jobSeparationClearance/programPersonnelForm/:params"
+      - link:
+        - /url: "#!jobSeparationClearance/relatedCaretakerEditForm/:params"
+      - link:
+        - /url: "#!jobSeparationClearance/sendBackForClearance/:params"
+      - link:
+        - /url: "#!jobSeparationClearance/relatedDeptOrProgramForm/:params"
+      - link:
+        - /url: "#!jobSeparationClearance/mDpsForm/:params"
+      - link:
+        - /url: "#!jobSeparationClearance/completeMdpsForm/:params"
+      - link:
+        - /url: "#!jobSeparationClearance/hrComForm/:params"
+      - link:
+        - /url: "#!jobSeparationClearance/leaveForm/:params"
+      - link:
+        - /url: "#!jobSeparationProposal/order/:params"
+      - link:
+        - /url: "#!jobSeparationProposal/cancelOrder/:params"
+      - link:
+        - /url: "#!jobSeparationProposal/verifyCancelOrder/:params"
+      - link:
+        - /url: "#!jobSeparationProposal/verifyWithdrawn/:params"
+      - link:
+        - /url: "#!jobSeparationClearance/employeeForm/:params"
+      - link:
+        - /url: "#!jobSeparationClearance/relatedDeptOrProgramForm/:params"
+      - link:
+        - /url: "#!jobSeparationClearance/ictForm/:params"
+      - link:
+        - /url: "#!jobSeparationClearance/transportForm/:params"
+      - link:
+        - /url: "#!jobSeparationClearance/telephoneForm/:params"
+      - link:
+        - /url: "#!jobSeparationClearance/libraryForm/:params"
+      - link:
+        - /url: "#!jobSeparationClearance/dayCareForm/:params"
+      - link:
+        - /url: "#!jobSeparationClearance/relatedCaretakerForm/:params"
+      - link:
+        - /url: "#!jobSeparationClearance/relatedCaretakerEditForm/:params"
+      - link:
+        - /url: "#!jobSeparationClearance/supervisorEditForm/:params"
+      - link:
+        - /url: "#!jobSeparationClearance/verifyProposal/:params"
+      - link:
+        - /url: "#!jobSeparationClearance/hrForm/:params"
+      - link:
+        - /url: "#!jobSeparationClearance/settlePrepareForm/:params"
+      - link:
+        - /url: "#!jobSeparationSettlement/finalPaymentSettlement/:params"
+      - link:
+        - /url: "#!jobSeparationSettlement/fieldFinalPaymentSettlement/:params"
+      - link:
+        - /url: "#!jobSeparationSettlement/finalPaymentSettlementForEdit/:params"
+      - link:
+        - /url: "#!jobSeparationSettlement/saveFinalSettlement/:params"
+      - link:
+        - /url: "#!jobSeparationProposal/viewSeparationInfo/:params"
+      - link:
+        - /url: "#!jobSeparationProposal/jobSeparationProposalList/:params"
+      - link:
+        - /url: "#!jobSeparationProposal/hrJobSeparationProposalList/:params"
+      - link:
+        - /url: "#!jobSeparationProposal/listForCancelSeparationOrder/:params"
+      - link:
+        - /url: "#!jobSeparationProposal/showEmployeeResignation/:params"
+      - link:
+        - /url: "#!jobSeparationProposal/verifyProposal/:params"
+      - link:
+        - /url: "#!jobSeparationProposal/listForAuthorization/:params"
+      - link:
+        - /url: "#!jobSeparationProposal/edit/:params"
+      - link:
+        - /url: "#!jobSeparationClearance/salaryForm/:params"
+      - link:
+        - /url: "#!jobSeparationClearance/combinedFieldClrForm/:params"
+      - link:
+        - /url: "#!jobSeparationClearance/pfForm/:params"
+      - link:
+        - /url: "#!jobSeparationClearance/completePfForm/:params"
+      - link:
+        - /url: "#!jobSeparationClearance/loanDpsForm/:params"
+      - link:
+        - /url: "#!jobSeparationClearance/completeLoanForm/:params"
+      - link:
+        - /url: "#!jobSeparationClearance/iouAdvanceForm/:params"
+      - link:
+        - /url: "#!jobSeparationClearance/pfClearanceListForEdit/:params"
+      - link:
+        - /url: "#!jobSeparationSettlement/finalPaymentSettlement/:params"
+      - link:
+        - /url: "#!jobSeparationSettlement/finalPaymentSettlementForEdit/:params"
+      - link:
+        - /url: "#!jobSeparationSettlement/settleVerificationForm/:params"
+      - link:
+        - /url: "#!empChargeHandover/supervisorEdit/:params"
+      - link:
+        - /url: "#!empChargeHandover/pendingList/:params"
+      - link:
+        - /url: "#!higherStudyBondSign/edit/:params"
+      - link:
+        - /url: "#!higherStudiesApplication/editRequest/:params"
+      - link:
+        - /url: "#!higherStudiesApplication/allHigherStudiesView/:params"
+      - link:
+        - /url: "#!higherStudiesApplication/associatedHigherStudiesView/:params"
+      - link:
+        - /url: "#!higherStudyBondSign/show/:params"
+      - link:
+        - /url: "#!higherStudiesApplication/verifyProposal/:params"
+      - link:
+        - /url: "#!higherStudiesApplication/editRequest/:params"
+      - link:
+        - /url: "#!hrGrievanceInfo/show/:params"
+      - link:
+        - /url: "#!grievanceForum/forumListForEdit/:params"
+      - link:
+        - /url: "#!hrGrievanceActionTaken/grievanceActionTakenList/:params"
+      - link:
+        - /url: "#!employeeProbationInfo/probationConfirmationList/:params"
+      - link:
+        - /url: "#!employeeProbationInfo/probationConfirmationList/:params"
+      - link:
+        - /url: "#!empConfirmationAssessment/beginningYearSupervisorReview/:params"
+      - link:
+        - /url: "#!empConfirmationAssessment/delegatedListForEndYearEmployeeRemarks/:params"
+      - link:
+        - /url: "#!empConfirmationAssessment/delegatedListForEndYearAcceptanceEmployee"
+      - link:
+        - /url: "#!empObjectiveConcernLog/delegatedListForEmployeeIssueLog"
+      - link:
+        - /url: "#!empObjectiveConcernLog/showForSupervisor/:params"
+      - link:
+        - /url: "#!empConfirmationAssessment/verifyProposal/:params"
+      - link:
+        - /url: "#!empConfirmationAssessment/showEmpConfirmationInfo/:params"
+      - link:
+        - /url: "#!participantEvaluation/show/:params"
+      - link:
+        - /url: "#!courseEvaluation/show/:params"
+      - link:
+        - /url: "#!empAssessmentRecommendation/pmsWithRecommendationDetails/:params"
+      - link:
+        - /url: "#!empAssessmentRecommendation/verifyProposal/:params"
+      - link:
+        - /url: "#!empAssessmentRecommendation/verifyCancelOrder/:params"
+      - link:
+        - /url: "#!empAssessmentRecommendation/pmsWithRecommendation"
+      - link:
+        - /url: "#!empAssessmentResult/showEmployeePMS/:params"
+      - link:
+        - /url: "#!empAssessmentResult/showFinalEntry/:params"
+      - link:
+        - /url: "#!empAssessmentResult/showEmpAssessmentResult/:params"
+      - link:
+        - /url: "#!empYearlyAssessment/assessmentDetails/:params"
+      - link:
+        - /url: "#!empYearlyAssessment/showDetails/:params"
+      - link:
+        - /url: "#!empYearlyAssessment/supervisedPmsList"
+      - link:
+        - /url: "#!empExitInterviewForm/show/:params"
+      - link:
+        - /url: "#!empAssessmentComment/endYearSupReview/:params"
+      - link:
+        - /url: "#!empYearlyAssessment/beginningYearReviewList"
+      - link:
+        - /url: "#!empYearlyAssessment/reviewBothForMidYear/:params"
+      - link:
+        - /url: "#!employeeCoreInfo/edit/:params"
+      - link:
+        - /url: "#!hrGrievanceInfo/grievanceDetailsForCPO/:params"
+      - link:
+        - /url: "#!hrGrievanceInfo/addEmployeeToCommittee/:params"
+      - link:
+        - /url: "#!hrGrievanceActionCommittee/investigationCommitteeFeedback/:params"
+      - link:
+        - /url: "#!hrGrievanceActionEmpMapping/act/:params"
+      - link:
+        - /url: "#!hrGrievanceInfo/grievanceAllListDetails/:params"
+      - link:
+        - /url: "#!hrGrievanceActionEmpMapping/noReplyAppealAction/:params"
+      - link:
+        - /url: "#!grievanceForum/edit/:params"
+      - link:
+        - /url: "#!grievanceForum/grievanceForumDetails/:params"
+      - link:
+        - /url: "#!hrGrievanceActionTaken/grievanceCommitteeFeedbackInfo/:params"
+      - link:
+        - /url: "#!empChargeHandover/supervisorEdit/:params"
+      - link:
+        - /url: "#!hrGrievanceActionTaken/createInvestigationAction/:params"
+      - link:
+        - /url: "#!empPersonalFileAccessControl/editApprovedRequest/:params"
+      - link:
+        - /url: "#!jobSeparationClearance/accountsForm/:params"
+      - link:
+        - /url: "#!confirmationAssessmentComment/endYearSupReview/:params"
+      - link:
+        - /url: "#!confirmationAssessmentComment/midYearSupervisorReview/:params"
+      - link:
+        - /url: "#!confirmationAssessmentComment/midYearSupervisorReview/:params"
+      - link:
+        - /url: "#!confirmationAssessmentComment/objectiveListForMidYearSupReview/:params"
+      - link:
+        - /url: "#!confirmationAssessmentComment/delegatedListForEndYearEmployeeRemarks/:params"
+      - link:
+        - /url: "#!hrGrievanceInfo/addAccusedEmpGrievance/:params"
+      - link:
+        - /url: "#!empPersonalFileAccessControl/edit/:params"
+      - link:
+        - /url: "#!employeeAssessmentAccess/showForApproval/:params"
+      - link:
+        - /url: "#!empConfirmationAssessment/listForSupervisorApproval/:params"
+      - link:
+        - /url: "#!employeeAssessmentAccess/listForApproval/:params"
+      - link:
+        - /url: "#!employeeCoreInfo/empVerifyList/:params"
+      - link:
+        - /url: "#!employeeCoreInfo/empNotVerifyList/:params"
+      - link:
+        - /url: "#!empPersonalFileAccessControl/requestedListForHr"
+      - link:
+        - /url: "#!TravelApplication/listForAuthorization"
+      - link:
+        - /url: "#!hrGrievanceActionCommittee/addEmployeeToCommittee/:params"
+      - link:
+        - /url: "#!trainingOffering/editBLDTraining/:params"
+      - link:
+        - /url: "#!hrGrievanceActionCommittee/addEmployeeToCommittee/:params"
+      - link:
+        - /url: "#!hrReport/objectiveSetupStatus/:params"
+      - link:
+        - /url: "#!trainingNeedAnalysis/editRequest/:params"
+      - link:
+        - /url: "#!hrLetter/contractRenewEmployeeList/:params"
+      - link:
+        - /url: "#!jobSeparationProposal/showRetirementSep/:params"
+      - link:
+        - /url: "#!travelApplication/verifyProposal/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/approvedBulkTransferDetails/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/bulkTransferEditDetails/:params"
+      - link:
+        - /url: "#!employeeTransferProposal/bulkTransferUpdateDetails/:params"
+      - link:
+        - /url: "#!individualDevelopmentPlan/getDevelopmentPlanDetails/:params"
+      - link:
+        - /url: "#!empQuestionValueMapping/show/:params"
+      - link:
+        - /url: "#!empYearlyAssessment/midYearReviewBoth/:params"
+      - link:
+        - /url: "#!empAssessmentComment/interimReview/:params"
+      - link:
+        - /url: "#!empAssessmentComment/calibratedReview/:params"
+      - link:
+        - /url: "#!empAssessmentComment/recommendReview"
+      - link:
+        - /url: "#!empAssessmentComment/recommendReview/:params"
+      - link:
+        - /url: "#!hrReport/pmsMonitoringReport"
+      - link:
+        - /url: "#!hrReport/pmsMonitoringReport/:params"
+      - link:
+        - /url: "#!hrReport/pmsPerformanceReport"
+      - link:
+        - /url: "#!hrReport/pmsPerformanceReport/:params"
+      - link:
+        - /url: "#!hrReport/pmsDevPlanReport"
+      - link:
+        - /url: "#!hrReport/pmsDevPlanReport/:params"
+      - link:
+        - /url: "#!projectOfficeMapping/officeWiseProjectMapping"
+      - link:
+        - /url: "#!employeeCoreInfo/employeeListForSupervisorReceive"
+      - link:
+        - /url: "#!employeeCoreInfo/empDetailForSupReceive"
+      - link:
+        - /url: "#!physicalOfficeInfo/createFieldOffice"
+      - link:
+        - /url: "#!employeeCoreInfo/empDetailForSupReceive/:params"
+      - link:
+        - /url: "#!physicalOfficeInfo/editFieldOffice/:params"
+      - link:
+        - /url: "#!employeeProjectMapping/empProjectMapping"
+      - link:
+        - /url: "#!employeeContractRenew/contractRenewCurrentStatusList"
+      - link:
+        - /url: "#!employeeContractRenew/contractRenewCurrentStatusList/:params"
+      - link:
+        - /url: "#!employeeCoreInfo/employeeProfile"
+      - link:
+        - /url: "#!changeTeamMember/myTeamMember"
+      - link:
+        - /url: "#!projectOfficeMapping/officeHierarchy"
+      - link:
+        - /url: "#!projectOfficeMapping/demarcationOfficeChangeList"
+      - link:
+        - /url: "#!projectOfficeMapping/projectOfficeMapping"
+      - link:
+        - /url: "#!employeeOfficeMapping/empOfficeMapping"
+      - link:
+        - /url: "#!hrDashboard/pmsDashboard/:params"
+      - link:
+        - /url: "#!empYearlyAssessment/showBoth/:params"
+      - link:
+        - /url: "#!empObjectiveDelegation/show/:params"
+      - link:
+        - /url: "#!empYearlyAssessment/beginningYearReviewList/:params"
+      - link:
+        - /url: "#!empYearlyAssessment/reviewBoth/:params"
+      - link:
+        - /url: "#!empYearlyAssessment/showBothForMidYear/:params"
+      - link:
+        - /url: "#!empYearlyAssessment/midYearReviewBothList/:params"
+      - link:
+        - /url: "#!empYearlyAssessment/midYearReviewBoth/:params"
+      - link:
+        - /url: "#!empYearlyAssessment/midYearStaffRatting/:params"
+      - link:
+        - /url: "#!empYearlyAssessment/midYearReviewList/:params"
+      - link:
+        - /url: "#!empYearlyAssessment/reviewBothForMidYear/:params"
+      - link:
+        - /url: "#!empAssessmentComment/midYearEmpSignOff/:params"
+      - link:
+        - /url: "#!empAssessmentComment/endYearEmpReview/:params"
+      - link:
+        - /url: "#!empAssessmentComment/objectiveSettingListForEndYearReview/:params"
+      - link:
+        - /url: "#!empAssessmentComment/endYearSupReview/:params"
+      - link:
+        - /url: "#!empAssessmentComment/interimSelfReview/:params"
+      - link:
+        - /url: "#!empAssessmentComment/interimSignOff/:params"
+      - link:
+        - /url: "#!empAssessmentComment/interimReviewList/:params"
+      - link:
+        - /url: "#!empAssessmentComment/interimReview/:params"
+      - link:
+        - /url: "#!empAssessmentComment/endYearEmpSignOff/:params"
+      - link:
+        - /url: "#!empAssessmentComment/reviewCascadeSupRatingList/:params"
+      - link:
+        - /url: "#!empAssessmentComment/calibratedReview/:params"
+      - link:
+        - /url: "#!empAssessmentComment/recommendationApprovalList/:params"
+      - link:
+        - /url: "#!empAssessmentComment/recommendReview/:params"
+      - link:
+        - /url: "#!otherEvaluator/show/:params"
+      - link:
+        - /url: "#!otherEvaluator/replaceDeclineProvider/:params"
+      - link:
+        - /url: "#!empQuestionValueMapping/viewOutCome/:params"
+      - link:
+        - /url: "#!empQuestionValueMapping/questionValueMappingList/:params"
+      - link:
+        - /url: "#!empQuestionValueMapping/show/:params"
+      - link:
+        - /url: "#!empQuestionValueMapping/supervisorApprovalList/:params"
+      - link:
+        - /url: "#!empQuestionValueMapping/supervisorApprovalWindow/:params"
+      - link:
+        - /url: "#!empQuestionValueMapping/modifyFeedbackProviderList/:params"
+      - link:
+        - /url: "#!empQuestionValueMapping/feedbackResultTeamList/:params"
+      - link:
+        - /url: "#!individualDevelopmentPlan/show/:params"
+      - link:
+        - /url: "#!individualDevelopmentPlan/planListForSupervisor/:params"
+      - link:
+        - /url: "#!hrDashboard/pmsDashboard"
+      - link:
+        - /url: "#!empYearlyAssessment/showBoth"
+      - link:
+        - /url: "#!empObjectiveDelegation/show"
+      - link:
+        - /url: "#!empYearlyAssessment/beginningYearReviewList"
+      - link:
+        - /url: "#!empYearlyAssessment/reviewBoth"
+      - link:
+        - /url: "#!empYearlyAssessment/showBothForMidYear"
+      - link:
+        - /url: "#!empYearlyAssessment/midYearReviewBothList"
+      - link:
+        - /url: "#!empYearlyAssessment/midYearReviewBoth"
+      - link:
+        - /url: "#!empYearlyAssessment/midYearStaffRatting"
+      - link:
+        - /url: "#!empYearlyAssessment/midYearReviewList"
+      - link:
+        - /url: "#!empYearlyAssessment/reviewBothForMidYear"
+      - link:
+        - /url: "#!empAssessmentComment/midYearEmpSignOff"
+      - link:
+        - /url: "#!empAssessmentComment/endYearEmpReview"
+      - link:
+        - /url: "#!empAssessmentComment/objectiveSettingListForEndYearReview"
+      - link:
+        - /url: "#!empAssessmentComment/endYearSupReview"
+      - link:
+        - /url: "#!empAssessmentComment/interimSelfReview"
+      - link:
+        - /url: "#!empAssessmentComment/interimSignOff"
+      - link:
+        - /url: "#!empAssessmentComment/interimReviewList"
+      - link:
+        - /url: "#!empAssessmentComment/interimReview"
+      - link:
+        - /url: "#!empAssessmentComment/endYearEmpSignOff"
+      - link:
+        - /url: "#!empAssessmentComment/reviewCascadeSupRatingList"
+      - link:
+        - /url: "#!empAssessmentComment/calibratedReview"
+      - link:
+        - /url: "#!empAssessmentComment/recommendationApprovalList"
+      - link:
+        - /url: "#!empAssessmentComment/recommendReview"
+      - link:
+        - /url: "#!otherEvaluator/show"
+      - link:
+        - /url: "#!otherEvaluator/replaceDeclineProvider"
+      - link:
+        - /url: "#!empQuestionValueMapping/viewOutCome"
+      - link:
+        - /url: "#!empQuestionValueMapping/questionValueMappingList"
+      - link:
+        - /url: "#!empQuestionValueMapping/show"
+      - link:
+        - /url: "#!empQuestionValueMapping/supervisorApprovalList"
+      - link:
+        - /url: "#!empQuestionValueMapping/supervisorApprovalWindow"
+      - link:
+        - /url: "#!empQuestionValueMapping/modifyFeedbackProviderList"
+      - link:
+        - /url: "#!empQuestionValueMapping/feedbackResultTeamList"
+      - link:
+        - /url: "#!individualDevelopmentPlan/show"
+      - link:
+        - /url: "#!individualDevelopmentPlan/planListForSupervisor"
+      - link:
+        - /url: "#!empAssessmentComment/assessmentListForPmsUnit"
+      - link:
+        - /url: "#!empAssessmentComment/assessmentListForPmsUnit/:params"
+      - link:
+        - /url: "#!empAssessmentComment/assessmentListForAdmin"
+      - link:
+        - /url: "#!empAssessmentComment/assessmentListForAdmin/:params"
+      - link:
+        - /url: "#!empAssessmentComment/adminAssessmentReview"
+      - link:
+        - /url: "#!empAssessmentComment/adminAssessmentReview/:params"
+      - link:
+        - /url: "#!empAssessmentComment/empAssessmentTools"
+      - link:
+        - /url: "#!empAssessmentComment/empAssessmentTools/:params"
+      - link:
+        - /url: "#!empAssessmentComment/empAssessmentDetails"
+      - link:
+        - /url: "#!empAssessmentComment/empAssessmentDetails/:params"
+      - link:
+        - /url: "#!project/createProject"
+      - link:
+        - /url: "#!project/list"
+      - link:
+        - /url: "#!holiday/createHoliday/:params"
+      - link:
+        - /url: "#!holiday/editHoliday/:params"
+      - link:
+        - /url: "#!project/editProject/:params"
+      - link:
+        - /url: "#!holiday/list"
+      - link:
+        - /url: "#!myBrac/myAttendance"
+      - link:
+        - /url: "#!myBrac/myBrac"
+      - link:
+        - /url: "#!myBrac/paySlipReport"
+      - link:
+        - /url: "#!myBrac/myProfileReport"
+      - link:
+        - /url: "#!myBrac/myLeaveHistory"
+      - link:
+        - /url: "#!myBrac/myDpsReport"
+      - link:
+        - /url: "#!myBrac/incomeTaxStatement"
+      - link:
+        - /url: "#!myBrac/bonusSlip"
+      - link:
+        - /url: "#!myBrac/adjustmentSlip"
+      - link:
+        - /url: "#!myBrac/myLoanReport"
+      - link:
+        - /url: "#!myBrac/providentFund"
+      - link:
+        - /url: "#!myBrac/myNominee"
+      - link:
+        - /url: "#!myBrac/myPromotionAppriciation"
+      - link:
+        - /url: "#!myBrac/performanceBonus"
+      - link:
+        - /url: "#!myBrac/taxReturn"
+      - link:
+        - /url: "#!myBrac/taxCertificate"
+      - link:
+        - /url: "#!myBrac/bracBankOffer"
+      - link:
+        - /url: "#!myBrac/leaveEncashment"
+      - link:
+        - /url: "#!myBrac/uploadMyBracPdf"
+      - link:
+        - /url: "#!myBrac/daktarBhai"
+      - link:
+        - /url: "#!myBrac/bracBankOffers"
+      - link:
+        - /url: "#!myBrac/circular"
+      - link:
+        - /url: "#!myBrac/investmentTaxRebate"
+      - link:
+        - /url: "#!myBrac/employeeProfile"
+      - link:
+        - /url: "#!myBrac/transportBill"
+      - link:
+        - /url: "#!myBrac/healthInsurance"
+      - link:
+        - /url: "#!employeeCoreInfo/profileInfo"
+      - link:
+        - /url: "#!myBrac/profileInfo"
+      - link:
+        - /url: "#!myBrac/educationalCertificate"
+      - link:
+        - /url: "#!syncEmployee/syncResolve"
+      - link:
+        - /url: "#!myBrac/hrFormFormat"
+      - link:
+        - /url: "#!hrGrievanceInfo/listForAuthorization"
+      - link:
+        - /url: "#!hrGrievanceInfo/listForSecSupervisor"
+      - link:
+        - /url: "#!hrGrievanceInfo/verifyProposal/:params"
+      - link:
+        - /url: "#!hrGrievanceInfo/grievanceDetailsForSecSupervisor/:params"
+      - link:
+        - /url: "#!grievanceForum/grievanceForumCaseDetails/:params"
+      - link:
+        - /url: "#!hrLetter/generateShowCauseLetter/:params"
+      - link:
+        - /url: "#!hrLetter/grievanceLetterEmpList"
+      - link:
+        - /url: "#!hrGrievanceInfo/listForEnquiryTeamChange"
+      - link:
+        - /url: "#!grievanceForum/subForumListForForumMember"
+      - link:
+        - /url: "#!hrGrievanceInfo/enquiryTeamMemberChangeDetails/:params"
+      - link:
+        - /url: "#!employeeProvidentFund/empProvidentFundReq"
+      - link:
+        - /url: "#!employeeProvidentFund/empPfList"
+      - link:
+        - /url: "#!employeeProvidentFund/empProvidentFundReqForAdmin"
+      - link:
+        - /url: "#!employeeProvidentFund/allPfList"
+      - link:
+        - /url: "#!employeeProvidentFund/getEmpProvidentFund/:params"
+      - link:
+        - /url: "#!orientation/showEmpOrient/:params"
+      - link:
+        - /url: "#!orientation/showBatchEmpOrient/:params"
+      - link:
+        - /url: "#!referenceCheck/addressPostCheck/:params"
+      - link:
+        - /url: "#!referenceCheck/addressBackCheck/:params"
+      - link:
+        - /url: "#!referenceCheck/viewBackCheck/:params"
+      - link:
+        - /url: "#!referenceCheck/viewPostRef/:params"
+      - link:
+        - /url: "#!empPersonalFileAccessControl/createGroup"
+      - link:
+        - /url: "#!empPersonalFileAccessControl/createGroup/:params"
+      - link:
+        - /url: "#!empPersonalFileAccessControl/requestForAccess"
+      - link:
+        - /url: "#!empPersonalFileAccessControl/requestForAccess/:params"
+      - link:
+        - /url: "#!empYearlyAssessment/myPmsList"
+      - link:
+        - /url: "#!empAssessmentComment/valueRatingForEndYearEmpList/:params"
+      - link:
+        - /url: "#!empAssessmentComment/valueRatingEndYearSupReview/:params"
+      - link:
+        - /url: "#!hrPmsEmpProjectMap/show"
+      - link:
+        - /url: "#!hrAssessmentFeedbackLevelMap/show"
+      - link:
+        - /url: "#!hrAssessmentFeedbackQuestion/show"
+      - link:
+        - /url: "#!hrFeedbackCompetency/show"
+      - link:
+        - /url: "#!hrFeedbackSkill/show"
+      - link:
+        - /url: "#!hrAssessFeedbackRatingScale/show"
+      - link:
+        - /url: "#!empAssesssorChange/show/:params"
+      - link:
+        - /url: "#!empAssesssorChange/approveList/:params"
+      - link:
+        - /url: "#!empYearlyAssessment/reminderMailPendingEmp"
+      - link:
+        - /url: "#!empAssesssorChange/list"
+      - link:
+        - /url: "#!empAssesssorChange/edit/:params"
+      - link:
+        - /url: "#!empAssesssorChange/approveDetails/:params"
+      - link:
+        - /url: "#!grievanceReport/programWiseEnquiryConduct"
+      - link:
+        - /url: "#!empYearlyAssessment/yearAssessmentAllListDetails/:params"
+      - link:
+        - /url: "#!empQuestionValueMapping/empFeedBackDetails/:params"
+      - link:
+        - /url: "#!empQuestionValueMapping/allFeedbackList"
+      - link:
+        - /url: "#!empQuestionValueMapping/pinWiseDetailReport"
+      - link:
+        - /url: "#!empQuestionValueMapping/show360FeedbackStatusByAdmin"
+      - link:
+        - /url: "#!hrNonComQsnSkillMap/show"
+      - link:
+        - /url: "#!hrReport/show360DegreeFeedbackForAdmin"
+      - link:
+        - /url: "#!hrDocumentCategory/show"
+      - link:
+        - /url: "#!hrDocumentSubCategory/show"
+      - link:
+        - /url: "#!hrLetter/jobSeparationDiscountiueEmployeeList"
+      - link:
+        - /url: "#!hrLetter/showJobSeparationDiscountinuationLetter/:params"
+      - link:
+        - /url: "#!yearlyOtherEvaluatorCategory/show"
+      - link:
+        - /url: "#!empQuestionValueMapping/allFeedbackList"
+      - link:
+        - /url: "#!empQuestionValueMapping/feedbackStatusByEmp/:params"
+      - link:
+        - /url: "#!empQuestionValueMapping/show360FeedbackStatusBySupervisor"
+      - link:
+        - /url: "#!empQuestionValueMapping/migrateEmpAssessReportSts"
+      - link:
+        - /url: "#!empQuestionValueMapping/show360FeedbackStatusByAdmin"
+      - link:
+        - /url: "#!empQuestionValueMapping/show360FeedbackStatusByDirector"
+      - link:
+        - /url: "#!empQuestionValueMapping/show360FeedbackStatusByHrbp"
+      - link:
+        - /url: "#!empQuestionValueMapping/show360FeedbackStatusBySecSupervisor"
+      - link:
+        - /url: "#!empQuestionValueMapping/viewBarchart"
+      - link:
+        - /url: "#!empQuestionValueMapping/viewBarchart/:params"
+      - link:
+        - /url: "#!pmsHrbpProjectMap/show"
+      - link:
+        - /url: "#!hrReport/showPmsStatusBySupervisor"
+      - link:
+        - /url: "#!hrReport/showPmsStatusByAdmin"
+      - link:
+        - /url: "#!hrReport/showPmsStatusByHrbp"
+      - link:
+        - /url: "#!hrReport/showPmsStatusByDirector"
+      - link:
+        - /url: "#!hrReport/showPmsStatusBySecondSupervisorAbove"
+      - link:
+        - /url: "#!hrReport/yearAssessmentAllListDetails/:params"
+      - link:
+        - /url: "#!hrReport/showYearEndStatusBySupervisor"
+      - link:
+        - /url: "#!hrReport/showYearEndStatusBy2ndSupervisor"
+      - link:
+        - /url: "#!hrReport/showYearEndStatusByAdmin"
+      - link:
+        - /url: "#!hrReport/showYearEndStatusByHrbp"
+      - link:
+        - /url: "#!hrReport/showYearEndStatusByDirector"
+      - link:
+        - /url: "#!hrReport/showPerformanceRatingListByAdmin"
+      - link:
+        - /url: "#!hrReport/showPerformanceRatingListByHrbp"
+      - link:
+        - /url: "#!hrPmsGuideline/show"
+      - link:
+        - /url: "#!employeeValidation/validationProjectList"
+      - link:
+        - /url: "#!employeeValidation/categoryWiseLevelMap"
+      - link:
+        - /url: "#!hrReport/showObjectiveListBySupervisor"
+      - link:
+        - /url: "#!hrReport/showObjectiveListByHrbp"
+      - link:
+        - /url: "#!hrReport/showObjectiveListBy2ndSupervisor"
+      - link:
+        - /url: "#!hrReport/showObjectiveListByDirector"
+      - link:
+        - /url: "#!hrReport/showObjectiveListByAdmin"
+      - link:
+        - /url: "#!hrReport/showMidYearStatusListBySupervisor"
+      - link:
+        - /url: "#!hrReport/showMidYearStatusListByAdmin"
+      - link:
+        - /url: "#!hrReport/showMidYearStatusListByHrbp"
+      - link:
+        - /url: "#!hrReport/showMidYearStatusListByDirector"
+      - link:
+        - /url: "#!hrReport/showMidYearStatusListBy2ndSupervisor"
+      - link:
+        - /url: "#!skippedRequest/show"
+      - link:
+        - /url: "#!skippedRequest/listForApproval"
+      - link:
+        - /url: "#!skippedRequest/approveDetails/:params"
+      - link:
+        - /url: "#!pmsReopenRequest/show"
+      - link:
+        - /url: "#!pmsReopenRequest/listForApproval"
+      - link:
+        - /url: "#!pmsReopenRequest/approveDetails/:params"
+      - link:
+        - /url: "#!employeeValidation/validationProjectList"
+      - link:
+        - /url: "#!employeeValidation/categoryWiseLevelMap"
+      - link:
+        - /url: "#!employeeMonitoring/update/:params"
+      - link:
+        - /url: "#!employeeMonitoring/show"
+      - link:
+        - /url: "#!employeeMonitoring/list"
+      - link:
+        - /url: "#!hrReport/employeeHistoryReport"
+      - link:
+        - /url: "#!hrReport/separationHistory"
+      - link:
+        - /url: "#!employeeSearch/employeeSearch"
+      - link:
+        - /url: "#!mailConfiguration/show"
+      - link:
+        - /url: "#!tableOfAuthority/toaAuthEmployee/:params"
+      - link:
+        - /url: "#!ebenfisApi/show"
+      - link:
+        - /url: "#!jobSeparationClearance/incomeTaxClearance"
+      - link:
+        - /url: "#!jobSeparationClearance/incomeTaxClearanceDetails/:params"
+      - link:
+        - /url: "#!jobSeparationProposal/showFinalSettlementPreparationHistory/:params"
+      - link:
+        - /url: "#!edms/redirectToEDMSExternalApplication"
+  - generic [ref=f11e98]:
+    - generic [ref=f11e100]:
+      - heading "Support Contact Information" [level=4] [ref=f11e101]
+      - generic "Phone No." [ref=f11e102]:  096-77-444-555 (Field office)
+      - generic "Phone No." [ref=f11e104]:  096-77-444-888 (Head office)
+      - generic "Extension Number" [ref=f11e106]:
+        - text:  3480
+        - paragraph [ref=f11e107]: (for BRAC Center, Kaderia Tower, Gulshan Tower)
+      - generic "Email" [ref=f11e109]:
+        - text: ✉
+        - link "brac.erpsupport@bracits.com" [ref=f11e110] [cursor=pointer]:
+          - /url: mailto:brac.erpsupport@bracits.com
+      - heading "Support Time & Days" [level=4] [ref=f11e112]
+      - paragraph [ref=f11e113]: 08:30 AM – 06:30 PM (BST)
+      - paragraph [ref=f11e114]: SIX (6) DAYS A WEEK (SATURDAY TO THURSDAY)
+    - generic [ref=f11e115]:
+      - generic:
+        - generic:
+          - generic:
+            - generic [ref=f11e117]:
+              - generic [ref=f11e119]: 
+              - link "HRM" [ref=f11e121] [cursor=pointer]:
+                - /url: javascript:void(0);
+            - generic [ref=f11e123]:
+              - generic [ref=f11e125]: 
+              - link "ePMS" [ref=f11e127] [cursor=pointer]:
+                - /url: javascript:void(0);
+            - generic [ref=f11e129]:
+              - generic [ref=f11e131]: 
+              - link "EDMS" [ref=f11e133] [cursor=pointer]:
+                - /url: javascript:void(0);
+            - generic [ref=f11e135]:
+              - generic [ref=f11e137]: 
+              - link "PROCUREMENT" [ref=f11e139] [cursor=pointer]:
+                - /url: javascript:void(0);
+            - generic [ref=f11e141]:
+              - generic [ref=f11e143]: 
+              - link "E-Tender" [ref=f11e145] [cursor=pointer]:
+                - /url: http://35.201.217.90/erp
+            - generic [ref=f11e147]:
+              - generic [ref=f11e149]: 
+              - link "Marketplace" [ref=f11e151] [cursor=pointer]:
+                - /url: https://marketplace.brac.net/BITSAuthentication/Login
+            - generic [ref=f11e153]:
+              - generic [ref=f11e155]: 
+              - link "FIXED ASSET" [ref=f11e157] [cursor=pointer]:
+                - /url: javascript:void(0);
+            - generic [ref=f11e159]:
+              - generic [ref=f11e161]: 
+              - link "MICROFINANCE" [ref=f11e163] [cursor=pointer]:
+                - /url: javascript:void(0);
+            - generic [ref=f11e165]:
+              - generic [ref=f11e167]: 
+              - link "ACCOUNTING" [ref=f11e169] [cursor=pointer]:
+                - /url: javascript:void(0);
+            - generic [ref=f11e171]:
+              - generic [ref=f11e173]: 
+              - link "Budget" [ref=f11e175] [cursor=pointer]:
+                - /url: https://erpbudget.brac.net
+            - generic [ref=f11e177]:
+              - generic [ref=f11e179]: 
+              - link "My BRAC" [ref=f11e181] [cursor=pointer]:
+                - /url: https://mybrac.brac.net
+            - generic [ref=f11e183]:
+              - generic [ref=f11e185]: 
+              - link "My Desk" [ref=f11e187] [cursor=pointer]:
+                - /url: https://mydesk.brac.net
+            - generic [ref=f11e189]:
+              - generic [ref=f11e191]: 
+              - link "Careers Portal" [ref=f11e193] [cursor=pointer]:
+                - /url: https://careers.brac.net
+            - generic [ref=f11e195]:
+              - generic [ref=f11e197]: 
+              - link "eRecruitment" [ref=f11e199] [cursor=pointer]:
+                - /url: http://er-panel.brac.net/auth/login
+            - generic [ref=f11e201]:
+              - generic [ref=f11e203]: 
+              - link "PERFORMANCE DASHBOARD" [ref=f11e205] [cursor=pointer]:
+                - /url: https://erpstaging.brac.net/performancedashboard/
+            - generic [ref=f11e207]:
+              - generic [ref=f11e209]: 
+              - link "HR Analytics Dashboard" [ref=f11e211] [cursor=pointer]:
+                - /url: https://erpstaging.brac.net/analyticaldashboard/app/hrms/
+            - generic [ref=f11e213]:
+              - generic [ref=f11e215]: 
+              - link "HO FAMS" [ref=f11e217] [cursor=pointer]:
+                - /url: https://hofinance.brac.net
+            - generic [ref=f11e219]:
+              - generic [ref=f11e221]: 
+              - link "Monthly MF Reporting Tool" [ref=f11e223] [cursor=pointer]:
+                - /url: https://erpstaging.brac.net/mffrt
+            - generic [ref=f11e225]:
+              - generic [aria-hidden] [ref=f11e228]: 
+              - link "Brac Inventory" [ref=f11e229] [cursor=pointer]:
+                - /url: https://erpstaging.brac.net/inventory/
+          - link:
+            - /url: "#!holiday/localHolidayList"
+          - link:
+            - /url: "#!applicationUser/show/:params"
+          - link:
+            - /url: "#!applicationUser/edit/:params"
+          - link:
+            - /url: "#!project/edit/:params"
+          - link:
+            - /url: "#!delegationOfAuthority/show/:params"
+          - link:
+            - /url: "#!delegationOfAuthority/showTransformationAuthority/:params"
+          - link:
+            - /url: "#!delegationOfAuthority/showTransformationAuthorityDetails/:params"
+          - link:
+            - /url: "#!thirdPartyInfo/edit/:params"
+          - link:
+            - /url: "#!physicalOfficeInfo/show/:params"
+          - link:
+            - /url: "#!physicalOfficeInfo/edit/:params"
+          - link:
+            - /url: "#!holiday/listOfGlobalHoliday"
+          - link:
+            - /url: "#!holiday/editGlobalHoliday/:params"
+          - link:
+            - /url: "#!featureInfo/list/:params"
+          - link:
+            - /url: "#!featureInfo/show/:params"
+          - link:
+            - /url: "#!featureInfo/edit/:params"
+          - link:
+            - /url: "#!menuGroup/edit/:params"
+          - link:
+            - /url: "#!itemInformation/list"
+          - link:
+            - /url: "#!itemInformation/edit/:params"
+          - link:
+            - /url: "#!menuUpload/upload/:params"
+          - link:
+            - /url: "#!requestmap/create/:params"
+          - link:
+            - /url: "#!applicationCacheManager/updateCache/:params"
+          - link:
+            - /url: "#!thirdPartyInfo/show/:params"
+          - link:
+            - /url: "#!thirdPartyInfo/thirdPartyList/:params"
+          - link:
+            - /url: "#!thirdPartyInfo/getThirdPartyList/:params"
+          - link:
+            - /url: "#!sourceOfFund/show"
+          - link:
+            - /url: "#!employeeToaMapping/edit/:params"
+          - link:
+            - /url: "#!employeeToaMapping/toaDetails"
+          - link:
+            - /url: "#!employeeTransferProposal/transferDetails/:params"
+          - link:
+            - /url: "#!employeeContractRenew/contractRenewResultView/:params"
+          - link:
+            - /url: "#!jobSeparationProposal/viewSeparationInfo/:params"
+          - link:
+            - /url: "#!project/updateEmployeeProject"
+          - link:
+            - /url: "#!userAuthority/roleWiseAccessView"
+          - link:
+            - /url: "#!adminReport/roleWiseUserList"
+          - link:
+            - /url: "#!externalApiConfiguration/show"
+          - link:
+            - /url: "#!workflowConfiguration/show"
+          - link:
+            - /url: "#!workflowConfiguration/workflowTypeList"
+          - link:
+            - /url: "#!workflowConfiguration/workflowDetails"
+  - generic [ref=f11e231]:
+    - generic [ref=f11e233]:
+      - text: Copyright © 2022
+      - link "BRAC, Bangladesh" [ref=f11e234] [cursor=pointer]:
+        - /url: javascript:void(0)
+      - text: . All rights reserved.
+    - generic [ref=f11e236]:
+      - generic [ref=f11e237]: "Developed By:"
+      - generic [ref=f11e238]:
+        - link "biTS logo":
+          - /url: http://www.bracits.com/
+          - img "biTS logo" [ref=f11e239] [cursor=pointer]

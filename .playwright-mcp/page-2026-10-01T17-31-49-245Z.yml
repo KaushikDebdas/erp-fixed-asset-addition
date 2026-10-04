@@ -1,0 +1,65 @@
+- generic [active] [ref=f8e1]:
+  - generic [ref=f8e4]:
+    - generic [ref=f8e6]:
+      - generic [ref=f8e7]:
+        - link [ref=f8e9] [cursor=pointer]:
+          - /url: /
+          - img "Logo" [ref=f8e10]
+        - list [ref=f8e12]:
+          - listitem [ref=f8e13]:
+            - link "Dashboard" [ref=f8e14] [cursor=pointer]:
+              - /url: /addons/fin/dashboard
+          - listitem [ref=f8e16]:
+            - link "Settings " [ref=f8e17] [cursor=pointer]:
+              - /url: "javascript:"
+              - generic [ref=f8e18]: Settings
+              - generic [ref=f8e19]: 
+            - text:    
+          - listitem [ref=f8e20]:
+            - link "Consolidation " [ref=f8e21] [cursor=pointer]:
+              - /url: "javascript:"
+              - generic [ref=f8e22]: Consolidation
+              - generic [ref=f8e23]: 
+            - text:                  
+          - listitem [ref=f8e24]:
+            - link "Reports " [ref=f8e25] [cursor=pointer]:
+              - /url: "javascript:"
+              - generic [ref=f8e26]: Reports
+              - generic [ref=f8e27]: 
+            - text:                          
+      - generic [ref=f8e28]:
+        - generic [ref=f8e29]: 
+        - generic [ref=f8e36]:
+          - generic [ref=f8e37]: Hi,
+          - generic [ref=f8e38]: Abu Shoaib Asik
+          - generic [ref=f8e39]: (abushoaib.asik - Head Office [BDHO] )
+          - generic [ref=f8e40]: AA
+        - link "" [ref=f8e43] [cursor=pointer]:
+          - /url: /addons/logout
+    - generic [ref=f8e45]:
+      - generic [ref=f8e47]:
+        - generic [ref=f8e48]:
+          - heading "Financial Report" [level=5] [ref=f8e49]
+          - generic [ref=f8e51]: Income Statement
+          - text: 
+        - generic [ref=f8e52]:
+          - text: 
+          - button "Filter" [ref=f8e54] [cursor=pointer]
+          - link "" [ref=f8e55] [cursor=pointer]:
+            - /url: "#"
+          - text: 
+      - generic [ref=f8e58]:
+        - heading "Please choose criteria from \"Filter\" options" [level=3] [ref=f8e62]
+        - text: "* * *  *    "
+    - generic [ref=f8e64]:
+      - generic [ref=f8e65]:
+        - text: Copyright © 2019
+        - link "BRAC, Bangladesh" [ref=f8e66] [cursor=pointer]:
+          - /url: http://www.brac.net
+      - generic [ref=f8e67]:
+        - text: "Developed By:"
+        - link [ref=f8e68] [cursor=pointer]:
+          - /url: https://www.bracits.com
+          - img "BRAC IT" [ref=f8e69]
+  - text:           
+  - generic [ref=f8e71]: Please wait...

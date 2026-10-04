@@ -1,0 +1,54 @@
+[    1011ms] [LOG] false @ https://erpstaging.brac.net/myDashboard/myDashboard:3273
+[  102182ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[  129182ms] [LOG] 4 @ :128
+[  193209ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[  284236ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[  345815ms] [LOG] 4 @ :128
+[  375241ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[  466262ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[  557306ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[  648326ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[  739351ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[  830371ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[  921412ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[ 1012424ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[ 1103438ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[ 1194452ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[ 1285493ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[ 1376513ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[ 1467521ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[ 1558558ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25

@@ -1,0 +1,193 @@
+- generic [active] [ref=f8e1]:
+  - generic [ref=f8e4]:
+    - generic [ref=f8e6]:
+      - generic [ref=f8e7]:
+        - link [ref=f8e9] [cursor=pointer]:
+          - /url: /
+          - img "Logo" [ref=f8e10]
+        - list [ref=f8e12]:
+          - listitem [ref=f8e13]:
+            - link "Dashboard" [ref=f8e14] [cursor=pointer]:
+              - /url: /addons/fin/dashboard
+          - listitem [ref=f8e16]:
+            - link "Settings " [ref=f8e17] [cursor=pointer]:
+              - /url: "javascript:"
+              - generic [ref=f8e18]: Settings
+              - generic [ref=f8e19]: 
+            - text:    
+          - listitem [ref=f8e20]:
+            - link "Consolidation " [ref=f8e21] [cursor=pointer]:
+              - /url: "javascript:"
+              - generic [ref=f8e22]: Consolidation
+              - generic [ref=f8e23]: 
+            - text:                  
+          - listitem [ref=f8e24]:
+            - link "Reports " [ref=f8e25] [cursor=pointer]:
+              - /url: "javascript:"
+              - generic [ref=f8e26]: Reports
+              - generic [ref=f8e27]: 
+            - text:                          
+      - generic [ref=f8e28]:
+        - generic [ref=f8e29]: 
+        - generic [ref=f8e36]:
+          - generic [ref=f8e37]: Hi,
+          - generic [ref=f8e38]: Abu Shoaib Asik
+          - generic [ref=f8e39]: (abushoaib.asik - Head Office [BDHO] )
+          - generic [ref=f8e40]: AA
+        - link "" [ref=f8e43] [cursor=pointer]:
+          - /url: /addons/logout
+    - generic [ref=f8e45]:
+      - generic [ref=f8e47]:
+        - generic [ref=f8e48]:
+          - heading "Financial Report" [level=5] [ref=f8e49]
+          - generic [ref=f8e51]: Income Statement
+          - text: 
+        - generic [ref=f8e52]:
+          - text: 
+          - button "Filter" [ref=f8e54] [cursor=pointer]
+          - link "" [ref=f8e55] [cursor=pointer]:
+            - /url: "#"
+          - text: 
+      - generic [ref=f8e58]:
+        - heading "Please choose criteria from \"Filter\" options" [level=3] [ref=f8e62]
+        - dialog [ref=f8e76]:
+          - generic [ref=f8e78]:
+            - generic [ref=f8e79]:
+              - heading "Report Filter" [level=6] [ref=f8e80]
+              - button "Close" [ref=f8e81] [cursor=pointer]
+            - generic [ref=f8e83]:
+              - generic [ref=f8e84]:
+                - generic [ref=f8e85]: From date *
+                - textbox "From date *" [ref=f8e87]:
+                  - /placeholder: Please select date from
+                  - text: 07-2025
+              - generic [ref=f8e88]:
+                - generic [ref=f8e89]: To date *
+                - textbox "To date *" [ref=f8e91]:
+                  - /placeholder: Please select to Month
+              - generic [ref=f8e92]:
+                - generic [ref=f8e93]: Report view *
+                - generic [ref=f8e94]:
+                  - combobox [aria-hidden] [ref=f8e95]
+                  - combobox [ref=f8e98] [cursor=pointer]:
+                    - textbox [ref=f8e99]
+                    - text: 
+              - generic [ref=f8e100]:
+                - generic [ref=f8e101]: Show Zero *
+                - generic [ref=f8e102]:
+                  - combobox [aria-hidden] [ref=f8e103]
+                  - combobox [ref=f8e106] [cursor=pointer]:
+                    - textbox "No" [ref=f8e107]
+                    - text: 
+              - generic [ref=f8e108]:
+                - generic [ref=f8e109]: Conversion
+                - generic [ref=f8e110]:
+                  - combobox [aria-hidden] [ref=f8e111]
+                  - combobox [ref=f8e114] [cursor=pointer]:
+                    - textbox [ref=f8e115]
+                    - text: 
+              - generic [ref=f8e116]:
+                - generic [ref=f8e117]: Project Status
+                - generic [ref=f8e118]:
+                  - combobox [aria-hidden] [ref=f8e119]
+                  - combobox [ref=f8e122] [cursor=pointer]:
+                    - textbox [ref=f8e123]
+                    - text: 
+              - generic [ref=f8e124]:
+                - generic [ref=f8e125]: Category
+                - generic [ref=f8e126]:
+                  - listbox [aria-hidden] [ref=f8e127]:
+                    - option [ref=f8e128]: Development (27)
+                    - option [ref=f8e129]: Enterprise (12)
+                    - option [ref=f8e130]: Microfinance (1)
+                    - option [ref=f8e131]: Self Financing (8)
+                    - option [ref=f8e132]: Unknown (7)
+                  - combobox [ref=f8e135]:
+                    - list [ref=f8e136]:
+                      - listitem [ref=f8e137]:
+                        - searchbox [ref=f8e138]
+              - generic [ref=f8e139]:
+                - generic [ref=f8e140]: Program
+                - generic [ref=f8e141]:
+                  - listbox [aria-hidden] [ref=f8e142]
+                  - combobox [ref=f8e145]:
+                    - list [ref=f8e146]:
+                      - listitem:
+                        - searchbox "All program"
+              - generic [ref=f8e147]:
+                - generic [ref=f8e148]: Project
+                - generic [ref=f8e149]:
+                  - listbox [aria-hidden] [ref=f8e150]
+                  - combobox [ref=f8e153]:
+                    - list [ref=f8e154]:
+                      - listitem:
+                        - searchbox "All Project"
+              - generic [ref=f8e155]:
+                - generic [ref=f8e156]: Report For
+                - generic [ref=f8e157]:
+                  - combobox [aria-hidden] [ref=f8e158]
+                  - combobox [ref=f8e161] [cursor=pointer]:
+                    - textbox [ref=f8e162]
+                    - text: 
+              - generic [ref=f8e163]:
+                - generic [ref=f8e164]: Divisional office
+                - generic [ref=f8e165]:
+                  - listbox [aria-hidden] [ref=f8e166]
+                  - combobox [ref=f8e169]:
+                    - list [ref=f8e170]:
+                      - listitem:
+                        - searchbox "All division"
+              - generic [ref=f8e171]:
+                - generic [ref=f8e172]: Regional office
+                - generic [ref=f8e173]:
+                  - listbox [aria-hidden] [ref=f8e174]
+                  - combobox [ref=f8e177]:
+                    - list [ref=f8e178]:
+                      - listitem:
+                        - searchbox "All Region"
+              - generic [ref=f8e179]:
+                - generic [ref=f8e180]: Area office
+                - generic [ref=f8e181]:
+                  - listbox [aria-hidden] [ref=f8e182]
+                  - combobox [ref=f8e185]:
+                    - list [ref=f8e186]:
+                      - listitem:
+                        - searchbox "All Area"
+              - generic [ref=f8e187]:
+                - generic [ref=f8e188]: Branch Office
+                - generic [ref=f8e189]:
+                  - listbox [aria-hidden] [ref=f8e190]
+                  - combobox [ref=f8e193]:
+                    - list [ref=f8e194]:
+                      - listitem:
+                        - searchbox "All Branch"
+              - generic [ref=f8e195]:
+                - generic [ref=f8e196]: CoA Layer
+                - generic [ref=f8e197]:
+                  - listbox [aria-hidden] [ref=f8e198]:
+                    - option [ref=f8e199]: 2-Sub Group
+                    - option [ref=f8e200]: 3-Parent
+                    - option [ref=f8e201]: 4-Sub Parent
+                    - option [ref=f8e202]: 5-Head
+                    - option [ref=f8e203]: 6-Sub Head
+                    - option [ref=f8e204]: 7-Ledger
+                  - combobox [ref=f8e207]:
+                    - list [ref=f8e208]:
+                      - listitem [ref=f8e209]:
+                        - searchbox [ref=f8e210]
+            - generic [ref=f8e211]:
+              - button "Reset" [ref=f8e212] [cursor=pointer]
+              - button "Preview" [ref=f8e213] [cursor=pointer]
+              - button "Export" [ref=f8e214] [cursor=pointer]
+              - button "Close" [ref=f8e215] [cursor=pointer]
+    - generic [ref=f8e64]:
+      - generic [ref=f8e65]:
+        - text: Copyright © 2019
+        - link "BRAC, Bangladesh" [ref=f8e66] [cursor=pointer]:
+          - /url: http://www.brac.net
+      - generic [ref=f8e67]:
+        - text: "Developed By:"
+        - link [ref=f8e68] [cursor=pointer]:
+          - /url: https://www.bracits.com
+          - img "BRAC IT" [ref=f8e69]
+  - text:           

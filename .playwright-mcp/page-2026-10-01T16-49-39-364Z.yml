@@ -1,0 +1,16 @@
+- generic [ref=f1e1]:
+  - generic [ref=f1e2]: ERP External User
+  - generic [ref=f1e7]:
+    - banner [ref=f1e8]:
+      - heading "Sign in to your account" [level=1] [ref=f1e9]
+    - generic [ref=f1e14]:
+      - generic [ref=f1e15]:
+        - generic [ref=f1e16]: Username
+        - textbox "Username" [active] [ref=f1e17]
+      - generic [ref=f1e18]:
+        - generic [ref=f1e19]: Password
+        - textbox "Password" [ref=f1e20]
+        - generic [ref=f1e21] [cursor=pointer]
+      - link "Forgot Password?" [ref=f1e25] [cursor=pointer]:
+        - /url: /idp/realms/brac/login-actions/reset-credentials?client_id=erp&tab_id=RBTGybhB480
+      - button "Sign In" [ref=f1e27] [cursor=pointer]

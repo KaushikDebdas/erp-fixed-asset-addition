@@ -1,0 +1,253 @@
+- generic [active] [ref=f8e1]:
+  - generic [ref=f8e4]:
+    - generic [ref=f8e6]:
+      - generic [ref=f8e7]:
+        - link [ref=f8e9] [cursor=pointer]:
+          - /url: /
+          - img "Logo" [ref=f8e10]
+        - list [ref=f8e12]:
+          - listitem [ref=f8e13]:
+            - link "Dashboard" [ref=f8e14] [cursor=pointer]:
+              - /url: /addons/fin/dashboard
+          - listitem [ref=f8e16]:
+            - link "Settings " [ref=f8e17] [cursor=pointer]:
+              - /url: "javascript:"
+              - generic [ref=f8e18]: Settings
+              - generic [ref=f8e19]: 
+            - text:    
+          - listitem [ref=f8e20]:
+            - link "Consolidation " [ref=f8e21] [cursor=pointer]:
+              - /url: "javascript:"
+              - generic [ref=f8e22]: Consolidation
+              - generic [ref=f8e23]: 
+            - text:                  
+          - listitem [ref=f8e24]:
+            - link "Reports " [ref=f8e25] [cursor=pointer]:
+              - /url: "javascript:"
+              - generic [ref=f8e26]: Reports
+              - generic [ref=f8e27]: 
+            - text:                          
+      - generic [ref=f8e28]:
+        - generic [ref=f8e29]: 
+        - generic [ref=f8e36]:
+          - generic [ref=f8e37]: Hi,
+          - generic [ref=f8e38]: Abu Shoaib Asik
+          - generic [ref=f8e39]: (abushoaib.asik - Head Office [BDHO] )
+          - generic [ref=f8e40]: AA
+        - link "" [ref=f8e43] [cursor=pointer]:
+          - /url: /addons/logout
+    - generic [ref=f8e45]:
+      - generic [ref=f8e47]:
+        - generic [ref=f8e48]:
+          - heading "Financial Report" [level=5] [ref=f8e49]
+          - generic [ref=f8e51]: Income Statement
+          - text: 
+        - generic [ref=f8e52]:
+          - generic [ref=f8e319] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f8e320]: 
+            - text: Export
+          - button "Filter" [ref=f8e54] [cursor=pointer]
+          - link "" [ref=f8e55] [cursor=pointer]:
+            - /url: "#"
+          - text: 
+      - generic [ref=f8e58]:
+        - application "A free feature-rich JavaScript pivot grid library for creating interactive reports inside your app or website." [ref=f8e321]:
+          - generic [ref=f8e322]:
+            - generic [ref=f8e324]:
+              - generic [ref=f8e325]:
+                - generic [ref=f8e326]: "1"
+                - generic [ref=f8e329]: "1"
+              - generic [ref=f8e332]:
+                - generic:
+                  - generic [ref=f8e780]: "2"
+                  - generic [ref=f8e781]: "3"
+                  - generic [ref=f8e782]: "4"
+                  - generic [ref=f8e783]: "5"
+                  - generic [ref=f8e784]: "6"
+                  - generic [ref=f8e785]: "7"
+                  - generic [ref=f8e786]: "8"
+                  - generic [ref=f8e787]: "9"
+                  - generic [ref=f8e788]: "10"
+                  - generic [ref=f8e789]: "11"
+                  - generic [ref=f8e790]: "12"
+                  - generic [ref=f8e791]: "13"
+                  - generic [ref=f8e792]: "14"
+                  - generic [ref=f8e793]: "15"
+                  - generic [ref=f8e794]: "2025"
+                  - generic [ref=f8e795]: "2026"
+              - generic [ref=f8e808]:
+                - generic [ref=f8e809]: "2"
+                - generic [ref=f8e810] [cursor=pointer]:
+                  - generic "Click to collapse" [ref=f8e811]: 
+                  - text: "[4]-Income"
+                - generic [ref=f8e812]: "3"
+                - generic [ref=f8e813] [cursor=pointer]:
+                  - generic "Click to collapse" [ref=f8e814]: 
+                  - text: "[41]-Operating Income"
+                - generic [ref=f8e815]: "4"
+                - generic [ref=f8e816] [cursor=pointer]:
+                  - generic "Click to collapse" [ref=f8e817]: 
+                  - text: "[4101]-Service Charge Income Micro Credit"
+                - generic [ref=f8e818]: "5"
+                - generic [ref=f8e819] [cursor=pointer]:
+                  - generic "Click to collapse" [ref=f8e820]: 
+                  - text: "[410101]-Service Charge-Current Loan"
+                - generic [ref=f8e821]: "6"
+                - generic [ref=f8e822] [cursor=pointer]:
+                  - generic "Click to collapse" [ref=f8e823]: 
+                  - text: "[41010101]-Service Charge-Current Loan"
+                - generic [ref=f8e824]: "7"
+                - generic [ref=f8e825] [cursor=pointer]:
+                  - generic "Click to collapse" [ref=f8e826]: 
+                  - text: "[4101010101]-Service Charge-Current Loan"
+                - generic [ref=f8e827]: "8"
+                - generic [ref=f8e828]: "[4101010101-01]-Service Charge"
+                - generic [ref=f8e829]: "9"
+                - generic [ref=f8e830] [cursor=pointer]:
+                  - generic "Click to collapse" [ref=f8e831]: 
+                  - text: "[4102]-Income from Social Enterprise"
+                - generic [ref=f8e832]: "10"
+                - generic [ref=f8e833] [cursor=pointer]:
+                  - generic "Click to collapse" [ref=f8e834]: 
+                  - text: "[410201]-Income from Social Enterprise"
+                - generic [ref=f8e835]: "11"
+                - generic [ref=f8e836] [cursor=pointer]:
+                  - generic "Click to collapse" [ref=f8e837]: 
+                  - text: "[41020101]-Income from Social Enterprise"
+                - generic [ref=f8e838]: "12"
+                - generic [ref=f8e839] [cursor=pointer]:
+                  - generic "Click to collapse" [ref=f8e840]: 
+                  - text: "[4102010101]-Income from Social Enterprise"
+                - generic [ref=f8e841]: "13"
+                - generic [ref=f8e842]: "[4102010101-01]-Sales Revenue"
+                - generic [ref=f8e843]: "14"
+                - generic [ref=f8e844] [cursor=pointer]:
+                  - generic "Click to collapse" [ref=f8e845]: 
+                  - text: "[4103]-Investment Income"
+                - generic [ref=f8e846]: "15"
+                - generic [ref=f8e847] [cursor=pointer]:
+                  - generic "Click to collapse" [ref=f8e848]: 
+                  - text: "[410301]-Investment Income"
+                - generic [ref=f8e849]: "16"
+                - generic [ref=f8e850] [cursor=pointer]:
+                  - generic "Click to collapse" [ref=f8e851]: 
+                  - text: "[41030101]-Interest Income from Other Investments"
+                - generic [ref=f8e852]: "17"
+                - generic [ref=f8e853] [cursor=pointer]:
+                  - generic "Click to collapse" [ref=f8e854]: 
+                  - text: "[4103010101]-Interest Income from Other Investments"
+                - generic [ref=f8e855]: "18"
+                - generic [ref=f8e856]: "[4103010101-02]-Gain/Loss on Disposal of Related Undertakings"
+                - generic [ref=f8e857]: "19"
+                - generic [ref=f8e858]: "[4103010101-03]-Income from Investment"
+                - generic [ref=f8e859]: "20"
+                - generic [ref=f8e860] [cursor=pointer]:
+                  - generic "Click to collapse" [ref=f8e861]: 
+                  - text: "[4104]-Other Operating Income"
+                - generic [ref=f8e862]: "21"
+                - generic [ref=f8e863] [cursor=pointer]:
+                  - generic "Click to collapse" [ref=f8e864]: 
+                  - text: "[410401]-Other Operating Income"
+                - generic [ref=f8e865]: "22"
+                - generic [ref=f8e866] [cursor=pointer]:
+                  - generic "Click to collapse" [ref=f8e867]: 
+                  - text: "[41040101]- Social Development Programs"
+                - generic [ref=f8e868]: "23"
+                - generic [ref=f8e869] [cursor=pointer]:
+                  - generic "Click to collapse" [ref=f8e870]: 
+                  - text: "[4104010101]-Social Development Programs"
+                - generic [ref=f8e871]: "24"
+                - generic [ref=f8e872]: "[4104010101-01]-Training Income"
+                - generic [ref=f8e873]: "25"
+                - generic [ref=f8e874]: "[4104010101-03]-Sale of Waste Materials"
+              - generic [ref=f8e727]:
+                - generic [ref=f8e875]: "-76,089,773,604"
+                - generic [ref=f8e876]: "-81,446,271,467"
+                - generic [ref=f8e889]: "-70,159,061,575"
+                - generic [ref=f8e890]: "-75,992,982,337"
+                - generic [ref=f8e903]: "-50,676,998,685"
+                - generic [ref=f8e904]: "-54,339,656,072"
+                - generic [ref=f8e917]: "-50,676,998,685"
+                - generic [ref=f8e918]: "-54,339,656,072"
+                - generic [ref=f8e931]: "-50,676,998,685"
+                - generic [ref=f8e932]: "-54,339,656,072"
+                - generic [ref=f8e945]: "-50,676,998,685"
+                - generic [ref=f8e946]: "-54,339,656,072"
+                - generic [ref=f8e959] [cursor=pointer]: "-50,676,998,685"
+                - generic [ref=f8e960] [cursor=pointer]: "-54,339,656,072"
+                - generic [ref=f8e973]: "-9,064,028,796"
+                - generic [ref=f8e974]: "-7,550,478,347"
+                - generic [ref=f8e987]: "-9,064,028,796"
+                - generic [ref=f8e988]: "-7,550,478,347"
+                - generic [ref=f8e1001]: "-9,064,028,796"
+                - generic [ref=f8e1002]: "-7,550,478,347"
+                - generic [ref=f8e1015]: "-9,064,028,796"
+                - generic [ref=f8e1016]: "-7,550,478,347"
+                - generic [ref=f8e1029] [cursor=pointer]: "-9,064,028,796"
+                - generic [ref=f8e1030] [cursor=pointer]: "-7,550,478,347"
+                - generic [ref=f8e1043]: "-1,770,908,628"
+                - generic [ref=f8e1044]: "-3,811,248,713"
+                - generic [ref=f8e1057]: "-1,770,908,628"
+                - generic [ref=f8e1058]: "-3,811,248,713"
+                - generic [ref=f8e1071]: "-1,770,908,628"
+                - generic [ref=f8e1072]: "-3,811,248,713"
+                - generic [ref=f8e1085]: "-1,770,908,628"
+                - generic [ref=f8e1086]: "-3,811,248,713"
+                - generic [ref=f8e1099]: "0"
+                - generic [ref=f8e1100] [cursor=pointer]: "4"
+                - generic [ref=f8e1113] [cursor=pointer]: "-1,770,908,628"
+                - generic [ref=f8e1114] [cursor=pointer]: "-3,811,248,717"
+                - generic [ref=f8e1127]: "-469,493,351"
+                - generic [ref=f8e1128]: "-490,640,272"
+                - generic [ref=f8e1141]: "-469,493,351"
+                - generic [ref=f8e1142]: "-490,640,272"
+                - generic [ref=f8e1155]: "-267,064,035"
+                - generic [ref=f8e1156]: "-309,860,092"
+                - generic [ref=f8e1169]: "-267,064,035"
+                - generic [ref=f8e1170]: "-309,860,092"
+                - generic [ref=f8e1183] [cursor=pointer]: "-13,667,366"
+                - generic [ref=f8e1184] [cursor=pointer]: "-68,629,163"
+                - generic [ref=f8e1197] [cursor=pointer]: "-1,858,047"
+                - generic [ref=f8e1198] [cursor=pointer]: "-197,911"
+              - generic "Double click to fit" [ref=f8e729]:
+                - generic "Drag to resize" [ref=f8e730]
+                - generic "Drag to resize" [ref=f8e731]
+                - generic "Drag to resize" [ref=f8e732]
+              - generic "Double click to fit" [ref=f8e734]:
+                - generic "Drag to resize" [ref=f8e735]
+                - generic "Drag to resize" [ref=f8e736]
+                - generic "Drag to resize" [ref=f8e737]
+                - generic "Drag to resize" [ref=f8e738]
+                - generic "Drag to resize" [ref=f8e739]
+                - generic "Drag to resize" [ref=f8e740]
+                - generic "Drag to resize" [ref=f8e741]
+                - generic "Drag to resize" [ref=f8e742]
+                - generic "Drag to resize" [ref=f8e743]
+                - generic "Drag to resize" [ref=f8e744]
+                - generic "Drag to resize" [ref=f8e745]
+                - generic "Drag to resize" [ref=f8e746]
+                - generic "Drag to resize" [ref=f8e747]
+                - generic "Drag to resize" [ref=f8e748]
+                - generic "Drag to resize" [ref=f8e749]
+                - generic "Drag to resize" [ref=f8e750]
+                - generic "Drag to resize" [ref=f8e751]
+                - generic "Drag to resize" [ref=f8e752]
+                - generic "Drag to resize" [ref=f8e753]
+                - generic "Drag to resize" [ref=f8e754]
+            - text: 
+            - link "Created using" [ref=f8e759] [cursor=pointer]:
+              - /url: https://webdatarocks.com/?r=wdr
+            - text: 
+        - text: "* * *  *    "
+    - generic [ref=f8e64]:
+      - generic [ref=f8e65]:
+        - text: Copyright © 2019
+        - link "BRAC, Bangladesh" [ref=f8e66] [cursor=pointer]:
+          - /url: http://www.brac.net
+      - generic [ref=f8e67]:
+        - text: "Developed By:"
+        - link [ref=f8e68] [cursor=pointer]:
+          - /url: https://www.bracits.com
+          - img "BRAC IT" [ref=f8e69]
+  - text:           
+  - generic [ref=f8e1212]: Please wait...

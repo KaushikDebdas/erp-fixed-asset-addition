@@ -1,0 +1,112 @@
+"""
+registration_helper.py: gives a test a registration of a chosen asset item in
+a chosen status, so one test can reuse what another test created.
+
+How it works:
+    A test that creates a registration records it here. A later test asks for
+    one with get_draft / get_pending / get_approved. If an earlier test already
+    made it, that one is returned. If not (for example the test is run on its
+    own), a new one is created right then. So every test can run alone, and a
+    full run does not create the same thing twice.
+
+Example:
+    record = registrations.get_pending("land")
+    number = record["registration_number"]
+
+A record is a dictionary:
+    {"data": <the values entered>, "registration_number": "757877"}
+An approved record also has "serial", the Asset Serial Number.
+"""
+from test_data.asset_registration_data import build_asset_data
+from utils.asset_flow import create_approved_asset
+
+
+class RegistrationHelper:
+    """Finds, creates and remembers registrations for the tests."""
+
+    def __init__(self, aaq_page, registration_list_page, approval_list_page, remembered: dict):
+        """
+        The three page objects are used to create a registration when none is
+        remembered. `remembered` is the dictionary shared by the whole test run.
+        """
+        self.aaq_page = aaq_page
+        self.registration_list_page = registration_list_page
+        self.approval_list_page = approval_list_page
+        self.remembered = remembered
+
+    def make_key(self, item: str, status: str, sub_type: str, owner: str) -> tuple:
+        """
+        Return the key a registration is remembered under.
+        `owner` is empty for a registration anyone may reuse; give a name (for
+        example "bulk") for one that only one test should use.
+        """
+        return (item, sub_type, status, owner)
+
+    def get_draft(self, item: str, sub_type: str = "spot", owner: str = "") -> dict:
+        """Return a DRAFT registration of the item, creating one if none is remembered."""
+        key = self.make_key(item, "DRAFT", sub_type, owner)
+        if key not in self.remembered:
+            data = build_asset_data(item, sub_type=sub_type)
+            self.aaq_page.navigate_here()
+            self.aaq_page.create_draft(data)
+            self.remember_draft(data, owner)
+        return self.remembered[key]
+
+    def get_pending(self, item: str, sub_type: str = "spot", owner: str = "") -> dict:
+        """Return a submitted (PENDING) registration of the item, creating one if none is remembered."""
+        key = self.make_key(item, "PENDING", sub_type, owner)
+        if key not in self.remembered:
+            data = build_asset_data(item, sub_type=sub_type)
+            self.aaq_page.navigate_here()
+            self.aaq_page.create_and_submit(data)
+            self.remember_pending(data, owner)
+        return self.remembered[key]
+
+    def get_approved(self, item: str, sub_type: str = "spot", owner: str = "") -> dict:
+        """Return an APPROVED registration (with its Asset Serial), creating one if none is remembered."""
+        key = self.make_key(item, "APPROVED", sub_type, owner)
+        if key not in self.remembered:
+            data = build_asset_data(item, sub_type=sub_type)
+            created = create_approved_asset(
+                self.aaq_page, self.registration_list_page, self.approval_list_page, data
+            )
+            self.remembered[key] = {
+                "data": data,
+                "registration_number": created["registration_number"],
+                "serial": created["serial"],
+            }
+        return self.remembered[key]
+
+    def remember_draft(self, data: dict, owner: str = "") -> dict:
+        """Record the Draft that was just saved. Its number is the newest DRAFT in the list."""
+        return self.remember_from_list(data, "DRAFT", owner)
+
+    def remember_pending(self, data: dict, owner: str = "") -> dict:
+        """Record the registration that was just submitted. Its number is the newest PENDING in the list."""
+        return self.remember_from_list(data, "PENDING", owner)
+
+    def remember_from_list(self, data: dict, status: str, owner: str) -> dict:
+        """Read the newest registration number with this status from the list and record it."""
+        self.registration_list_page.navigate_here()
+        self.registration_list_page.filter_by_status(status)
+        number = self.registration_list_page.get_newest_registration_number()
+        key = self.make_key(data["item"], status, data["sub_type"], owner)
+        self.remembered[key] = {"data": data, "registration_number": number}
+        return self.remembered[key]
+
+    def forget(self, record: dict, status: str, owner: str = "") -> None:
+        """Remove a record from its old status, for example after a test approved it."""
+        key = self.make_key(record["data"]["item"], status, record["data"]["sub_type"], owner)
+        self.remembered.pop(key, None)
+
+    def move_to_approved(self, record: dict, serial: str, owner: str = "") -> None:
+        """Record that a PENDING registration was approved, and keep its Asset Serial."""
+        self.forget(record, "PENDING", owner)
+        key = self.make_key(record["data"]["item"], "APPROVED", record["data"]["sub_type"], owner)
+        self.remembered[key] = {**record, "serial": serial}
+
+    def move_draft_to_pending(self, record: dict, owner: str = "") -> None:
+        """Record that a DRAFT registration was submitted, so it is now PENDING."""
+        self.forget(record, "DRAFT", owner)
+        key = self.make_key(record["data"]["item"], "PENDING", record["data"]["sub_type"], owner)
+        self.remembered.setdefault(key, record)

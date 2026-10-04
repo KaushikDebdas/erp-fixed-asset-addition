@@ -1,0 +1,4 @@
+[ 1534725ms] [LOG] false @ https://erpstaging.brac.net/myDashboard/myDashboard?flag=false:3273
+[ 1624712ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/assets/js/eventsource.min.js:942:25

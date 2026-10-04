@@ -1,0 +1,48 @@
+[    9274ms] [LOG] false @ https://erpstaging.brac.net/myDashboard/myDashboard?flag=false:3273
+[   99252ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/assets/js/eventsource.min.js:942:25
+[  190267ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/assets/js/eventsource.min.js:942:25
+[  281306ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/assets/js/eventsource.min.js:942:25
+[  372333ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/assets/js/eventsource.min.js:942:25
+[  463343ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/assets/js/eventsource.min.js:942:25
+[  554373ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/assets/js/eventsource.min.js:942:25
+[  645411ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/assets/js/eventsource.min.js:942:25
+[  736449ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/assets/js/eventsource.min.js:942:25
+[  827473ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/assets/js/eventsource.min.js:942:25
+[  917175ms] [ERROR] Failed to load resource: the server responded with a status of 403 () @ https://erpstaging.brac.net/login/keepAlive:0
+[ 2478384ms] [LOG] false @ https://erpstaging.brac.net/myDashboard/myDashboard?flag=false:3273
+[ 2568370ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/assets/js/eventsource.min.js:942:25
+[ 2659380ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/assets/js/eventsource.min.js:942:25
+[ 2750417ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/assets/js/eventsource.min.js:942:25
+[ 2841439ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/assets/js/eventsource.min.js:942:25
+[ 2932455ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/assets/js/eventsource.min.js:942:25
+[ 3023473ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/assets/js/eventsource.min.js:942:25

@@ -1,0 +1,23 @@
+- generic [ref=f4e4]:
+  - generic [ref=f4e5]:
+    - heading "Welcome to Single Sign On Page" [level=4] [ref=f4e7]
+    - generic [ref=f4e9]:
+      - generic [ref=f4e13]:
+        - generic [ref=f4e14]: Users with BRAC Gmail id must login from here
+        - link "Sign in" [ref=f4e18] [cursor=pointer]:
+          - /url: /realms/brac/broker/google/login?client_id=erpotc&tab_id=q51UVdW2nSU&session_code=-QBSQr92r4DGkeOPXunWpiIKvsu-X0TkRqSArYZh01Q
+      - generic [ref=f4e29]:
+        - generic [ref=f4e30]: Users without BRAC Gmail id must login from here
+        - generic [ref=f4e31]:
+          - generic [ref=f4e32]:
+            - generic [ref=f4e33]: PIN
+            - spinbutton "Enter your PIN" [active] [ref=f4e34]
+          - generic [ref=f4e35]:
+            - generic [ref=f4e36]: Password
+            - textbox "Password" [ref=f4e37]:
+              - /placeholder: Enter your password
+            - generic [ref=f4e38] [cursor=pointer]
+          - generic [ref=f4e39]:
+            - button "Register Yourself / Forgot Password?" [ref=f4e40] [cursor=pointer]
+            - button "Sign In" [ref=f4e42] [cursor=pointer]
+  - generic [ref=f4e43]: "Note: For Single Sign On access, you must have a valid BRAC Gmail id or BRAC PIN. For support Ext:3200 (from Head Office) Email: it-support@brac.net (from outside Head Office)"

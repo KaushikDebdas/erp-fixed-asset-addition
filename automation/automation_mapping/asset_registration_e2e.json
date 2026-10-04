@@ -1,0 +1,106 @@
+{
+  "flow_name": "Asset Registration by AAQ -> Asset Registration List -> Asset Registration Approval List",
+  "roles": ["ERP External User (abushoaib.asik)"],
+  "notes": "Single test account only. The same account could both create the AAQ registration and see/select it in the Approval List -- no second role/login was required to reach or attempt the approval step, so this is a SINGLE-ROLE flow for navigation/permission purposes. Session 2 added: (1) a Draft-before-Submit path with verbatim success toasts for both actions, (2) Asset Item search changed to 'Furniture' (item picked: Cabinet Table), (3) Purchase Date set equal to Registration Date, (4) a second Approve attempt using Project [C04] Administratiion instead of [801] EHC, and (5) full field mapping of the Approval List's 'Asset Registration View' popup. The Approve action was blocked AGAIN this session by the same class of staging error ('No Area Current Account Code: This branch is not mapped with project : [C04] Administratiion'), now observed against two different projects on the same branch (Head Office [BDHO]) -- this points to a branch-wide staging data gap, not a per-project one. Steps 1-9 below are VERIFIED. The Approve step (step 10) remains DATA_REQUIRES_REVIEW: locator and click flow are verified, but no successful business outcome (success toast, Asset Serial Number, Asset Serials tab population) has been observed in either session.",
+  "steps": [
+    {
+      "step_no": 1,
+      "role": "ERP External User (abushoaib.asik)",
+      "page": "AssetRegistrationAaqPage",
+      "business_action": "Navigate to Fixed Asset > Registration > Asset Registration by AAQ via left menu (not direct hash URL -- SPA does not reliably re-render on page.goto with a hash fragment)",
+      "locator_strategy": "get_by_role",
+      "locator": "link:Asset Registration by AAQ",
+      "status": "VERIFIED"
+    },
+    {
+      "step_no": 2,
+      "role": "ERP External User (abushoaib.asik)",
+      "page": "AssetRegistrationAaqPage",
+      "business_action": "Select Project Name & Number",
+      "action": "select_option",
+      "target": "#project",
+      "test_data": "[C04] Administratiion (session 2; session 1 used [801] EHC)",
+      "locator_strategy": "css",
+      "locator": "#project",
+      "status": "VERIFIED"
+    },
+    {
+      "step_no": 3,
+      "role": "ERP External User (abushoaib.asik)",
+      "page": "AssetRegistrationAaqPage",
+      "business_action": "Select Spot Purchase sub-type, read Registration Date value, set Purchase Date to the SAME value via the calendar popup, enter Note/Remarks, select Vendor, search Asset Item Name for 'Furniture' and pick a real result, fill Item Specification/Quantity/Unit Price (>= 20000 Tk total), click Add to add the line to the grid",
+      "test_data": "Spot Purchase; Registration Date (read-only, auto) = Purchase Date = 20/09/2026; Note 'AUTOMATION_TEST registration note - project C04'; Vendor 'ACE IT[P008937]'; Asset Item search 'Furniture' -> picked 'Cabinet Table-> Wooden Furniture-> Furniture-> Furniture and Fixture'; Item Spec 'AUTOMATION_TEST-SPEC-FURN-001'; Quantity 1; Unit Price 25000 (total 25000 >= 20000 rule satisfied)",
+      "locator_strategy": "css",
+      "locator": "#spotPurchase, #registrationDate (read value), #purchaseDate + #forUpdate calendar button + datepicker day cell, #remarks, link '-Select Party-' then select2 search + option 'ACE IT[P008937]', link '-Select Item-' then select2 search 'Furniture' + option 'Cabinet Table-> Wooden...', #itemSpecification, #quantity, #unitPrice, button:' Add'",
+      "status": "VERIFIED"
+    },
+    {
+      "step_no": 4,
+      "role": "ERP External User (abushoaib.asik)",
+      "page": "AssetRegistrationAaqPage",
+      "business_action": "Click Draft to save without submitting for approval",
+      "locator_strategy": "get_by_role",
+      "locator": "button:' Draft'",
+      "produces_data": "registration_number (as DRAFT)",
+      "status": "VERIFIED",
+      "observed_value": "Verbatim success toast: 'Asset registration(AAQ) drafted Successfully!'. Draft validates the SAME required fields as Submit (Purchase Date, Vendor, at least one Asset Details line) -- confirmed by deliberately omitting each and observing toasts 'Please Select Purchase Date.', 'Please Select a supplier.', 'No Asset in List to perform operation.' before completing the form and succeeding. Registration Number 757755 (later submitted) and 757756 (left as Draft) were both created this way."
+    },
+    {
+      "step_no": 5,
+      "role": "ERP External User (abushoaib.asik)",
+      "page": "AssetRegistrationListPage",
+      "business_action": "Navigate to Asset Registration List via left menu, filter Status = DRAFT, search, confirm the new registration appears with Status DRAFT",
+      "locator_strategy": "css",
+      "locator": "link:Asset Registration List, then #status select_option('DRAFT'), then button:' Search'",
+      "consumes_data": "registration_number",
+      "status": "VERIFIED",
+      "observed_value": "Registration Number 757755 and 757756 both appeared with Status DRAFT, Created By Abu Shoaib Asik, Project [C04] Administratiion"
+    },
+    {
+      "step_no": 6,
+      "role": "ERP External User (abushoaib.asik)",
+      "page": "AssetRegistrationListPage",
+      "business_action": "Click the Draft record's Registration Number link to reopen it (form heading becomes 'Update Asset Registration By AAQ', pre-filled, Draft/Submit/Reset still available), then click Submit",
+      "locator_strategy": "css",
+      "locator": "a:has-text('<registration_number>'), then button:' Submit'",
+      "consumes_data": "registration_number",
+      "produces_data": "registration_number (now PENDING)",
+      "status": "VERIFIED",
+      "observed_value": "Verbatim success toast: 'Asset registration(AAQ) submitted Successfully!' -- identical text to a fresh (non-draft) Submit. Registration 757755 moved from DRAFT to PENDING."
+    },
+    {
+      "step_no": 7,
+      "role": "ERP External User (abushoaib.asik)",
+      "page": "AssetRegistrationApprovalListPage",
+      "business_action": "Navigate to Asset Registration Approval List via left menu, filter by Registration Number, locate the row, click the Registration Number link to open the 'Asset Registration View' popup and verify every field matches what was entered at creation",
+      "locator_strategy": "css",
+      "locator": "#registrationId (filter), a:has-text('<registration_number>'), modal container #commonModal, tab link a[href=\"#tab_asset_serials\"] for the second tab",
+      "consumes_data": "registration_number",
+      "status": "VERIFIED",
+      "observed_value": "Popup Details tab fields (Registration No, Type, Date, Source Of Fund, Spot Purchase radio, Branch, Project, Department, Purchase Date, Note/Remarks, Vendor Name/Number/Address/Contact, Asset Details grid: Item Name/Spec/SubCategory/Category/Group/Measurement/Unit/Qty/UnitPrice/TotalPrice/WarrantyEndDate) all matched the AAQ form's submitted values for Registration 757755. Asset Serials tab grid (SL, Asset Serial, Asset Item Name, Sub Category Name, Category Name, Asset Group) was empty ('No data available in table') since the record was still PENDING, not yet approved."
+    },
+    {
+      "step_no": 8,
+      "role": "ERP External User (abushoaib.asik)",
+      "page": "AssetRegistrationApprovalListPage",
+      "business_action": "Close the popup, select the row checkbox for the target registration",
+      "locator_strategy": "css",
+      "locator": "button:has-text('Close') (popup), #assetRegistration (single-pending-row case; for multiple pending rows, scope checkbox to the tr containing the registration_number text)",
+      "consumes_data": "registration_number",
+      "status": "VERIFIED"
+    },
+    {
+      "step_no": 9,
+      "role": "ERP External User (abushoaib.asik)",
+      "page": "AssetRegistrationApprovalListPage",
+      "business_action": "Click the page-level bulk Approve button",
+      "locator_strategy": "css",
+      "locator": "#btnApprove (NOT a generic get_by_role name=' Approve' match -- there are 3 same-labelled approve-type buttons on this page: #btnApprove (bulk, bottom of page, onclick=submit()), a per-row onclick=\"singleApprove('<regNo>')\" button, and #approve (onclick=\"approveAssetRegistration()\", modal-context, not reached). Automation Engineer must use #btnApprove.)",
+      "consumes_data": "registration_number",
+      "status": "DATA_REQUIRES_REVIEW",
+      "observed_value": "Session 1 (Project [801] EHC): blocked by toast 'No Area Current Account Code: This branch is not mapped with project : [801] EHC'. Session 2 (Project [C04] Administratiion): blocked by toast 'No Area Current Account Code: This branch is not mapped with project : [C04] Administratiion'. Status remained PENDING both times. Same error class against two different projects on the same branch (Head Office [BDHO]) indicates a branch-wide staging data/account-code mapping gap, not a per-project issue. No Asset Serial/Asset ID was generated either time. Retry once staging data is fixed or a genuinely-mapped project is identified from the accounting setup screens (not guessed)."
+    }
+  ],
+  "overall_status": "DATA_REQUIRES_REVIEW",
+  "note": "Temporary review artifact -- once the POM classes are written, this file's locators are no longer the source of truth. See skills/automation-mapping.md."
+}

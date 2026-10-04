@@ -1,0 +1,27 @@
+[   54883ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[  145900ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[  236930ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[  327942ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[  418951ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[  509959ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[  600990ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[  691994ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[  783025ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25

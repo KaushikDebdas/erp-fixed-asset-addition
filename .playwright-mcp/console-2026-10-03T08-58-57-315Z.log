@@ -1,0 +1,31 @@
+[   78824ms] [LOG] false @ https://erpstaging.brac.net/node/myDashboard/myDashboard?flag=false:3273
+[  177781ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[  268792ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[  359826ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[  450853ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[  541873ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[  632901ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[  723892ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[  814915ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[  905948ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[  996983ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25

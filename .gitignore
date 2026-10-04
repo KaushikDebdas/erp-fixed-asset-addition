@@ -1,0 +1,9 @@
+.env
+__pycache__/
+*.pyc
+automation/reports/*/
+!automation/reports/.gitkeep
+automation/automation_mapping/_archive/
+.pytest_cache/
+automation/logs/*.log
+.claude/settings.local.json

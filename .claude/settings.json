@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pytest:*)",
+      "Bash(pip:*)",
+      "Bash(playwright:*)",
+      "Bash(npx:*)"
+    ],
+    "deny": [
+      "Read(./.env)"
+    ]
+  }
+}
