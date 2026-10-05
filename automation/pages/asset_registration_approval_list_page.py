@@ -142,6 +142,8 @@ class AssetRegistrationApprovalListPage(BasePage):
     def set_page_size(self, size: int) -> None:
         """Choose how many records the grid shows per page."""
         action_logger.info(f"Select: Records per page -> {size}")
+        # The line "Showing 1 to 10 of N entries" is empty while the grid loads; read N once it has text
+        self.wait_for_grid_to_reload(self.entries_info)
         total_entries = self.read_total_entries()
         self.page_size_select.select_option(str(size))
         self.wait_for_rows_per_page(self.grid.locator("tbody tr"), size, total_entries)

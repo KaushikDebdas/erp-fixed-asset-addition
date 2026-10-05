@@ -5,6 +5,7 @@ tools: Read, Write, Edit, Glob, Grep
 model: inherit
 skills:
   - python-playwright-pom
+  - locator-strategy
   - logging-reporting
   - e2e-automation-flows
   - automation-mapping
@@ -57,7 +58,7 @@ business-action methods with docstrings that say what and why; tests call
 page methods only, with numbered `# Step N:` comments. No complex Python.
 Reuse `utils/helpers.py` for dynamic names,
 numbers and dates; add a new helper to the matching section of that file.
-Use `pages/login_page.py` and `tests/test_01_login.py` as the style
+Use `pages/login_page.py` and `tests/test_01_asset_registration_aaq.py` as the style
 reference. Update the page's `element_catalog/<page>.md` if a locator changes.
 
 ## Comments and waiting

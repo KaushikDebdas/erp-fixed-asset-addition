@@ -8,9 +8,9 @@ the voucher that Preview opens as a PDF in a new tab. See
 """
 import re
 
-from pages.base_page import BasePage
+from pages.base_page import OPEN_LIST_ATTEMPTS, BasePage
 from utils.helpers import day_of_month
-from utils.logger import action_logger
+from utils.logger import action_logger, assertion_logger
 from utils.voucher_pdf import parse_voucher, read_voucher_text
 
 
@@ -34,7 +34,6 @@ class VoucherSearchPage(BasePage):
         the top bar opens the module in the same browser tab.
         """
         # Start from another module so Voucher Search is built fresh every time
-        # (opening it again from itself keeps the old, half-working page)
         self.open_fixed_asset_module()
         accounting_tab = self.page.get_by_text("Accounting", exact=True).first
         self.click(accounting_tab, "Accounting tab")
@@ -66,13 +65,10 @@ class VoucherSearchPage(BasePage):
         day = day_of_month(date_text)
         for index, name in [(0, "Date From"), (1, "Date To")]:
             day_cell = self.page.get_by_role("cell", name=day, exact=True).last
-            for attempt in range(3):
+            for attempt in range(OPEN_LIST_ATTEMPTS):
                 self.click(self.calendar_icons.nth(index), f"{name} calendar icon")
-                try:
-                    day_cell.wait_for(state="visible", timeout=5000)
+                if self.is_shown_within(day_cell, f"{name} calendar", timeout=5000):
                     break
-                except Exception:
-                    action_logger.info(f"The {name} calendar did not open yet, trying again")
             self.wait_until_visible(day_cell, f"{name} calendar day {day}")
             self.click(day_cell, f"{name} calendar day {day}")
             # Let this calendar close before the next one is opened
@@ -149,9 +145,80 @@ class VoucherSearchPage(BasePage):
         preview_url = preview_tab.url
         preview_tab.close()
         response = self.page.context.request.get(preview_url)
-        voucher = parse_voucher(read_voucher_text(response.body()))
+        text = read_voucher_text(response.body())
+        voucher = parse_voucher(text)
+        voucher["text"] = text
         voucher["url"] = preview_url
         voucher["pdf_status"] = response.status
         voucher["content_type"] = response.headers.get("content-type", "")
         action_logger.info(f"Voucher preview read for {transaction_no}: voucher {voucher['voucher_number']}")
         return voucher
+
+    def verify_registration_voucher(self, registration_number: str, expected: dict) -> None:
+        """
+        Confirm the voucher of an approved asset registration (see
+        test_data.asset_registration_data.build_registration_voucher for
+        `expected`). The search row is found by the Registration Number, and
+        the Preview PDF must be this registration's voucher: same voucher
+        number as the row, "Reference no: <Registration Number>" printed on it,
+        the expected date, project, branch, accounts and amounts. Fails and
+        names everything that was different.
+        """
+        assert self.is_voucher_listed(registration_number), (
+            f"No voucher was found for Registration Number {registration_number}."
+        )
+        row = self.get_row_values(registration_number)
+        voucher = self.read_voucher_preview(registration_number)
+        assertion_logger.info(f"Verifying the voucher of registration {registration_number}")
+
+        problems = []
+        particular_pattern = (
+            rf"{re.escape(expected['particular_group'])}\[\d+\] Registered by AAQ\. "
+            rf"Asset Item: {re.escape(expected['item_name'])}"
+        )
+        # The search row shows the date without a leading zero, e.g. 20/9/2026
+        expected_row_date = "/".join(str(int(part)) for part in expected["date"].split("/"))
+        checks = [
+            ("search row date", row["date"], expected_row_date),
+            ("search row amount", row["amount"], expected["amount_in_search"]),
+            ("search row status", row["status"], "Approved"),
+            ("PDF status code", voucher["pdf_status"], 200),
+            ("voucher title", voucher["title"], "JOURNAL VOUCHER"),
+            ("voucher number (PDF and search row)", voucher["voucher_number"], row["voucher_number"]),
+            ("creation date", voucher["creation_date"], expected["date"]),
+            ("posted date", voucher["posted_date"], expected["date"]),
+            ("project", voucher["project"], expected["project"]),
+            ("total debit", voucher["total_debit"], expected["amount_on_voucher"]),
+            ("total credit", voucher["total_credit"], expected["amount_on_voucher"]),
+        ]
+        for name, found, wanted in checks:
+            if found != wanted:
+                problems.append(f"{name}: expected '{wanted}' but found '{found}'")
+        if not re.fullmatch(particular_pattern, row["particular"]):
+            problems.append(f"search row particular: '{row['particular']}' does not match '{particular_pattern}'")
+        if expected["branch"] not in (voucher["branch"] or ""):
+            problems.append(f"branch: expected '{expected['branch']}' in '{voucher['branch']}'")
+        if "pdf" not in voucher["content_type"]:
+            problems.append(f"content type: expected a PDF but found '{voucher['content_type']}'")
+
+        # The two account lines: the asset account is debited and the credit account is credited
+        wanted_lines = [
+            {**expected["debit"], "debit": expected["amount_on_voucher"], "credit": "0.00"},
+            {**expected["credit"], "debit": "0.00", "credit": expected["amount_on_voucher"]},
+        ]
+        if voucher["lines"] != wanted_lines:
+            problems.append(f"account lines: expected {wanted_lines} but found {voucher['lines']}")
+
+        # The voucher belongs to this registration: its number is printed as the reference
+        flat_text = " ".join(voucher["text"].split())
+        if f"Reference no: {registration_number}" not in flat_text:
+            problems.append(f"the voucher text does not show 'Reference no: {registration_number}'")
+
+        assert not problems, f"The voucher of registration {registration_number} is not as expected: {problems}"
+
+    def verify_no_voucher(self, transaction_no: str) -> None:
+        """Confirm the search for this Transaction No found no voucher. Fails with the row that was found."""
+        assertion_logger.info(f"Verifying no voucher exists for {transaction_no}")
+        if self.is_voucher_listed(transaction_no):
+            row = self.get_row_values(transaction_no)
+            raise AssertionError(f"Expected no voucher for {transaction_no} but found one: {row}")

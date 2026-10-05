@@ -14,8 +14,7 @@ Order of the file: 0. smoke, 1. columns/options/defaults, 2. filters,
 import pytest
 
 from config.settings import TEST_USERNAME
-from test_data.asset_items import ASSET_ITEMS
-from test_data.asset_registration_data import build_registration_data
+from test_data.asset_registration_data import ASSET_ITEMS, build_registration_data
 from utils.run_context import trace_one_test
 
 

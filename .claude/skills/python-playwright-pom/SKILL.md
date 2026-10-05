@@ -15,7 +15,7 @@ comment explaining WHY it is there.
 ```
 automation/
 ├── pages/                # one class per page + base_page.py
-├── tests/                # feature-organized, numbered: test_01_login.py
+├── tests/                # feature-organized, numbered: test_01_<feature>.py
 ├── element_catalog/      # PERMANENT record of every page/element seen
 ├── automation_mapping/   # temporary review JSON, per automation-mapping skill
 ├── test_data/
@@ -51,7 +51,7 @@ it fills any screen.
 
 ## Reference examples (copy their style)
 - `pages/base_page.py`, `pages/login_page.py`
-- `tests/test_01_login.py`
+- `tests/test_01_asset_registration_aaq.py`
 
 ## Helpers — reuse before writing new ones
 - `utils/helpers.py` (data): `unique_name("Voucher")`, `random_number(6)`,
@@ -97,7 +97,7 @@ def test_login_with_valid_credentials(login_page):
     ...
 ```
 Assign markers from the Excel's **Suite** column. Test files are numbered in
-run order (`test_01_login.py`, `test_02_income_statement.py`) and
+run order (`test_01_asset_registration_aaq.py`, `test_02_...`) and
 named by feature, never by suite.
 
 ## Multi-role end-to-end flows

@@ -7,3 +7,4 @@ automation/automation_mapping/_archive/
 .pytest_cache/
 automation/logs/*.log
 .claude/settings.local.json
+automation/test_data/saved_assets.json

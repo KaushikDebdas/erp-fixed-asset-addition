@@ -5,6 +5,7 @@ tools: Read, Bash, Glob, Grep
 model: inherit
 skills:
   - logging-reporting
+  - dependency-management
 ---
 # Agent: Test Reporter
 

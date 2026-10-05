@@ -24,6 +24,12 @@ from utils.logger import action_logger
 # Maximum time to wait for a grid to show its new rows after a Search (milliseconds)
 GRID_RELOAD_TIMEOUT = 15000
 
+# Maximum time to wait for a suggestion list or a calendar to open (milliseconds)
+POPUP_OPEN_TIMEOUT = 8000
+
+# Number of times a search button / calendar icon is used to open its list
+OPEN_LIST_ATTEMPTS = 3
+
 # Path of the Fixed Asset module on the ERP site
 FIXED_ASSET_PATH = "/nodef/fixedasset"
 
@@ -84,6 +90,24 @@ class BasePage:
         """
         action_logger.info(f"Wait until visible: {element_name}")
         element.wait_for(state="visible")
+
+    def is_shown_within(self, element: Locator, element_name: str, timeout: int = POPUP_OPEN_TIMEOUT) -> bool:
+        """
+        Wait up to `timeout` milliseconds for an element to appear and return
+        True if it did, False if it did not. Use it in a short loop that
+        opens a suggestion list or a calendar and checks it is shown:
+
+            for attempt in range(OPEN_LIST_ATTEMPTS):
+                self.click(search_icon, "Search button")
+                if self.is_shown_within(suggestion, "Suggestion"):
+                    break
+        """
+        try:
+            element.wait_for(state="visible", timeout=timeout)
+            return True
+        except Exception:
+            action_logger.info(f"Not shown yet: {element_name}")
+            return False
 
     def open_fixed_asset_module(self) -> None:
         """
@@ -185,13 +209,13 @@ class BasePage:
     def wait_for_grid_refresh(self) -> None:
         """
         Wait until a grid has finished reloading after a Search. The page
-        keeps no spinner we can rely on, so this waits for the network to go
-        quiet (it gives up quietly after 10 seconds).
+        has no spinner to watch, so this waits for the network to go quiet,
+        for at most 10 seconds, and then carries on.
         """
         try:
             self.page.wait_for_load_state("networkidle", timeout=10000)
         except Exception:
-            action_logger.info("Network did not go idle, continuing")
+            action_logger.info("Network still busy after 10 seconds, continuing")
 
     def wait_for_grid_to_reload(self, entries_info: Locator) -> None:
         """
@@ -262,14 +286,20 @@ class BasePage:
         It is a custom component, not an ARIA dialog, so it needs its own
         selector instead of a role-based locator.
 
+        The popup is closed by clicking the dark overlay behind it, near the
+        top-left corner of the page, which is always outside the popup box.
+        The close (x) button is not used because on a small screen the popup
+        is taller than the window and the button is above the visible area.
+
         If the popup never shows up within `timeout` ms, this does nothing
         and moves on — it is expected to be absent most of the time.
         """
-        close_button = self.page.locator("#modals button[data-close-button]")
+        popup = self.page.locator("#modals.active")
         try:
-            close_button.wait_for(state="visible", timeout=timeout)
+            popup.wait_for(state="visible", timeout=timeout)
         except Exception:
             action_logger.info("Popup not shown, nothing to close")
             return
-        action_logger.info("Close: popup image")
-        close_button.click()
+        action_logger.info("Close: popup image (click outside the popup)")
+        self.page.locator("#overlay.active").click(position={"x": 5, "y": 5})
+        popup.wait_for(state="hidden")

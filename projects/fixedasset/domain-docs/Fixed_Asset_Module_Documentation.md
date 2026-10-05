@@ -35,6 +35,15 @@ This document consolidates the screen-by-screen breakdown of the Fixed Asset mod
 - **Accounting Entry (on approval):**
   - Fixed Asset (Group-wise) — **Dr.**
   - Supplier Payable – Capex — **Cr.**
+- **Checking the voucher (verified on staging, 2026-10-06):**
+  1. Click the **Accounting** tab in the top bar, then **Voucher > Voucher Search**.
+  2. Type the **Registration Number** in **Transaction No**. Leave Date From and Date To empty (setting both to the approval date missed some vouchers). Click **Search**.
+  3. The row shows the approval date, the voucher number, the Registration Number, the amount, the Particular (for example `Furniture and Fixture[4] Registered by AAQ. Asset Item: Cabinet Table`) and Status Approved. Click **Preview**: the voucher opens as a PDF in a new tab.
+  4. A registration that is still Draft or PENDING has no voucher.
+- **Voucher accounts seen on staging:**
+  - **Spot Purchase:** Debit the item's asset account: Furniture and Fixture `1202010501-01`, Land `1202010101-01`, Building `1202010201-01`, Computer and IT Equipment `1202010701-01`. Credit Supplier Payable-Capex `2101010301-06`. The amount is quantity x unit price. The Credit line shows `Reference no:` followed by the Registration Number.
+  - **Gift Item:** the same Debit, but the Credit is Other Income `4202010101-16` (verified on staging, 2026-10-06).
+- **Approval screen:** the Approval List popup has only Approve and Close; no Reject or Sendback button was found (2026-10-05).
 
 ---
 

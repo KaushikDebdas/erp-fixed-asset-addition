@@ -49,7 +49,7 @@
 - Note/Remarks (`#remarks`) has `maxlength=200` although its placeholder says "Maximum 100 characters"; 200 characters are kept.
 - Item search: "Desktop Computer" also lists "All In One Desktop Computer-> ...", so pick the option whose name starts with the wanted text.
 - Auto-filled boxes (`#assetCategory`, `#assetSubCategory`, `#assetGroup`, `#uom`, `#depRate`, `#supplierNumber`, `#supplierAddress`) fill about 3 s after the pick; wait for a value before reading. `#supplierContactNo` stayed empty for vendor ACE IT.
-- Gift Item (`#giftItem`) shows the same fields as Spot Purchase and validates in the same order: `Please Select Purchase Date.`, `Please Select a supplier.`, `No Asset in List to perform operation`. The 20,000 Taka unit-price minimum applies. Draft and Submit give the same toasts; the list shows DRAFT and PENDING. Not tested: Approve for a Gift Item registration.
+- Gift Item (`#giftItem`) shows the same fields as Spot Purchase and validates in the same order: `Please Select Purchase Date.`, `Please Select a supplier.`, `No Asset in List to perform operation`. The 20,000 Taka unit-price minimum applies. Draft and Submit give the same toasts; the list shows DRAFT and PENDING. Approve for a Gift Item registration was verified on 2026-10-05 (the Gift furniture and land were approved from their popup, the Gift building and laptop together with ticked rows).
 - Draft with a blank form gives `Please Select Purchase Date.` first; `Please Select a Project.` was not reachable from a blank form.
 
 ## Opening/editing an existing Draft record

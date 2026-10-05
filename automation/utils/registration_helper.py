@@ -13,6 +13,10 @@ Example:
     record = registrations.get_pending("land")
     number = record["registration_number"]
 
+The 10 AAQ assets are also saved in a file (utils/saved_registrations.py), so a
+later run reuses them. A saved record is checked once against the Registration
+List before it is used, and replaced when its status has changed.
+
 A record is a dictionary:
     {"data": <the values entered>, "registration_number": "757877"}
 An approved record also has "serial", the Asset Serial Number.
@@ -42,10 +46,31 @@ class RegistrationHelper:
         """
         return (item, sub_type, status, owner)
 
+    def is_still_valid(self, key: tuple, status: str) -> bool:
+        """
+        Return True if the remembered registration can be used. A record created
+        during this run is up to date. One loaded from the saved file is checked
+        once: its Registration Number is searched in the list and its real
+        Status must be the remembered one. A record that is out of date is removed.
+        """
+        if key not in self.remembered:
+            return False
+        if key in self.remembered.trusted:
+            return True
+        number = self.remembered[key]["registration_number"]
+        self.registration_list_page.navigate_here()
+        self.registration_list_page.filter_by_registration_number(number)
+        statuses = self.registration_list_page.read_column("Status")
+        if statuses == [status]:
+            self.remembered.trusted.add(key)
+            return True
+        self.remembered.pop(key, None)
+        return False
+
     def get_draft(self, item: str, sub_type: str = "spot", owner: str = "") -> dict:
         """Return a DRAFT registration of the item, creating one if none is remembered."""
         key = self.make_key(item, "DRAFT", sub_type, owner)
-        if key not in self.remembered:
+        if not self.is_still_valid(key, "DRAFT"):
             data = build_asset_data(item, sub_type=sub_type)
             self.aaq_page.navigate_here()
             self.aaq_page.create_draft(data)
@@ -55,7 +80,7 @@ class RegistrationHelper:
     def get_pending(self, item: str, sub_type: str = "spot", owner: str = "") -> dict:
         """Return a submitted (PENDING) registration of the item, creating one if none is remembered."""
         key = self.make_key(item, "PENDING", sub_type, owner)
-        if key not in self.remembered:
+        if not self.is_still_valid(key, "PENDING"):
             data = build_asset_data(item, sub_type=sub_type)
             self.aaq_page.navigate_here()
             self.aaq_page.create_and_submit(data)
@@ -65,7 +90,7 @@ class RegistrationHelper:
     def get_approved(self, item: str, sub_type: str = "spot", owner: str = "") -> dict:
         """Return an APPROVED registration (with its Asset Serial), creating one if none is remembered."""
         key = self.make_key(item, "APPROVED", sub_type, owner)
-        if key not in self.remembered:
+        if not self.is_still_valid(key, "APPROVED"):
             data = build_asset_data(item, sub_type=sub_type)
             created = create_approved_asset(
                 self.aaq_page, self.registration_list_page, self.approval_list_page, data

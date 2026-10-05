@@ -9,7 +9,7 @@ Two logins are involved:
     - the main user (TEST_USERNAME) registers an asset, assigns it to the test
       employee and approves the assignment. The `assigned_asset` fixture in
       conftest.py does this.
-    - the ASSIGNED employee (ASSGN_USER_USERNAME / ASSIGN_USER_PASSWROD in
+    - the ASSIGNED employee (ASSIGN_USER_USERNAME / ASSIGN_USER_PASSWORD in
       .env) opens the Asset Assign Acknowledgement screen in a second browser
       tab (the `assignee_logged_in_page` fixture) and acknowledges it.
 

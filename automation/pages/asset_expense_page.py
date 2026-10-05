@@ -17,7 +17,7 @@ Things the screen needs, in this order (verified on staging):
 """
 import re
 
-from pages.base_page import BasePage
+from pages.base_page import OPEN_LIST_ATTEMPTS, BasePage
 from utils.logger import action_logger
 
 
@@ -135,17 +135,13 @@ class AssetExpensePage(BasePage):
     def select_asset_by_serial(self, serial: str) -> None:
         """Type the serial and click the suggestion; the read-only asset fields fill in."""
         suggestion = self.suggestions.filter(has_text=serial).first
-        # The search of a freshly opened popup can miss the first typing, so
-        # the serial is typed again (up to three times) until the suggestion shows
-        for attempt in range(3):
+        # Type the serial key by key until the suggestion list shows it
+        for attempt in range(OPEN_LIST_ATTEMPTS):
             action_logger.info("Type into: Asset Serial box")
             self.asset_serial_box.fill("")
             self.asset_serial_box.press_sequentially(serial, delay=40)
-            try:
-                suggestion.wait_for(state="visible", timeout=8000)
+            if self.is_shown_within(suggestion, f"Suggestion for {serial}"):
                 break
-            except Exception:
-                action_logger.info(f"No suggestion for {serial} yet, typing it again")
         self.wait_until_visible(suggestion, f"Suggestion for {serial}")
         self.click(suggestion, f"Suggestion for {serial}")
         self.page.wait_for_function(

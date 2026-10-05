@@ -1,7 +1,7 @@
 # AI SQA Framework
 
-CR/SRS → test cases written exactly per the team's own `skills/
-test-case-writing.md` standard (single Excel, edited directly) → uploaded
+CR/SRS → test cases written exactly per the team's own
+`.claude/skills/test-case-writing/SKILL.md` standard (single Excel, edited directly) → uploaded
 to Zephyr as-is → independently, UI-verified Playwright + Python (POM)
 automation, including multi-role end-to-end flows → execution → dated
 Allure/HTML report. Built for use with Claude Code as the orchestrator.
@@ -15,15 +15,15 @@ Allure/HTML report. Built for use with Claude Code as the orchestrator.
 
 ## Framework root — Claude Code setup files
 ```
-ai-sqa-framework/
-├── .claude/       ← agents/ (registered subagents) + settings.json
+fixedasset-automation/
+├── .claude/       ← agents/ (registered subagents) + skills/ + settings.json
 └── .mcp.json      ← Playwright MCP server config
 ```
 Both are created during the one-time setup below.
 
 ## Project folder
 ```
-projects/addons/
+projects/fixedasset/
 ├── project_config.yaml
 ├── cr/            ← CR/SRS documents
 ├── domain-docs/   ← domain reference material, any format
@@ -34,29 +34,30 @@ projects/addons/
 ## One-time setup (before first use)
 Claude Code needs two things that are easy to miss:
 1. **The `.claude/` folder** at the project root — `agents/` (the 7 agents
-   registered as subagents), and `settings.json` (permissions). Without it,
-   Claude Code will not discover the agents on its own.
+   registered as subagents), `skills/` (the 9 skills, one `<name>/SKILL.md`
+   each) and `settings.json` (permissions). Without it, Claude Code will not
+   discover the agents or skills on its own.
 2. **The Playwright MCP server** configured in `.mcp.json` at the project
    root (requires Node.js 18+) — used by the UI Explorer agent. This is
    separate from the Python `playwright` package.
 
-Exact contents and verification steps (`/agents`, `/mcp`) are in
+Exact contents and verification steps (`/mcp`) are in
 `CLAUDE.md` → "Claude Code Setup". You can simply ask Claude Code to set
 these up on first run.
 
 ## Start here
 1. Read `CLAUDE.md` first.
-2. `skills/test-case-writing.md` — the real, detailed standard this whole
+2. `.claude/skills/test-case-writing/SKILL.md` — the real, detailed standard this whole
    framework is built around: exact 11-column schema, a `Test Case Type`
    column (`Positive`/`Negative`/`Edge Case`/`Business`/`Out of Scope` —
    Folder stays a plain feature path), ~100-cases-per-story volume
    target, fixed defaults, exact `.xlsx` formatting, plus a Bug Report
    format and a Banglish-in/
    English-out communication rule.
-3. `skills/e2e-automation-flows.md` — for journeys that span multiple
+3. `.claude/skills/e2e-automation-flows/SKILL.md` — for journeys that span multiple
    pages, roles, and carry data between steps (e.g. HOFIN create → HOFA
    approve → HOFIN acknowledge). See `templates/e2e_flow_template.md` and
-   the filled example in `projects/addons/e2e-flows/`.
+   the filled example in `projects/fixedasset/e2e-flows/`.
 4. `templates/TestCases_template.xlsx` — the team's exact 11 columns
    (including `Test Case Type`) plus 3 appended for this framework
    (`Automation Suitable`, `Automation Reason`, `Suite`) — delete those 3
@@ -73,7 +74,7 @@ these up on first run.
   → Business Analyst agent → business_knowledge/
   → your review
   → Test Case Generator agent → test-cases/Test_Case_<JIRA-ID>.xlsx
-    (per skills/test-case-writing.md, with Automation Suitable/Reason/Suite)
+    (per the test-case-writing skill, with Automation Suitable/Reason/Suite)
   → your review/correction, in place
   → you upload to Zephyr (independent)
   → separately: point at Yes-marked rows, or describe a flow, or write an

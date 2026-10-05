@@ -37,7 +37,7 @@ in parallel. For a very small change (one locator, one typo) do it directly.
 ## Definition of done (say each line as done / not done)
 - [ ] Skills loaded and named at the start
 - [ ] Locators checked against locator-strategy priority order
-- [ ] Code matches pages/login_page.py and tests/test_01_login.py style
+- [ ] Code matches pages/login_page.py and tests/test_01_asset_registration_aaq.py style
 - [ ] Tests actually run this session (never claim a pass without a run)
 - [ ] CHANGELOG, element catalog and knowledge file updated for new findings
 - [ ] Temporary probe files deleted
@@ -260,12 +260,12 @@ changes, update the catalog and the page class together.
 - Use Python, Playwright, pytest, Page Object Model.
 - Check `automation/pages/` for an existing class/method before writing a
   new one — reuse, don't duplicate.
-- Always launch the browser headed (visible) and maximized (`headless=False`, `--start-maximized`, `no_viewport=True`) so it fills any screen — already set in `automation/conftest.py`; never reintroduce a fixed viewport.
+- Launch the browser headed (visible) and maximized by default (`--start-maximized`, `no_viewport=True`) so it fills any screen — set in `automation/conftest.py`; never reintroduce a fixed viewport. `pytest --headless` runs it without a window (1920 x 1080 page); the default stays headed.
 - Never hardcode credentials — read from `.env` via
   `automation/config/settings.py`.
 - Organize test files by **feature/module**, not by suite, numbered in
-  run order — `automation/tests/test_01_login.py`,
-  `test_02_income_statement.py`, etc.
+  run order — `automation/tests/test_01_asset_registration_aaq.py`,
+  `test_02_...`, etc.
 - Comments describe what the code does, never how it was debugged (no retry
   counts, "used to fail", or workaround stories). After every action that
   loads a page, call `wait_for_page_load()` from `pages/base_page.py` so the
@@ -275,7 +275,7 @@ changes, update the catalog and the page class together.
   `pages/base_page.py`, no complex Python, numbered `# Step N:` comments in
   tests, and reuse `utils/helpers.py` for
   dynamic data and dates. `pages/login_page.py` and
-  `tests/test_01_login.py` are the style reference.
+  `tests/test_01_asset_registration_aaq.py` are the style reference.
 - For a multi-role end-to-end flow, one test function may use multiple
   browser contexts (one per role) and pass data between them explicitly.
 - Reference the scenario/flow name in each test's docstring purely for

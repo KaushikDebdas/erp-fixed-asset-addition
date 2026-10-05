@@ -5,7 +5,7 @@
 | Page class | `pages/asset_assign_acknowledgement_page.py` → `AssetAssignAcknowledgementPage` (works in the assigned employee's tab, fixture `assignee_logged_in_page`); tests in `tests/test_15_asset_assign_acknowledgement.py` |
 | Module / menu path | Fixed Asset >> Asset Transaction >> Asset Assign Acknowledgement |
 | Entry URL | `https://erpstaging.brac.net/nodef/fixedasset#!faAssetTransaction/showAcknowledgementList` (reach via menu click) |
-| Role needed | **The assigned employee**, a different login from the user who creates the assignment. Tested with the second user from `.env` (`ASSGN_USER_USERNAME`, `ASSIGN_USER_PASSWROD`, read in code as `ASSIGN_USER_USERNAME` / `ASSIGN_USER_PASSWORD` from `config/settings.py`), who is employee `00015370` (Sachindra Nath Ghosh). |
+| Role needed | **The assigned employee**, a different login from the user who creates the assignment. Tested with the second user from `.env` (`ASSIGN_USER_USERNAME`, `ASSIGN_USER_PASSWORD`, read from `config/settings.py`), who is employee `00015370` (Sachindra Nath Ghosh). |
 | Last explored | 2026-10-04 (acknowledgement of one test asset was actually performed) |
 | Screenshot | `evidence/asset_assign_ack_initial.png`, `asset_assign_ack_details.png`, `asset_assign_ack_details_target.png`, `asset_assign_ack_after_ack.png` |
 

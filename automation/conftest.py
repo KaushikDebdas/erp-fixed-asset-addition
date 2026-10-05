@@ -26,6 +26,8 @@ What is inside:
 - At the end of every run, one self-contained HTML report is built in that
   folder: Test_Report_<date>_<time>.html (opens by double-click).
 """
+import os
+
 import pytest
 from playwright.sync_api import sync_playwright
 from config.settings import BASE_URL, ENVIRONMENT
@@ -41,19 +43,48 @@ from utils.run_context import (
 )
 
 
+# How many tests are in this run and how many have started, for the "[3/64]" in the START line
+TEST_COUNT = {"total": 0, "started": 0}
+
+# Window size used when the browser runs without a window (--headless)
+HEADLESS_WINDOW_SIZE = "--window-size=1920,1080"
+
+
+def pytest_addoption(parser):
+    """Adds the --headless option: run the browser without a window (the default is a visible window)."""
+    parser.addoption(
+        "--headless",
+        action="store_true",
+        default=False,
+        help="Run the browser without a visible window. The log lines still show in the terminal.",
+    )
+
+
 def pytest_configure(config):
     """
     Runs once at session start. Points Allure's output at this run's
     dated folder instead of a fixed top-level allure-results/ directory.
     """
+    # Only finding the tests (VS Code does this to show the play buttons): no run folder
+    if config.option.collectonly:
+        return
     run_dir = get_run_dir()
     config.option.allure_report_dir = str(run_dir / "allure-results")
     write_environment_info(BASE_URL, ENVIRONMENT)
+    # The window helper below reads this to know there is no window to maximize
+    os.environ["SQA_HEADLESS"] = "1" if config.getoption("--headless") else ""
+
+
+def pytest_collection_finish(session):
+    """Remembers how many tests will run, for the "[3/64]" count in the START line."""
+    TEST_COUNT["total"] = len(session.items)
 
 
 def pytest_runtest_logstart(nodeid, location):
     """Writes a START line to the log when a test begins, so the log shows where each test starts."""
-    test_logger.info(f"========== START: {nodeid.split('::')[-1]} ==========")
+    TEST_COUNT["started"] += 1
+    position = f"[{TEST_COUNT['started']}/{TEST_COUNT['total']}]"
+    test_logger.info(f"========== START {position}: {nodeid.split('::')[-1]} ==========")
 
 
 def pytest_runtest_logreport(report):
@@ -80,20 +111,24 @@ def pytest_runtest_logreport(report):
 @pytest.hookimpl(trylast=True)
 def pytest_sessionfinish(session, exitstatus):
     """Runs once at the end of the session: builds the single-file HTML report."""
+    if session.config.option.collectonly:
+        return
     generate_html_report()
 
 
 @pytest.fixture(scope="session")
-def browser():
+def browser(request):
     """
     One browser instance shared across the whole test session.
 
-    - headless=False: the browser window is VISIBLE, so you can watch the test.
-    - --start-maximized: the window opens at the full size of whatever screen
-      this code runs on (laptop, big monitor, ...).
+    - By default the browser window is VISIBLE, so you can watch the test, and
+      it opens maximized at the full size of whatever screen this code runs on.
+    - With --headless there is no window; the page gets a 1920 x 1080 size.
     """
+    headless = request.config.getoption("--headless")
+    window_arg = HEADLESS_WINDOW_SIZE if headless else "--start-maximized"
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False, args=["--start-maximized"])
+        browser = p.chromium.launch(headless=headless, args=[window_arg])
         yield browser
         browser.close()
 
@@ -102,8 +137,11 @@ def maximize_window(context, page) -> None:
     """
     Maximize the browser window that holds `page`, so every screen opens at
     the full size of the monitor. Each new browser context opens its own
-    window, so this runs for every tab we create (Chromium only).
+    window, so this runs for every tab we create (Chromium only). With
+    --headless there is no window, so nothing is done.
     """
+    if os.environ.get("SQA_HEADLESS"):
+        return
     cdp_session = context.new_cdp_session(page)
     window = cdp_session.send("Browser.getWindowForTarget")
     cdp_session.send(
@@ -445,9 +483,12 @@ def shared_registrations():
     """
     The registrations created during this run, shared by every test file, so
     one test can reuse what another created. Used by the `registrations`
-    fixture below; tests do not read it directly.
+    fixture below; tests do not read it directly. The 10 AAQ assets are also
+    saved in a file, so a later run reuses them (see utils/saved_registrations.py).
     """
-    return {}
+    from utils.saved_registrations import SavedRegistrations
+
+    return SavedRegistrations()
 
 
 @pytest.fixture

@@ -653,12 +653,27 @@ flowchart TD
   G --> H{Approve?}
   H -- No / Reject --> I([Rejected — back to Registration])
   H -- Yes --> J[/Asset ID / Serial generated/]
-  J --> K[[Journal Voucher:\\nFixed Asset Grp = Dr.\\nSupplier Payable-Capex = Cr.]]
-  K --> L([Asset now in Asset Serial Global List])
-  style K fill:#12241c,stroke:#2e7d5b,color:#a9e2c6
+  J --> SG{Spot Purchase\\nor Gift Item?}
+  SG -- Spot Purchase --> KS[[Journal Voucher:\\nFixed Asset Grp = Dr.\\nSupplier Payable-Capex = Cr.]]
+  SG -- Gift Item --> KG[[Journal Voucher:\\nFixed Asset Grp = Dr.\\nOther Income = Cr.]]
+  KS --> L([Asset now in Asset Serial Global List])
+  KG --> L
+  F -.-> NV[Before approval, Draft or Pending:\\nVoucher Search finds no voucher]
+  KS -.-> VC[Check the voucher:\\nAccounting > Voucher > Voucher Search\\nTransaction No = Registration Number\\nleave Date From and To empty]
+  KG -.-> VC
+  VC --> VP[Preview opens the voucher\\nas a PDF in a new tab]
+  VP --> VK{Dr. asset account of the item,\\nCr. as in the box above for the type,\\namount and Reference no. correct?}
+  VK -- Yes --> VOK([Voucher verified])
+  VK -- No --> VF([Fail: voucher is wrong\\nor was not generated])
+  style KS fill:#12241c,stroke:#2e7d5b,color:#a9e2c6
+  style KG fill:#12241c,stroke:#2e7d5b,color:#a9e2c6
+  style SG fill:#241c10,stroke:#c9862b,color:#e8c491
   style H fill:#241c10,stroke:#c9862b,color:#e8c491
   style C fill:#241c10,stroke:#c9862b,color:#e8c491
   style I fill:#241313,stroke:#7b3f3f,color:#e8b0b0
+  style VK fill:#241c10,stroke:#c9862b,color:#e8c491
+  style VOK fill:#12241c,stroke:#2e7d5b,color:#a9e2c6
+  style VF fill:#241313,stroke:#7b3f3f,color:#e8b0b0
 `;
 
 diagrams.profile = `

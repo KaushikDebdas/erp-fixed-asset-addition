@@ -224,6 +224,36 @@ class AssetRegistrationAaqPage(BasePage):
                 line[headings[position]] = cells[position]
         return line
 
+    def verify_form_shows_registration(self, data: dict) -> None:
+        """
+        Confirm the form (for example a Draft just opened from the list) shows
+        the values in `data`: sub type, project, remarks, vendor number and an
+        Asset Details line with the item name, specification, quantity and unit
+        price. Fails and names every value that was different or missing.
+        """
+        action_logger.info("Verify the form shows the saved registration")
+        expect(self.asset_grid.locator("tbody")).not_to_contain_text("No data available", timeout=10000)
+        expect(self.vendor_number_field).not_to_have_value("", timeout=10000)
+        project = self.project_field.evaluate("s => s.options[s.selectedIndex].text").strip()
+        found = {
+            "project": project,
+            "remarks": self.remarks_field.input_value(),
+            "vendor_number": self.vendor_number_field.input_value(),
+        }
+        problems = []
+        for name, value in found.items():
+            if value != data[name]:
+                problems.append(f"{name}: expected '{data[name]}' but found '{value}'")
+        if self.is_gift_item_selected() != (data["sub_type"] == "gift"):
+            problems.append(f"sub type: '{data['sub_type']}' was expected to be selected")
+        grid_text = self.read_asset_grid_text()
+        # The grid shortens a long specification, so only its first 30 characters are compared
+        for value in [data["grid_item_name"], data["item_specification"][:30], str(data["quantity"]), str(data["unit_price"])]:
+            if value not in grid_text:
+                problems.append(f"the Asset Details grid does not show '{value}'")
+        assertion_logger.info("Verifying the form shows the saved registration")
+        assert not problems, f"The form does not show the saved registration: {problems}. Grid text: {grid_text}"
+
     def wait_until_grid_is_empty(self) -> None:
         """Wait until the Asset Details grid shows "No data available"."""
         expect(self.asset_grid.locator("tbody")).to_contain_text("No data available", timeout=10000)
@@ -264,6 +294,24 @@ class AssetRegistrationAaqPage(BasePage):
         self.wait_for_toast_to_clear()
         self.click(self.draft_button, "Draft button")
         return self.get_toast_text()
+
+    def click_submit_and_get_toast(self) -> str:
+        """Click Submit and return the toast text, for tests that expect a validation message."""
+        self.wait_for_toast_to_clear()
+        self.click(self.submit_button, "Submit button")
+        return self.get_toast_text()
+
+    def verify_draft_and_submit_rejected(self, expected_toast: str) -> None:
+        """
+        Click Draft, then Submit, and confirm both are rejected with the same
+        validation toast. Fails with the toast that was actually shown.
+        """
+        draft_toast = self.click_draft_and_get_toast()
+        assertion_logger.info("Verifying Draft is rejected with the validation toast")
+        assert draft_toast == expected_toast, f"Draft: expected toast '{expected_toast}' but found '{draft_toast}'."
+        submit_toast = self.click_submit_and_get_toast()
+        assertion_logger.info("Verifying Submit is rejected with the validation toast")
+        assert submit_toast == expected_toast, f"Submit: expected toast '{expected_toast}' but found '{submit_toast}'."
 
     def fill_form_until_add(self, data: dict) -> str:
         """

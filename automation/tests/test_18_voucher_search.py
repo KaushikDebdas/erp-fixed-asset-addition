@@ -5,7 +5,9 @@ Accounting module (Accounting > Voucher > Voucher Search).
 Built from automation/element_catalog/voucher_search.md. The whole file logs in
 once and every test reuses that session. These tests only search; the check of
 an Asset Expense voucher (search by the Expense ID, then the Preview PDF) is in
-the full-flow tests of test_16_asset_expense.py.
+the full-flow tests of test_16_asset_expense.py. The check of an Asset
+Registration voucher (search by the Registration Number, then the Preview PDF)
+is in test_03_asset_registration_approval_list_new.py.
 """
 import re
 

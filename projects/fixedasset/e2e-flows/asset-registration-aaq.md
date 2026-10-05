@@ -32,7 +32,7 @@ Domain background: `knowledge/erp-fixedasset.md` §2.
 | 15 | same session | **Asset Assign**: type the stored `asset_serial`, search, pick the suggestion; assert the box starts with the serial and Assigned Status is UNASSIGNED; Add to Grid; search employee PIN `00015370`; add a note; click **Draft**; expect toast `Asset Assign Draft Successfully` | automation-only: assign draft | consumes `asset_serial` |
 | 16 | same session | **Transaction List**: open the Draft's **Details**, check the values, click **Edit**, check the form, click **Submit**; expect `Asset Assign Submit Successfully` | automation-only: submit assign | consumes `asset_serial` |
 | 17 | same session | **Transaction Approval List**: open **Details**, check the values, **Approve**; expect `Approved successfully`; confirm the row is APPROVED | automation-only: approve assign | consumes `asset_serial` |
-| 18 | **assigned employee** (second login, `ASSGN_USER_USERNAME` in `.env`) | **Asset Assign Acknowledgement**: open the screen, note the pending count, **Details** on the row whose asset list holds `asset_serial`, verify the serial, employee and note, click **Acknowledge**; expect toast `Acknowledged successfully`; the pending count drops by one and `asset_serial` appears in **My Assigned Asset** | automation-only: acknowledge assign | consumes `asset_serial` |
+| 18 | **assigned employee** (second login, `ASSIGN_USER_USERNAME` in `.env`) | **Asset Assign Acknowledgement**: open the screen, note the pending count, **Details** on the row whose asset list holds `asset_serial`, verify the serial, employee and note, click **Acknowledge**; expect toast `Acknowledged successfully`; the pending count drops by one and `asset_serial` appears in **My Assigned Asset** | automation-only: acknowledge assign | consumes `asset_serial` |
 | 19 | same session | **Asset Serial Global List**: search `asset_serial`; assert it is listed, Assign Status ASSIGNED, and its popup shows the employee | automation-only: verify ASSIGNED | consumes `asset_serial` |
 | 20 | same session | **Asset Internal Movement**: select the serial (Assigned Status must be ASSIGNED), Add to Grid, employee `00015370`, Building `Head Office` and its first floor, note, **Draft**; expect `Asset Internal-Movement Draft Successfully` | automation-only: movement draft | consumes `asset_serial` |
 | 21 | same session | Transaction List Details/Edit/**Submit** (`Asset Internal-Movement Submit Successfully`), then Approval List Details/**Approve** (`Approved successfully`) | automation-only: submit and approve movement | consumes `asset_serial` |
@@ -109,3 +109,18 @@ grid is empty ("No data available in table").
 
 ## Why the expense is last
 An Asset Expense is not offered for an asset that has a transaction still pending, and a submitted Un Assign locks the asset until it is approved. The expense (rows 25-28) therefore comes after the Un Assign is approved. Only the Inventory source saved as a Draft is in this smoke flow; the Accounts source and the direct-Submit path are covered by the regression tests in `tests/test_16_asset_expense.py`.
+
+## The 10 AAQ assets (`tests/test_01_asset_registration_aaq_new.py`)
+The new AAQ test file creates 10 assets, 5 with Spot Purchase and 5 with Gift Item, and records them under the group `aaq_ten_assets` (`AAQ_ASSET_GROUP` in the test file) so later tests can reuse them with `registrations.get_pending(item, sub_type, "aaq_ten_assets")` or `get_draft(...)`. The plan per asset is the same for both sub types; change a row in the `TEN_AAQ_ASSETS` table to change it.
+
+| Asset item | Plan | Ends as |
+|---|---|---|
+| furniture | submit | PENDING |
+| land | submit | PENDING |
+| building | draft, then opened from the Registration List and submitted | PENDING |
+| laptop | draft, then opened from the Registration List and submitted | PENDING |
+| desktop | draft | DRAFT |
+
+There is no Reject row: the Asset Registration Approval List has no Reject control (re-checked 2026-10-05). The mandatory-field checks (Draft and Submit) and the amount rules run once in the same file, not once per asset.
+
+The Drafts planned as `draft_then_submit` are opened from the Registration List and submitted in `tests/test_02_asset_registration_list_new.py`; `test_01_asset_registration_aaq_new.py` creates them.

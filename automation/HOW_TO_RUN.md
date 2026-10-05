@@ -10,9 +10,8 @@
 5. Install Node.js 18+ (`node --version`) — required by the Playwright MCP
    server that Claude Code uses for UI exploration.
 6. Make sure the `.claude/` folder exists at the project root (with
-   `agents/` and `settings.json`). If not, ask Claude Code to create it —
-   see `CLAUDE.md` → "Claude Code Setup". Check with `/agents` inside
-   Claude Code.
+   `agents/`, `skills/` and `settings.json`). If not, ask Claude Code to
+   create it — see `CLAUDE.md` → "Claude Code Setup".
 7. Make sure the Playwright MCP server is configured: `.mcp.json` at the
    project root must contain the `playwright` server, or run
    `claude mcp add playwright npx @playwright/mcp@latest`. Approve it when
@@ -26,10 +25,40 @@
 | `pytest -m smoke` | Runs only smoke-tagged tests |
 | `pytest -m regression` | Runs only regression-tagged tests |
 | `pytest -m "smoke or regression"` | Runs both suites |
-| `pytest -k test_valid_login` | Runs one specific test by name |
-| `pytest tests/test_01_login.py` | Runs all tests in one file |
+| `pytest -k test_internal_movement` | Runs the tests whose name contains the text |
+| `pytest tests/test_01_asset_registration_aaq.py` | Runs all tests in one file |
 | `pytest -v` | Verbose — shows each test name as it runs |
-| `pytest --headed` | Runs with the browser visible (debugging) |
+
+By default the browser is visible and maximized (set in `conftest.py`). Add
+`--headless` to run without a window, for example `pytest -m smoke --headless`;
+the page then gets a 1920 x 1080 size.
+
+## Running one test from VS Code (play button)
+The project's `.vscode/settings.json` turns on pytest and selects the `.venv`
+Python, so the Testing panel (beaker icon) lists every test and each test and
+file has a play button. After pulling the project: press Ctrl+Shift+P, run
+"Developer: Reload Window", then open the Testing panel. A test started from
+the play button runs with the browser visible and the same logs.
+
+## The 10 AAQ assets are saved between runs
+The `*_new` Asset Registration tests share 10 assets (see
+`test_data/asset_registration_data.py`). Their registration numbers are saved in
+`automation/test_data/saved_assets.json` (not committed to git), so you can run
+`test_01_..._new`, `test_02_..._new` and `test_03_..._new` in separate commands
+without creating the assets again. A saved asset is checked once per run: its
+Registration Number is searched in the list and its real Status must be the one
+saved. If it is not (for example someone approved it), a new asset is created.
+Delete the file to start again from nothing.
+
+## Watching a run in the terminal
+`pytest.ini` turns on `-s`, so every run prints, live and with or without a
+browser window:
+- a START line for each test with its position, e.g.
+  `========== START [3/64]: test_list_grid_columns ==========`
+- every action and check the test does, one line each (`[INFO] Click: Search button`)
+- an END line with the result and the time,
+  e.g. `========== END: test_list_grid_columns - PASSED in 2.5 seconds ==========`
+The same lines are saved in `automation/logs/test_run.log`.
 
 A single test can carry both `@pytest.mark.smoke` and
 `@pytest.mark.regression` — it shows up in both `-m` runs without any
@@ -100,5 +129,5 @@ Find what you see in the left column and try the fix next to it.
 | HTML report not created at the end of a run | Install Allure (`allure --version` must work) and Java (`java -version`), then run again |
 | Can't find today's screenshots | Check `automation/reports/<today's date>/` — a new time-folder is created every run |
 | Playwright MCP not connected / UI exploration can't start | Check Node.js 18+ is installed, `.mcp.json` exists at the project root, and you approved the server; run `/mcp` to see its status |
-| Agents not listed in `/agents` | The `.claude/agents/` folder is missing or the files lack YAML frontmatter (`name`, `description`) |
+| Agents not available in Claude Code | The `.claude/agents/` folder is missing or the files lack YAML frontmatter (`name`, `description`) |
 | `ModuleNotFoundError` | Re-run `pip install -r requirements.txt`; check your virtual environment |

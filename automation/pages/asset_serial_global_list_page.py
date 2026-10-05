@@ -14,6 +14,7 @@ from pages.base_page import BasePage
 from utils.logger import action_logger, assertion_logger
 
 # Position of a cell in a result row (0-based; a hidden ID column comes first)
+ASSET_SERIAL_COLUMN_INDEX = 2
 ASSIGN_STATUS_COLUMN_INDEX = 9
 UTILIZATION_STATUS_COLUMN_INDEX = 10
 
@@ -102,6 +103,54 @@ class AssetSerialGlobalListPage(BasePage):
     def get_assign_status(self, serial: str) -> str:
         """Return the Assign Status shown in the row for this serial."""
         return self._row_cell(serial, ASSIGN_STATUS_COLUMN_INDEX)
+
+    def get_row_values(self, serial: str) -> dict:
+        """Return the cells of the row for this serial: item, sub category, category, group, project, assign and utilization status."""
+        row = self.results_table.locator("tbody tr", has_text=serial)
+        cells = [c.strip() for c in row.first.locator("td").all_inner_texts()]
+        return {
+            "serial": cells[ASSET_SERIAL_COLUMN_INDEX],
+            "item_name": cells[ASSET_SERIAL_COLUMN_INDEX + 1],
+            "sub_category": cells[ASSET_SERIAL_COLUMN_INDEX + 2],
+            "category": cells[ASSET_SERIAL_COLUMN_INDEX + 3],
+            "group": cells[ASSET_SERIAL_COLUMN_INDEX + 4],
+            "project_in_grid": cells[ASSET_SERIAL_COLUMN_INDEX + 5],
+            "assign_status": cells[ASSIGN_STATUS_COLUMN_INDEX],
+            "utilization_status": cells[UTILIZATION_STATUS_COLUMN_INDEX],
+        }
+
+    def verify_row_shows(self, serial: str, expected: dict) -> None:
+        """Confirm the row of this serial shows the values in `expected` (see build_asset_profile). Names every difference."""
+        found = self.get_row_values(serial)
+        assertion_logger.info(f"Verifying the grid row of {serial}")
+        problems = []
+        for name, value in found.items():
+            if value != expected[name]:
+                problems.append(f"{name}: expected '{expected[name]}' but found '{value}'")
+        assert not problems, f"The row of {serial} is not as expected: {problems}"
+
+    def verify_popup_shows(self, expected: dict) -> None:
+        """Confirm the open popup shows the values in `expected` (see build_asset_profile). Names every difference."""
+        fields = {
+            "assetSerial": expected["serial"],
+            "registrationNumber": expected["registration_number"],
+            "assetName": expected["item_name"],
+            "subCategory": expected["sub_category"],
+            "category": expected["category"],
+            "group": expected["group"],
+            "projectName": expected["project_in_popup"],
+            "utilizationStatusName": expected["utilization_status"],
+            "measurement": expected["measurement"],
+            "measurementUnit": expected["measurement_unit"],
+            "netAssetValue": expected["net_asset_value"],
+        }
+        assertion_logger.info(f"Verifying the popup of {expected['serial']}")
+        problems = []
+        for field_id, wanted in fields.items():
+            found = self.get_popup_value(field_id)
+            if found != wanted:
+                problems.append(f"{field_id}: expected '{wanted}' but found '{found}'")
+        assert not problems, f"The popup of {expected['serial']} is not as expected: {problems}"
 
     def get_grid_headers(self) -> list:
         """Return the visible column headings of the results grid."""

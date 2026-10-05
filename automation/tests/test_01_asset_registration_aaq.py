@@ -27,8 +27,13 @@ earlier test creates that registration itself when run alone (see the
 """
 import pytest
 
-from test_data.asset_items import ASSET_ITEMS, MEASURED_ITEMS, MINIMUM_PRICE_ITEMS
-from test_data.asset_registration_data import build_asset_data, build_registration_data
+from test_data.asset_registration_data import (
+    ASSET_ITEMS,
+    MEASURED_ITEMS,
+    MINIMUM_PRICE_ITEMS,
+    build_asset_data,
+    build_registration_data,
+)
 from utils.run_context import trace_one_test
 
 MINIMUM_PRICE_TOAST = "Total Unit Price/Cost of Fixed Asset cannot be lower than 20000 Taka."

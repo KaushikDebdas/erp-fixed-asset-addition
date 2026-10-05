@@ -13,7 +13,7 @@ The search boxes are autocompletes: type, click the small purple search
 icon, then click the suggestion. Only the click on the suggestion fills in
 the screen.
 """
-from pages.base_page import BasePage
+from pages.base_page import OPEN_LIST_ATTEMPTS, BasePage
 from utils.logger import action_logger
 
 
@@ -68,18 +68,14 @@ class AssetTransactionFormPage(BasePage):
 
     def _search_and_pick_suggestion(self, search_icon, text: str, what: str) -> None:
         """
-        Click a search button and click the suggestion that contains `text`.
-        If the suggestion list does not open, the search button is clicked
-        again (up to three times) before giving up.
+        Click a search button until the suggestion list shows `text`, then
+        click that suggestion.
         """
         suggestion = self.suggestions.filter(has_text=text).first
-        for attempt in range(3):
+        for attempt in range(OPEN_LIST_ATTEMPTS):
             self.click(search_icon, f"{what} search button")
-            try:
-                suggestion.wait_for(state="visible", timeout=8000)
+            if self.is_shown_within(suggestion, f"Suggestion for {text}"):
                 break
-            except Exception:
-                action_logger.info(f"No suggestion for {text} yet, trying again")
         self.wait_until_visible(suggestion, f"Suggestion for {text}")
         self.click(suggestion, f"Suggestion for {text}")
 

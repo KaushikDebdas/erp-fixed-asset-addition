@@ -14,10 +14,11 @@ TEST_PASSWORD = os.getenv("TEST_PASSWORD")
 
 # Second user, the employee an asset is assigned to. Used by the Asset Assign
 # Acknowledgement tests, where the assigned user confirms receiving the asset.
-# The .env names are ASSGN_USER_USERNAME and ASSIGN_USER_PASSWROD (spelled as
-# they are in the file); the correctly spelled names are accepted too.
-ASSIGN_USER_USERNAME = os.getenv("ASSGN_USER_USERNAME") or os.getenv("ASSIGN_USER_USERNAME")
-ASSIGN_USER_PASSWORD = os.getenv("ASSIGN_USER_PASSWROD") or os.getenv("ASSIGN_USER_PASSWORD")
+# The .env names are ASSIGN_USER_USERNAME and ASSIGN_USER_PASSWORD. The older
+# misspelled names (ASSGN_USER_USERNAME, ASSIGN_USER_PASSWROD) are still
+# accepted, so an existing .env keeps working.
+ASSIGN_USER_USERNAME = os.getenv("ASSIGN_USER_USERNAME") or os.getenv("ASSGN_USER_USERNAME")
+ASSIGN_USER_PASSWORD = os.getenv("ASSIGN_USER_PASSWORD") or os.getenv("ASSIGN_USER_PASSWROD")
 
 # Additional role credentials for multi-role E2E flows go here as they're
 # needed, e.g.:
