@@ -42,12 +42,14 @@ class AssetSerialSplitListPage(BasePage):
         """Open the Asset Serial Split List screen via the Asset Profile menu."""
         self.open_asset_profile_submenu("Asset Serial Split List")
         self.wait_until_visible(self.search_button, "Search button")
+        # The list loads its first rows after the screen appears; a search started
+        # before that is overwritten by the first load
+        self.results_table.locator("tbody tr").first.wait_for(state="visible")
 
     def search_by_serial(self, serial: str) -> None:
         """Filter by Asset Serial and wait for the result (or the empty message)."""
         self.type_text(self.asset_serial_filter, serial, "Asset Serial filter")
         self.click(self.search_button, "Search button")
-        self.wait_for_grid_refresh()
         self.wait_for_row_or_no_data(self.results_table, serial)
 
     def get_grid_headers(self) -> list:
@@ -130,7 +132,6 @@ class AssetSerialSplitListPage(BasePage):
     def search_and_wait_for(self, row_text: str) -> None:
         """Click Search and wait until the grid shows a row with `row_text` or the empty message."""
         self.click(self.search_button, "Search button")
-        self.wait_for_grid_refresh()
         self.wait_for_row_or_no_data(self.results_table, row_text)
 
     def get_column_values(self, heading: str) -> list:
@@ -157,7 +158,7 @@ class AssetSerialSplitListPage(BasePage):
     def reset_filters(self) -> None:
         """Click Reset to clear the filter boxes and reload the grid."""
         self.click(self.reset_button, "Reset button")
-        self.wait_for_grid_refresh()
+        self.wait_for_grid_to_reload(self.entries_info)
 
     def verify_filters_are_empty(self) -> None:
         """Confirm the Asset Serial and Created By filter boxes are empty."""
@@ -169,7 +170,7 @@ class AssetSerialSplitListPage(BasePage):
         """Pick a Records per page value (10, 20, 30, 50 or 100)."""
         action_logger.info(f"Records per page -> {size}")
         self.records_per_page.select_option(str(size))
-        self.wait_for_grid_refresh()
+        self.wait_for_grid_to_reload(self.entries_info)
 
     def verify_records_per_page(self, size: int) -> None:
         """Confirm the chosen page size is selected and the grid shows no more rows than that."""

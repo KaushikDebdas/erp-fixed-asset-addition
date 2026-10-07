@@ -3,30 +3,68 @@ test_15_asset_assign_acknowledgement.py: tests for the Asset Assign
 Acknowledgement screen (Fixed Asset > Asset Transaction > Asset Assign
 Acknowledgement).
 
-Built from automation/element_catalog/asset_assign_acknowledgement.md.
+Built from automation/element_catalog/asset_assign_acknowledgement.md. The asset
+is NOT created here: it is the saved Furniture asset, read with
+registrations.get_approved("furniture", "spot", AAQ_ASSET_GROUP)
+(test_data/saved_assets.json). Its saved record is never changed.
 
 Two logins are involved:
-    - the main user (TEST_USERNAME) registers an asset, assigns it to the test
-      employee and approves the assignment. The `assigned_asset` fixture in
-      conftest.py does this.
-    - the ASSIGNED employee (ASSIGN_USER_USERNAME / ASSIGN_USER_PASSWORD in
-      .env) opens the Asset Assign Acknowledgement screen in a second browser
-      tab (the `assignee_logged_in_page` fixture) and acknowledges it.
+    - the main user (TEST_USERNAME) assigns the asset to the test employee and
+      approves the assignment, only when no acknowledgement is waiting yet
+      (`transactions.ensure_acknowledgement_pending(...)`, utils/transaction_helper.py).
+      This file's `page` is the main user's tab.
+    - the ASSIGNED employee (ASSIGN_USER_USERNAME / ASSIGN_USER_PASSWORD in .env)
+      works in a second browser tab (the `assignee_logged_in_page` fixture),
+      opens the Asset Assign Acknowledgement screen and acknowledges it.
 
-The assigned employee's pending list can hold other people's assignments as
-well, so the test finds its own row by the serial inside the Details popup
-and acknowledges only that row. The full-flow test is the last test of the
-file, because acknowledging uses up the pending assignment.
+The assigned employee's pending list can hold other people's assignments as well,
+so the test finds its own row by the serial inside the Details popup and
+acknowledges only that row. Acknowledging does not change the asset: the last
+test reads its real Assign Status afterwards and it is still ASSIGNED.
+
+The tests run top to bottom:
+    1. The screen: columns and the Acknowledge button
+    2. The pending rows and the Details popup
+    3. LAST: acknowledge (this uses up the waiting acknowledgement)
+
+To run part of the file:
+    pytest tests/test_15_asset_assign_acknowledgement.py -k "details"
 """
 import pytest
 
 from test_data.asset_transaction_data import (
-    ACKNOWLEDGE_TOAST,
-    ASSIGN,
+    ASSIGNED,
     ASSIGNEE_NAME,
     ASSIGNEE_PIN,
-    SETUP_ASSIGN_NOTE,
+    NOTE_PREFIX,
 )
+from test_data.toast_messages import (
+    ACKNOWLEDGE_TOAST,
+)
+from utils.run_context import trace_one_test
+
+# Column headings of the Pending Asset Acknowledgement grid
+PENDING_COLUMNS = [
+    "SL", "Transaction Type", "Project", "Branch", "Assigned Employee",
+    "Assigned By", "Approval Date", "Details",
+]
+
+# Column headings of the My Assigned Asset grid
+MY_ASSET_COLUMNS = [
+    "SL", "Asset Serial", "Asset Item Name", "Branch Name", "Project Name", "Building Name",
+    "Floor Name", "Room Name", "Assigned Employee", "Assigned By", "Utilization Status",
+]
+
+
+@pytest.fixture
+def page(logged_in_page, request):
+    """The main user's tab, logged in once; it makes the assignment this file acknowledges."""
+    yield from trace_one_test(logged_in_page, request)
+
+
+# ---------------------------------------------------------------------------
+# 1. The screen
+# ---------------------------------------------------------------------------
 
 
 @pytest.mark.smoke
@@ -37,112 +75,86 @@ def test_acknowledgement_screen_layout(acknowledgement_page, assignee_screenshot
     acknowledgement_page.navigate_here()
     assignee_screenshot("asset assign acknowledgement opened")
 
-    # Step 2: the Pending Asset Acknowledgement grid has its documented columns
-    assert acknowledgement_page.get_pending_headers() == [
-        "SL",
-        "Transaction Type",
-        "Project",
-        "Branch",
-        "Assigned Employee",
-        "Assigned By",
-        "Approval Date",
-        "Details",
-    ]
+    # Step 2: both grids have their documented columns
+    acknowledgement_page.verify_pending_headers(PENDING_COLUMNS)
+    acknowledgement_page.verify_my_assets_headers(MY_ASSET_COLUMNS)
 
-    # Step 3: the My Assigned Asset grid has its documented columns
-    assert acknowledgement_page.get_my_assets_headers() == [
-        "SL",
-        "Asset Serial",
-        "Asset Item Name",
-        "Branch Name",
-        "Project Name",
-        "Building Name",
-        "Floor Name",
-        "Room Name",
-        "Assigned Employee",
-        "Assigned By",
-        "Utilization Status",
-    ]
+    # Step 3: the Acknowledge button is on the screen
+    acknowledgement_page.verify_acknowledge_button_shown()
 
-    # Step 4: the Acknowledge button is on the screen
-    assert acknowledgement_page.page_acknowledge_button.is_visible()
+
+# ---------------------------------------------------------------------------
+# 2. The pending rows and the Details popup
+# ---------------------------------------------------------------------------
 
 
 @pytest.mark.regression
 def test_pending_rows_belong_to_the_logged_in_employee(
-    acknowledgement_page, assigned_asset, assignee_screenshot
+    page, acknowledgement_page, transactions, assignee_screenshot
 ):
     """Asset Assign Acknowledgement: every pending row is an assignment to the employee who is logged in."""
-    # Step 1: open the screen (the fixture has just assigned an asset to this employee)
+    # Step 1: make sure an acknowledgement of the saved asset is waiting
+    transactions.ensure_acknowledgement_pending(acknowledgement_page)
+
+    # Step 2: open the screen as the assigned employee
     acknowledgement_page.navigate_here()
     assignee_screenshot("pending assignments")
-    assert acknowledgement_page.get_pending_count() > 0
 
-    # Step 2: every pending row names this employee as the Assigned Employee
-    for assigned_employee in acknowledgement_page.get_pending_assigned_employees():
-        assert f"[{ASSIGNEE_PIN}]" in assigned_employee, (
-            f"A pending row belongs to '{assigned_employee}', not to employee {ASSIGNEE_PIN}."
-        )
+    # Step 3: there are pending rows and every one names this employee
+    acknowledgement_page.verify_pending_rows_belong_to(ASSIGNEE_PIN)
 
 
 @pytest.mark.regression
-def test_details_popup_shows_the_assignment(
-    acknowledgement_page, assigned_asset, assignee_screenshot
-):
+def test_details_popup_shows_the_assignment(page, acknowledgement_page, transactions, assignee_screenshot):
     """Asset Assign Acknowledgement: Details shows the approved assignment and the assigned asset's serial."""
-    serial = assigned_asset["serial"]
+    # Step 1: make sure an acknowledgement of the saved asset is waiting
+    serial = transactions.ensure_acknowledgement_pending(acknowledgement_page)
 
-    # Step 1: open the screen and find the row that holds the test asset
+    # Step 2: open the screen and the Details of the row that holds the saved asset
     acknowledgement_page.navigate_here()
     acknowledgement_page.open_details_of_row_with_serial(serial)
     assignee_screenshot(f"details of the assignment of {serial}")
 
-    # Step 2: the popup shows the approved ASSIGN transaction for this employee
-    popup = acknowledgement_page
-    assert popup.get_popup_value("assetTransactionType") == ASSIGN
-    assert popup.get_popup_value("assignedEmployeePinNo") == ASSIGNEE_PIN
-    assert popup.get_popup_value("assignedEmployee") == ASSIGNEE_NAME
-    assert popup.get_popup_value("oldTransactionStatus") == "APPROVED"
-    assert popup.get_popup_value("remarks") == SETUP_ASSIGN_NOTE
-    assert popup.get_popup_asset_serials() == [serial]
+    # Step 3: the popup shows the approved ASSIGN transaction of this asset for this employee
+    acknowledgement_page.verify_popup_shows_assignment(serial, ASSIGNEE_PIN, ASSIGNEE_NAME, NOTE_PREFIX)
 
-    # Step 3: close without acknowledging; the assignment is still pending
-    popup.close_popup()
+    # Step 4: close without acknowledging
+    acknowledgement_page.close_popup()
+
+
+# ---------------------------------------------------------------------------
+# 3. LAST: acknowledge (uses up the waiting acknowledgement)
+# ---------------------------------------------------------------------------
 
 
 @pytest.mark.smoke
 @pytest.mark.regression
-def test_acknowledge_assigned_asset(acknowledgement_page, assigned_asset, assignee_screenshot):
-    """
-    Asset Assign Acknowledgement: the assigned employee opens Details, verifies the
-    Asset Serial Number, clicks Acknowledge, and the asset moves to My Assigned Asset.
-    """
-    serial = assigned_asset["serial"]
-
-    # Step 1: the assigned employee opens Asset Assign Acknowledgement
+def test_acknowledge_assigned_asset(
+    page, acknowledgement_page, asset_serial_global_list_page, transactions,
+    take_screenshot, assignee_screenshot
+):
+    """Asset Assign Acknowledgement: the employee opens Details, verifies the serial, clicks Acknowledge, and the asset moves to My Assigned Asset."""
+    # Step 1: make sure an acknowledgement of the saved asset is waiting, then open the screen
+    serial = transactions.ensure_acknowledgement_pending(acknowledgement_page)
     acknowledgement_page.navigate_here()
     pending_before = acknowledgement_page.get_pending_count()
-    assert serial not in acknowledgement_page.get_my_assigned_serials(), (
-        "The asset should not be in My Assigned Asset before it is acknowledged."
-    )
     assignee_screenshot("before acknowledging")
 
     # Step 2: open Details on the assignment and verify the Asset Serial Number
     acknowledgement_page.open_details_of_row_with_serial(serial)
     assignee_screenshot(f"details of the assignment of {serial}")
-    assert acknowledgement_page.get_popup_asset_serials() == [serial], (
-        f"Expected the assignment to list asset {serial}."
-    )
-    assert acknowledgement_page.get_popup_value("assignedEmployeePinNo") == ASSIGNEE_PIN
+    acknowledgement_page.verify_popup_shows_assignment(serial, ASSIGNEE_PIN, ASSIGNEE_NAME, NOTE_PREFIX)
 
     # Step 3: click Acknowledge; the success message must be shown
     toast = acknowledgement_page.acknowledge_in_popup_and_get_toast()
     assignee_screenshot("acknowledged")
-    assert toast == ACKNOWLEDGE_TOAST, f"Expected '{ACKNOWLEDGE_TOAST}' but found '{toast}'."
+    acknowledgement_page.verify_toast_text(toast, ACKNOWLEDGE_TOAST, "Acknowledge")
 
-    # Step 4: the assignment left the pending list
-    assert acknowledgement_page.get_pending_count() == pending_before - 1
+    # Step 4: one pending row less, and the asset is in My Assigned Asset
+    acknowledgement_page.verify_acknowledged(serial, pending_before, ASSIGNEE_PIN)
 
-    # Step 5: the asset now shows in My Assigned Asset, assigned to this employee
-    assert serial in acknowledgement_page.get_my_assigned_serials()
-    assert f"[{ASSIGNEE_PIN}]" in acknowledgement_page.get_my_assigned_row_text(serial)
+    # Step 5: the asset's real status is unchanged: still ASSIGNED
+    asset_serial_global_list_page.navigate_here()
+    asset_serial_global_list_page.search_by_serial(serial)
+    take_screenshot("asset still assigned")
+    asset_serial_global_list_page.verify_assign_status(serial, ASSIGNED)

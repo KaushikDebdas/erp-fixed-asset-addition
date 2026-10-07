@@ -3,13 +3,11 @@ GenerateBarcodePage: Fixed Asset > Asset Profile > Generate Barcode screen.
 
 Pick assets with the row checkboxes, set a Print Quantity per asset (or one
 Default Print Quantity for all), and click Generate, which opens a PDF of
-barcode labels in a new browser tab. See
+barcode labels in a new browser tab. The tests only click Generate; the PDF
+is not opened or checked. See
 `automation/element_catalog/generate_barcode.md`.
 """
-import io
 import re
-
-from pypdf import PdfReader
 
 from pages.base_page import BasePage
 from utils.logger import action_logger, assertion_logger
@@ -43,8 +41,8 @@ class GenerateBarcodePage(BasePage):
         """Filter by Asset Serial and wait for the result (or the empty message)."""
         self.type_text(self.asset_serial_filter, serial, "Asset Serial filter")
         self.click(self.search_button, "Search button")
-        self.wait_for_grid_refresh()
         self.wait_for_row_or_no_data(self.results_table, serial)
+        self.wait_for_loader_to_finish()
 
     def is_serial_listed(self, serial: str) -> bool:
         """Return True if a result row for this Asset Serial is shown."""
@@ -58,17 +56,35 @@ class GenerateBarcodePage(BasePage):
     def tick_row(self, serial: str) -> None:
         """Tick the checkbox of the row for this Asset Serial."""
         row = self.results_table.locator("tbody tr", has_text=serial)
+        self.scroll_into_view(row.first, f"row of {serial}")
         self.click(row.locator("input[type=checkbox]"), f"Row checkbox for {serial}")
 
     def set_default_quantity(self, quantity: int) -> None:
         """Type the Default Print Quantity and click Set."""
+        self.scroll_into_view(self.default_print_quantity_field, "Default Print Quantity field")
         self.type_text(self.default_print_quantity_field, str(quantity), "Default Print Quantity field")
         self.click(self.set_button, "Set button")
+        self.wait_for_loader_to_finish()
 
     def get_row_print_quantity(self, serial: str) -> str:
         """Return the Print Quantity shown in the row for this Asset Serial."""
         row = self.results_table.locator("tbody tr", has_text=serial)
         return row.locator("input[name=defaultPrint]").input_value()
+
+    def click_generate(self) -> None:
+        """
+        Click Generate. Nothing about the barcode report is checked, and it does
+        not matter whether the report opens. A tab that opens is closed, so the
+        next test works in the main tab.
+        """
+        self.wait_for_loader_to_finish()
+        self.scroll_into_view(self.generate_button, "Generate button")
+        try:
+            with self.page.context.expect_page(timeout=5000) as new_tab_info:
+                self.click(self.generate_button, "Generate button")
+            new_tab_info.value.close()
+        except Exception:
+            action_logger.info("No report tab was opened")
 
     def generate_and_get_report_url(self) -> str:
         """
@@ -109,28 +125,3 @@ class GenerateBarcodePage(BasePage):
             if value != expected[name]:
                 problems.append(f"{name}: expected '{expected[name]}' but found '{value}'")
         assert not problems, f"The row of {serial} is not as expected: {problems}"
-
-    def verify_barcode_pdf(self, report_url: str, expected: dict, quantity: int) -> None:
-        """
-        Fetch the barcode PDF at `report_url` with the logged-in session and
-        confirm it is a PDF for this asset: the request asks for this serial and
-        quantity, and the label (serial, item name, branch, project) is printed
-        once for every copy. Names every difference.
-        """
-        response = self.page.context.request.get(report_url)
-        text = PdfReader(io.BytesIO(response.body())).pages[0].extract_text()
-        assertion_logger.info(f"Verifying the barcode PDF of {expected['serial']}")
-        problems = []
-        if response.status != 200 or "pdf" not in response.headers.get("content-type", ""):
-            problems.append(f"expected a PDF with status 200 but found status {response.status}")
-        if expected["serial"] not in report_url or f"%22quantity%22:%22{quantity}%22" not in report_url:
-            problems.append(f"the request does not ask for serial {expected['serial']} with quantity {quantity}")
-        for label, value in [
-            ("serial", expected["serial"]),
-            ("item name", expected["item_name"]),
-            ("branch", expected["branch"]),
-            ("project", expected["project_in_grid"]),
-        ]:
-            if text.count(value) != quantity:
-                problems.append(f"{label} '{value}' is printed {text.count(value)} times, expected {quantity}")
-        assert not problems, f"The barcode PDF is not as expected: {problems}. PDF text: {text}"

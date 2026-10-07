@@ -75,7 +75,6 @@ class AssetSerialGlobalListPage(BasePage):
         """Filter by Asset Serial and wait for the result (or the empty message)."""
         self.type_text(self.asset_serial_filter, serial, "Asset Serial filter")
         self.click(self.search_button, "Search button")
-        self.wait_for_grid_refresh()
         self.wait_for_row_or_no_data(self.results_table, serial)
 
     def filter_by_utilization_status(self, status: str) -> None:

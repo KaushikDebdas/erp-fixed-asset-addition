@@ -2,12 +2,35 @@
 test_08_asset_serial_split_list.py: tests for the Asset Serial Split List
 screen (Fixed Asset > Asset Profile > Asset Serial Split List).
 
-Built from automation/element_catalog/asset_serial_split_list.md. The whole
-file logs in once and every test reuses that session. The tests only read the
-list; they change nothing.
+Built from automation/element_catalog/asset_serial_split_list.md. The split
+that is listed is the one of the saved Land asset, waiting for approval:
+splits.get_pending_split() returns the one test_07_asset_serial_split.py
+submitted, or splits the saved Land asset now when the test runs on its own
+(see utils/split_helper.py). The tests only read the list and open its popup;
+they change nothing. The whole file logs in once and every test reuses that
+session.
+
+The tests run top to bottom:
+    1. The grid: columns, an unknown serial
+    2. The PENDING split of the Land asset: its row and its Asset Split View popup
+    3. The filters: Created By, Reset, Records per page
+
+To run part of the file:
+    pytest tests/test_08_asset_serial_split_list.py -k "created_by"
 """
 import pytest
 
+from test_data.asset_split_data import (
+    CREATED_BY_NAME,
+    CREATED_BY_SEARCH_TEXT,
+    LAND_ACC_DEPRECIATION_TEXT,
+    LAND_ITEM_NAME,
+    LAND_MEASUREMENT_TEXT,
+    LAND_VALUE_TEXT,
+    SPLIT_GRID_COLUMNS,
+    SPLIT_INTO,
+    SPLIT_REMARKS,
+)
 from utils.run_context import trace_one_test
 
 
@@ -15,6 +38,11 @@ from utils.run_context import trace_one_test
 def page(logged_in_page, request):
     """Every test in this file reuses the one tab that logged in once."""
     yield from trace_one_test(logged_in_page, request)
+
+
+# ---------------------------------------------------------------------------
+# 1. The grid
+# ---------------------------------------------------------------------------
 
 
 @pytest.mark.smoke
@@ -26,26 +54,11 @@ def test_split_list_grid_columns(page, asset_split_list_page, take_screenshot):
     take_screenshot("asset serial split list opened")
 
     # Step 2: the column headings
-    assert asset_split_list_page.get_grid_headers() == [
-        "SL",
-        "Asset Split No.",
-        "Asset Group",
-        "Project Name",
-        "Department Name",
-        "Asset Serial No.",
-        "Split Into",
-        "Remarks",
-        "Created By",
-        "Status",
-        "Approved By",
-        "Approval Date",
-    ]
+    asset_split_list_page.verify_grid_headers(SPLIT_GRID_COLUMNS)
 
 
 @pytest.mark.regression
-def test_split_list_unknown_serial_shows_no_data(
-    page, asset_split_list_page, take_screenshot
-):
+def test_split_list_unknown_serial_shows_no_data(page, asset_split_list_page, take_screenshot):
     """Asset Serial Split List: an Asset Serial that was never split shows the empty message."""
     # Step 1: open the list and search a serial that cannot exist
     asset_split_list_page.navigate_here()
@@ -53,20 +66,112 @@ def test_split_list_unknown_serial_shows_no_data(
     take_screenshot("no data for unknown serial")
 
     # Step 2: the grid shows the empty message
-    assert "No data available in table" in asset_split_list_page.get_grid_text()
+    asset_split_list_page.verify_grid_is_empty("serial NOSUCHSERIAL000")
+
+
+# ---------------------------------------------------------------------------
+# 2. The PENDING split of the Land asset
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.smoke
+@pytest.mark.regression
+def test_split_list_shows_the_pending_split(page, asset_split_list_page, splits, take_screenshot):
+    """Asset Serial Split List: searching the split Land asset's serial lists its PENDING split."""
+    # Step 1: get the split that is waiting for approval
+    split = splits.get_pending_split()
+
+    # Step 2: open the list and search the serial
+    asset_split_list_page.navigate_here()
+    asset_split_list_page.search_by_serial(split["serial"])
+    take_screenshot(f"split of {split['serial']} found")
+
+    # Step 3: the row shows the split, who made it, and no approver yet
+    asset_split_list_page.verify_row_shows(split["serial"], {
+        "Asset Split No.": split["split_no"],
+        "Asset Group": LAND_ITEM_NAME,
+        "Asset Serial No.": split["serial"],
+        "Split Into": SPLIT_INTO,
+        "Remarks": SPLIT_REMARKS,
+        "Created By": CREATED_BY_NAME,
+        "Status": "PENDING",
+        "Approved By": "",
+        "Approval Date": "",
+    })
 
 
 @pytest.mark.regression
-def test_split_list_new_asset_has_no_split(
-    page, asset_split_list_page, profile_assets, take_screenshot
-):
-    """Asset Serial Split List: a freshly approved asset that was not split is not listed."""
-    serial = profile_assets["land"]["serial"]
-
-    # Step 1: search for the new asset
+def test_split_number_opens_the_split_view_popup(page, asset_split_list_page, splits, take_screenshot):
+    """Asset Serial Split List: the Asset Split No. opens the Asset Split View popup with the split's details."""
+    # Step 1: get the pending split and find its row
+    split = splits.get_pending_split()
     asset_split_list_page.navigate_here()
-    asset_split_list_page.search_by_serial(serial)
-    take_screenshot(f"search for {serial}")
+    asset_split_list_page.search_by_serial(split["serial"])
 
-    # Step 2: no split exists for it
-    assert "No data available in table" in asset_split_list_page.get_grid_text()
+    # Step 2: click the Asset Split No.
+    asset_split_list_page.open_split_view(split["serial"])
+    take_screenshot("asset split view popup opened")
+
+    # Step 3: the popup shows the asset and its 2 split lines
+    asset_split_list_page.verify_popup_shows({
+        "assetSerial": split["serial"],
+        "assetName": LAND_ITEM_NAME,
+        "splitInto": SPLIT_INTO,
+        "measurement": LAND_MEASUREMENT_TEXT,
+        "netAssetValue": LAND_VALUE_TEXT,
+        "accumulatedDepriciation": LAND_ACC_DEPRECIATION_TEXT,
+        "remarks": SPLIT_REMARKS,
+    }, int(SPLIT_INTO))
+
+    # Step 4: close the popup
+    asset_split_list_page.close_popup()
+
+
+# ---------------------------------------------------------------------------
+# 3. The filters
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.regression
+def test_split_list_created_by_filter(page, asset_split_list_page, splits, take_screenshot):
+    """Asset Serial Split List: the Created By filter lists only the splits made by that person."""
+    # Step 1: make sure at least one split exists, then open the list
+    splits.get_pending_split()
+    asset_split_list_page.navigate_here()
+
+    # Step 2: type the first letters of the name and pick the employee from the suggestions
+    asset_split_list_page.pick_created_by(CREATED_BY_SEARCH_TEXT, CREATED_BY_NAME)
+    take_screenshot("created by picked")
+
+    # Step 3: search; every row was created by that person
+    asset_split_list_page.search_and_wait_for(CREATED_BY_NAME)
+    take_screenshot("filtered by created by")
+    asset_split_list_page.verify_all_rows_have("Created By", CREATED_BY_NAME)
+
+
+@pytest.mark.regression
+def test_split_list_reset_clears_the_filters(page, asset_split_list_page, take_screenshot):
+    """Asset Serial Split List: Reset empties the Asset Serial and Created By filters."""
+    # Step 1: open the list, fill both filters
+    asset_split_list_page.navigate_here()
+    asset_split_list_page.pick_created_by(CREATED_BY_SEARCH_TEXT, CREATED_BY_NAME)
+    asset_split_list_page.search_by_serial("NOSUCHSERIAL000")
+    take_screenshot("filters filled")
+
+    # Step 2: click Reset; both boxes are empty
+    asset_split_list_page.reset_filters()
+    take_screenshot("filters reset")
+    asset_split_list_page.verify_filters_are_empty()
+
+
+@pytest.mark.regression
+@pytest.mark.parametrize("size", [10, 20, 50, 100])
+def test_split_list_records_per_page(size, page, asset_split_list_page, take_screenshot):
+    """Asset Serial Split List: Records per page limits how many rows the grid shows."""
+    # Step 1: open the list
+    asset_split_list_page.navigate_here()
+
+    # Step 2: choose the page size; the grid shows no more rows than that
+    asset_split_list_page.choose_records_per_page(size)
+    take_screenshot(f"records per page {size}")
+    asset_split_list_page.verify_records_per_page(size)

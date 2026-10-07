@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Page class | `pages/asset_assign_page.py` → `AssetAssignPage` (form screens share `pages/asset_transaction_form_page.py`, grids share `pages/transaction_grid_page.py`); tests in `tests/test_10_asset_assign.py` and `tests/test_10_asset_assign_new.py` (saved Furniture asset, state set by `utils/transaction_helper.py`) |
+| Page class | `pages/asset_assign_page.py` → `AssetAssignPage` (form screens share `pages/asset_transaction_form_page.py`, grids share `pages/transaction_grid_page.py`); tests in `tests/test_10_asset_assign.py` and `tests/test_10_asset_assign.py` (saved Furniture asset, state set by `utils/transaction_helper.py`) |
 | Module / menu path | Fixed Asset >> Asset Transaction >> Asset Assign |
 | Entry URL | `https://erpstaging.brac.net/nodef/fixedasset#!faAssetTransaction/showAssign` (reach via menu click, see Notes) |
 | Role needed | ERP External User (tested with `abushoaib.asik`, branch Head Office [ BDHO ]) |

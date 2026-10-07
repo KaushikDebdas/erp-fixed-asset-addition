@@ -12,21 +12,23 @@ then Submit, or Submit straight away).
 """
 from test_data.asset_expense_data import (
     ACCOUNTS,
-    APPROVE_TOAST_START,
     CREDIT_ACCOUNT,
     DEBIT_ACCOUNT,
-    DRAFT_TOAST,
     EXPENSE_AMOUNT,
     EXPENSE_AMOUNT_ON_VOUCHER,
     EXPENSE_CATEGORY,
     EXPENSE_ITEM,
     EXPENSE_SUB_CATEGORY,
     INVENTORY,
-    SUBMIT_TOAST,
     VENDOR_OPTION,
     VENDOR_SEARCH,
     VOUCHER_CREDIT,
     VOUCHER_DEBIT,
+)
+from test_data.toast_messages import (
+    EXPENSE_APPROVE_TOAST_START,
+    EXPENSE_DRAFT_TOAST,
+    EXPENSE_SUBMIT_TOAST,
 )
 from utils.logger import assertion_logger
 
@@ -64,18 +66,19 @@ def create_expense(expense_page, serial: str, source: str, expense_ref: str, sav
     take_screenshot(f"{source} expense form filled")
 
     if save_as == "draft":
-        toast, expected_toast, status = expense_page.draft_and_get_toast(), DRAFT_TOAST, "DRAFT"
+        toast, expected_toast, status = expense_page.draft_and_get_toast(), EXPENSE_DRAFT_TOAST, "DRAFT"
     else:
-        toast, expected_toast, status = expense_page.submit_and_get_toast(), SUBMIT_TOAST, "PENDING"
+        toast, expected_toast, status = expense_page.submit_and_get_toast(), EXPENSE_SUBMIT_TOAST, "PENDING"
     take_screenshot(f"{source} expense saved as {status}")
-    assert toast == expected_toast, f"Expected toast '{expected_toast}' but found '{toast}'."
+    expense_page.verify_toast_text(toast, expected_toast, f"saving the {source} expense as {status}")
     expense_page.wait_for_popup_to_close()
 
     # The Expense ID is generated on saving; read it from the list by the random reference
     expense_page.navigate_here()
     expense_page.search(status)
     expense_id = expense_page.get_expense_id_by_ref(expense_ref)
-    assert expense_page.get_row_status(expense_id) == status
+    row_status = expense_page.get_row_status(expense_id)
+    assert row_status == status, f"Expected the list row of {expense_id} to show status '{status}' but found '{row_status}'."
     return {
         "expense_id": expense_id,
         "date_of_entry": date_of_entry,
@@ -93,7 +96,8 @@ def check_saved_values_in_list_popup(expense_page, expected: dict) -> None:
     """Compare the opened Draft (Asset Expense list popup) with what was entered."""
     assertion_logger.info("Verifying the opened expense shows what was entered")
     expense_page.wait_for_saved_selections(expected["source"] == INVENTORY)
-    assert expected["serial"] in expense_page.get_asset_grid_serials()
+    grid_serials = expense_page.get_asset_grid_serials()
+    assert expected["serial"] in grid_serials, f"Expected asset {expected['serial']} in the expense asset grid but it holds {grid_serials}."
     saved = {
         "Expense Source": (expense_page.get_selected_text("expenseSource"), expected["source"]),
         "Expense Ref.": (expense_page.get_value("expenseRef"), expected["expense_ref"]),
@@ -121,13 +125,14 @@ def submit_draft(expense_page, expense_id: str, expected: dict, take_screenshot)
 
     toast = expense_page.submit_and_get_toast()
     take_screenshot(f"draft {expense_id} submitted")
-    assert toast == SUBMIT_TOAST, f"Expected toast '{SUBMIT_TOAST}' but found '{toast}'."
+    expense_page.verify_toast_text(toast, EXPENSE_SUBMIT_TOAST, f"Submit of the Draft {expense_id}")
     expense_page.wait_for_popup_to_close()
 
     expense_page.navigate_here()
     expense_page.search("PENDING")
     expense_page.wait_for_row_or_no_data(expense_page.results_table, expense_id)
-    assert expense_page.get_row_status(expense_id) == "PENDING"
+    row_status = expense_page.get_row_status(expense_id)
+    assert row_status == "PENDING", f"Expected the list row of {expense_id} to show status 'PENDING' but found '{row_status}'."
 
 
 def approve_expense(expense_approval_page, expense_page, expense_id: str, expected: dict, take_screenshot) -> str:
@@ -142,7 +147,8 @@ def approve_expense(expense_approval_page, expense_page, expense_id: str, expect
     take_screenshot(f"approval details of {expense_id}")
     assertion_logger.info(f"Verifying the approval popup of {expense_id} shows what was entered")
     approval = expense_approval_page
-    assert expected["serial"] in approval.get_popup_asset_serials(), "The expense does not list the test asset."
+    popup_serials = approval.get_popup_asset_serials()
+    assert expected["serial"] in popup_serials, f"Expected asset {expected['serial']} in the approval popup but it lists {popup_serials}."
     shown = {
         "Expense Ref.": (approval.get_popup_value("expenseRef"), expected["expense_ref"]),
         "Total Expense Amount": (approval.get_popup_value("expenseAmount"), EXPENSE_AMOUNT),
@@ -158,16 +164,16 @@ def approve_expense(expense_approval_page, expense_page, expense_id: str, expect
 
     toast = approval.approve_and_get_toast()
     take_screenshot(f"{expense_id} approved")
-    assert toast.startswith(APPROVE_TOAST_START), (
-        f"Expected the approval message to start with '{APPROVE_TOAST_START}' but found '{toast}'."
-    )
+    approval.verify_toast_contains(toast, EXPENSE_APPROVE_TOAST_START, f"Approve of {expense_id}")
 
     approval.find_expense(expense_id, "APPROVED")
-    assert approval.get_row_status(expense_id) == "APPROVED"
+    approval_status = approval.get_row_status(expense_id)
+    assert approval_status == "APPROVED", f"Expected the approval list row of {expense_id} to show 'APPROVED' but found '{approval_status}'."
     expense_page.navigate_here()
     expense_page.search("APPROVED")
     expense_page.wait_for_row_or_no_data(expense_page.results_table, expense_id)
-    assert expense_page.get_row_status(expense_id) == "APPROVED"
+    list_status = expense_page.get_row_status(expense_id)
+    assert list_status == "APPROVED", f"Expected the expense list row of {expense_id} to show 'APPROVED' but found '{list_status}'."
     return toast
 
 
@@ -187,22 +193,37 @@ def verify_voucher(voucher_search_page, expense_id: str, expected: dict, take_sc
     # The search row
     row = voucher_search_page.get_row_values(expense_id)
     assertion_logger.info(f"Verifying the voucher search row of {expense_id}")
-    assert row["transaction_no"] == expense_id
-    assert row["amount"] == "5,000"
-    assert row["particular"] == f"Asset Expense Voucher, Reference no: {expense_id}"
-    assert row["status"] == "Approved"
+    assert row["transaction_no"] == expense_id, f"Expected Transaction No '{expense_id}' on the voucher row but found '{row['transaction_no']}'."
+    assert row["amount"] == "5,000", f"Expected Amount '5,000' on the voucher row of {expense_id} but found '{row['amount']}'."
+    expected_particular = f"Asset Expense Voucher, Reference no: {expense_id}"
+    assert row["particular"] == expected_particular, (
+        f"Expected Particular '{expected_particular}' on the voucher row but found '{row['particular']}'."
+    )
+    assert row["status"] == "Approved", f"Expected Status 'Approved' on the voucher row of {expense_id} but found '{row['status']}'."
 
     # The Preview: a PDF opened in a new tab
     voucher = voucher_search_page.read_voucher_preview(expense_id)
     assertion_logger.info(f"Verifying the voucher PDF of {expense_id}")
-    assert voucher["pdf_status"] == 200 and "pdf" in voucher["content_type"]
-    assert voucher["title"] == "JOURNAL VOUCHER"
-    assert "Head Office" in voucher["branch"]
-    assert "Microfinance (Dabi)" in voucher["project"]
-    assert voucher["voucher_number"] == row["voucher_number"]
-    assert voucher["creation_date"] == expected["date_of_entry"]
-    assert voucher["posted_date"] == expected["date_of_entry"]
-    assert voucher["reference_numbers"] and set(voucher["reference_numbers"]) == {expense_id}
+    assert voucher["pdf_status"] == 200 and "pdf" in voucher["content_type"], (
+        f"Expected the Preview to open a PDF with status 200 but found status {voucher['pdf_status']} and type '{voucher['content_type']}'."
+    )
+    assert voucher["title"] == "JOURNAL VOUCHER", f"Expected the voucher title 'JOURNAL VOUCHER' but found '{voucher['title']}'."
+    assert "Head Office" in voucher["branch"], f"Expected the voucher branch to contain 'Head Office' but found '{voucher['branch']}'."
+    assert "Microfinance (Dabi)" in voucher["project"], (
+        f"Expected the voucher project to contain 'Microfinance (Dabi)' but found '{voucher['project']}'."
+    )
+    assert voucher["voucher_number"] == row["voucher_number"], (
+        f"Expected the PDF voucher number '{row['voucher_number']}' from the search row but found '{voucher['voucher_number']}'."
+    )
+    assert voucher["creation_date"] == expected["date_of_entry"], (
+        f"Expected the voucher creation date '{expected['date_of_entry']}' but found '{voucher['creation_date']}'."
+    )
+    assert voucher["posted_date"] == expected["date_of_entry"], (
+        f"Expected the voucher posted date '{expected['date_of_entry']}' but found '{voucher['posted_date']}'."
+    )
+    assert voucher["reference_numbers"] and set(voucher["reference_numbers"]) == {expense_id}, (
+        f"Expected every voucher reference number to be '{expense_id}' but found {voucher['reference_numbers']}."
+    )
 
     debit_code, debit_head = VOUCHER_DEBIT
     credit_code, credit_head = VOUCHER_CREDIT[source]
@@ -210,6 +231,12 @@ def verify_voucher(voucher_search_page, expense_id: str, expected: dict, take_sc
         {"account_code": debit_code, "head": debit_head, "debit": EXPENSE_AMOUNT_ON_VOUCHER, "credit": "0.00"},
         {"account_code": credit_code, "head": credit_head, "debit": "0.00", "credit": EXPENSE_AMOUNT_ON_VOUCHER},
     ], f"Unexpected voucher lines: {voucher['lines']}"
-    assert voucher["total_debit"] == EXPENSE_AMOUNT_ON_VOUCHER
-    assert voucher["total_credit"] == EXPENSE_AMOUNT_ON_VOUCHER
-    assert "Five Thousand" in voucher["amount_in_words"]
+    assert voucher["total_debit"] == EXPENSE_AMOUNT_ON_VOUCHER, (
+        f"Expected the voucher total debit '{EXPENSE_AMOUNT_ON_VOUCHER}' but found '{voucher['total_debit']}'."
+    )
+    assert voucher["total_credit"] == EXPENSE_AMOUNT_ON_VOUCHER, (
+        f"Expected the voucher total credit '{EXPENSE_AMOUNT_ON_VOUCHER}' but found '{voucher['total_credit']}'."
+    )
+    assert "Five Thousand" in voucher["amount_in_words"], (
+        f"Expected the amount in words to contain 'Five Thousand' but found '{voucher['amount_in_words']}'."
+    )

@@ -26,7 +26,9 @@ What is inside:
 - At the end of every run, one self-contained HTML report is built in that
   folder: Test_Report_<date>_<time>.html (opens by double-click).
 """
+import importlib.util
 import os
+import sys
 
 import pytest
 from playwright.sync_api import sync_playwright
@@ -58,6 +60,13 @@ def pytest_addoption(parser):
         default=False,
         help="Run the browser without a visible window. The log lines still show in the terminal.",
     )
+    parser.addoption(
+        "--screen-size",
+        action="store",
+        default="",
+        help="Run the browser in a window of this size, for example 1280x720, to test a small screen. "
+        "Without it the window is maximized.",
+    )
 
 
 def pytest_configure(config):
@@ -71,13 +80,32 @@ def pytest_configure(config):
     run_dir = get_run_dir()
     config.option.allure_report_dir = str(run_dir / "allure-results")
     write_environment_info(BASE_URL, ENVIRONMENT)
+    test_logger.info(f"========== START RUN {run_dir.parent.name} {run_dir.name} | Python: {sys.executable} ==========")
     # The window helper below reads this to know there is no window to maximize
     os.environ["SQA_HEADLESS"] = "1" if config.getoption("--headless") else ""
+    # The same for the chosen screen size, for example "1280x720" (empty means maximized)
+    os.environ["SQA_SCREEN_SIZE"] = config.getoption("--screen-size")
 
 
 def pytest_collection_finish(session):
-    """Remembers how many tests will run, for the "[3/64]" count in the START line."""
+    """
+    Remembers how many tests will run, for the "[3/64]" count in the START line.
+    Also stops the run at once when a selected test reads a voucher PDF (it uses
+    the `voucher_search_page` fixture) and this Python does not have `pypdf`.
+    Tests that do not read PDFs, such as the Generate Barcode tests, run anyway.
+    """
     TEST_COUNT["total"] = len(session.items)
+    if session.config.option.collectonly:
+        return
+    voucher_tests = [item for item in session.items if "voucher_search_page" in item.fixturenames]
+    if voucher_tests and importlib.util.find_spec("pypdf") is None:
+        pytest.exit(
+            f"pypdf is not installed in this Python ({sys.executable}), and {len(voucher_tests)} selected "
+            "tests read voucher PDFs. Run the tests with the project's own Python, from the project folder: "
+            "python -m pytest automation (after activating this project's .venv), "
+            "or .venv/Scripts/python.exe -m pytest automation",
+            returncode=2,
+        )
 
 
 def pytest_runtest_logstart(nodeid, location):
@@ -87,15 +115,27 @@ def pytest_runtest_logstart(nodeid, location):
     test_logger.info(f"========== START {position}: {nodeid.split('::')[-1]} ==========")
 
 
+def read_reason(report) -> str:
+    """Return the reason of a failed or skipped test report as one short line."""
+    if report.skipped:
+        reason = report.longrepr[2] if isinstance(report.longrepr, tuple) else str(report.longrepr)
+    else:
+        crash = getattr(report.longrepr, "reprcrash", None)
+        reason = crash.message if crash else str(report.longrepr)
+    return " ".join(reason.split())[:600]
+
+
 def pytest_runtest_logreport(report):
     """
     Writes an END line to the log when a test finishes, with its result and
     how long it took. A test that could not even start (set-up error) is
-    reported as ERROR.
+    reported as ERROR. A failed test is logged as ERROR and a skipped test as
+    WARNING, each with its reason on the next line; a passed test is INFO.
     """
     test_finished = report.when == "call"
     test_could_not_start = report.when == "setup" and report.failed
-    if not (test_finished or test_could_not_start):
+    test_skipped_before_start = report.when == "setup" and report.skipped
+    if not (test_finished or test_could_not_start or test_skipped_before_start):
         return
 
     test_name = report.nodeid.split("::")[-1]
@@ -105,7 +145,16 @@ def pytest_runtest_logreport(report):
         result = "SKIPPED"
     else:
         result = "FAILED" if report.failed else "PASSED"
-    test_logger.info(f"========== END: {test_name} - {result} in {report.duration:.1f} seconds ==========")
+    end_line = f"========== END: {test_name} - {result} in {report.duration:.1f} seconds =========="
+
+    if report.failed:
+        test_logger.error(end_line)
+        test_logger.error(f"Reason: {read_reason(report)}")
+    elif report.skipped:
+        test_logger.warning(end_line)
+        test_logger.warning(f"Reason: {read_reason(report)}")
+    else:
+        test_logger.info(end_line)
 
 
 @pytest.hookimpl(trylast=True)
@@ -124,13 +173,24 @@ def browser(request):
     - By default the browser window is VISIBLE, so you can watch the test, and
       it opens maximized at the full size of whatever screen this code runs on.
     - With --headless there is no window; the page gets a 1920 x 1080 size.
+    - With --screen-size 1280x720 the window has exactly that size (a small screen).
     """
     headless = request.config.getoption("--headless")
+    screen_size = request.config.getoption("--screen-size")
     window_arg = HEADLESS_WINDOW_SIZE if headless else "--start-maximized"
+    if screen_size:
+        width, height = read_screen_size(screen_size)
+        window_arg = f"--window-size={width},{height}"
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=headless, args=[window_arg])
         yield browser
         browser.close()
+
+
+def read_screen_size(text: str) -> tuple:
+    """Turn a size such as "1280x720" into (1280, 720)."""
+    width, height = text.lower().split("x")
+    return int(width), int(height)
 
 
 def maximize_window(context, page) -> None:
@@ -138,16 +198,19 @@ def maximize_window(context, page) -> None:
     Maximize the browser window that holds `page`, so every screen opens at
     the full size of the monitor. Each new browser context opens its own
     window, so this runs for every tab we create (Chromium only). With
+    --screen-size the window gets that size instead (a small screen). With
     --headless there is no window, so nothing is done.
     """
     if os.environ.get("SQA_HEADLESS"):
         return
+    bounds = {"windowState": "maximized"}
+    screen_size = os.environ.get("SQA_SCREEN_SIZE")
+    if screen_size:
+        width, height = read_screen_size(screen_size)
+        bounds = {"windowState": "normal", "left": 0, "top": 0, "width": width, "height": height}
     cdp_session = context.new_cdp_session(page)
     window = cdp_session.send("Browser.getWindowForTarget")
-    cdp_session.send(
-        "Browser.setWindowBounds",
-        {"windowId": window["windowId"], "bounds": {"windowState": "maximized"}},
-    )
+    cdp_session.send("Browser.setWindowBounds", {"windowId": window["windowId"], "bounds": bounds})
     cdp_session.detach()
 
 
@@ -355,50 +418,6 @@ def splits(
     )
 
 
-@pytest.fixture(scope="session")
-def profile_assets(browser):
-    """
-    Two freshly approved assets shared by every Asset Profile test file, so
-    the whole run creates them only once:
-        "land":  a Land asset with Measurement 12.5 (unit Decimal), splittable
-        "plain": a Cabinet Table asset with no measurement, not splittable
-    Each value is {"registration_number": ..., "serial": ...}.
-    They are created in their own browser tab, which logs in on its own.
-    """
-    from config.settings import TEST_PASSWORD, TEST_USERNAME
-    from pages.asset_registration_aaq_page import AssetRegistrationAaqPage
-    from pages.asset_registration_approval_list_page import AssetRegistrationApprovalListPage
-    from pages.asset_registration_list_page import AssetRegistrationListPage
-    from pages.login_page import LoginPage
-    from test_data.asset_registration_data import build_land_asset_data, build_registration_data
-    from utils.asset_flow import create_approved_asset
-
-    context = browser.new_context(no_viewport=True)
-    page = context.new_page()
-    maximize_window(context, page)
-    page.goto(BASE_URL)
-
-    login_page = LoginPage(page)
-    login_page.wait_for_login_page()
-    login_page.login(TEST_USERNAME, TEST_PASSWORD)
-    login_page.close_popup_if_present()
-
-    aaq_page = AssetRegistrationAaqPage(page)
-    registration_list_page = AssetRegistrationListPage(page)
-    approval_list_page = AssetRegistrationApprovalListPage(page)
-
-    assets = {
-        "land": create_approved_asset(
-            aaq_page, registration_list_page, approval_list_page, build_land_asset_data()
-        ),
-        "plain": create_approved_asset(
-            aaq_page, registration_list_page, approval_list_page, build_registration_data()
-        ),
-    }
-    context.close()
-    return assets
-
-
 @pytest.fixture
 def shipment_page(assignee_logged_in_page):
     """Asset Shipment page object (the second user's tab), ready to use."""
@@ -442,6 +461,22 @@ def shared_transfer():
     the `transfer` fixture below; tests do not read it directly.
     """
     return {}
+
+
+@pytest.fixture
+def saved_transfer(
+    registrations, shipment_page, challan_page, challan_approval_page, in_challan_page, shared_transfer
+):
+    """
+    Like `transfer`, but the transferred asset is saved in test_data/saved_assets.json
+    so a separate run reuses it. See SavedTransferHelper in utils/transfer_helper.py.
+    """
+    from utils.transfer_helper import SavedTransferHelper
+
+    return SavedTransferHelper(
+        registrations, shipment_page, challan_page,
+        challan_approval_page, in_challan_page, shared_transfer,
+    )
 
 
 @pytest.fixture
@@ -544,53 +579,6 @@ def registrations(aaq_page, registration_list_page, approval_list_page, shared_r
     )
 
 
-def _create_asset_in_tab(tab):
-    """Register, submit and approve one plain asset in the given tab; return its details."""
-    from pages.asset_registration_aaq_page import AssetRegistrationAaqPage
-    from pages.asset_registration_approval_list_page import AssetRegistrationApprovalListPage
-    from pages.asset_registration_list_page import AssetRegistrationListPage
-    from test_data.asset_registration_data import build_registration_data
-    from utils.asset_flow import create_approved_asset
-
-    return create_approved_asset(
-        AssetRegistrationAaqPage(tab),
-        AssetRegistrationListPage(tab),
-        AssetRegistrationApprovalListPage(tab),
-        build_registration_data(),
-    )
-
-
-@pytest.fixture(scope="module")
-def unassigned_asset(logged_in_page):
-    """
-    A freshly approved asset that is not assigned to anyone, for the tests of
-    one file. Returns {"registration_number": ..., "serial": ...}.
-    """
-    return _create_asset_in_tab(logged_in_page)
-
-
-@pytest.fixture(scope="module")
-def assigned_asset(logged_in_page):
-    """
-    A freshly approved asset that is already assigned to the test employee, for
-    the tests of one file. Returns {"registration_number": ..., "serial": ...}.
-    """
-    from pages.asset_assign_page import AssetAssignPage
-    from pages.transaction_approval_list_page import TransactionApprovalListPage
-    from test_data.asset_transaction_data import ASSIGNEE_PIN, SETUP_ASSIGN_NOTE
-    from utils.asset_flow import assign_and_approve
-
-    asset = _create_asset_in_tab(logged_in_page)
-    assign_and_approve(
-        AssetAssignPage(logged_in_page),
-        TransactionApprovalListPage(logged_in_page),
-        asset["serial"],
-        ASSIGNEE_PIN,
-        SETUP_ASSIGN_NOTE,
-    )
-    return asset
-
-
 @pytest.fixture(scope="module")
 def assignee_logged_in_page(browser):
     """
@@ -650,6 +638,20 @@ def expense_approval_page(page):
     """Asset Expense Approval page object, ready to use."""
     from pages.asset_expense_approval_page import AssetExpenseApprovalPage
     return AssetExpenseApprovalPage(page)
+
+
+@pytest.fixture
+def expenses(registrations, expense_page, expense_approval_page, shared_registrations):
+    """
+    Gives an Asset Expense test the saved Furniture asset and an approved expense:
+        serial = expenses.get_serial()
+        record = expenses.get_approved_expense("Inventory")
+    It returns what an earlier test saved, or makes it when the test runs on
+    its own. See utils/expense_helper.py.
+    """
+    from utils.expense_helper import ExpenseHelper
+
+    return ExpenseHelper(registrations, expense_page, expense_approval_page, shared_registrations)
 
 
 @pytest.fixture

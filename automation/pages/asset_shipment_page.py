@@ -10,7 +10,7 @@ Challan Details popup, Add Asset Serial popup) belong to
 `pages/shipment_challan_page.py`, which works on the same browser tab.
 
 The small functions at the top of this file (read_field_value, read_headings,
-find_column_index, row_to_dict, table_rows_to_dicts, check_toast_lines) are
+find_column_index, row_to_dict, table_rows_to_dicts) are
 shared with `ShipmentChallanPage`.
 
 Facts used here come from automation/element_catalog/asset_shipment.md.
@@ -100,21 +100,6 @@ def table_rows_to_dicts(table) -> list:
             continue
         result.append(row_to_dict(headings, row))
     return result
-
-
-def check_toast_lines(found_text: str, expected_lines: list) -> None:
-    """
-    Confirm a toast shows exactly the `expected_lines` (one entry per line of
-    the toast, in order). Raises AssertionError saying what was expected and
-    what was on screen.
-    """
-    found_lines = []
-    for line in found_text.split("\n"):
-        if line.strip() != "":
-            found_lines.append(line.strip())
-    assertion_logger.info(f"Verifying toast message {expected_lines}")
-    if found_lines != expected_lines:
-        raise AssertionError(f"Expected the toast message {expected_lines} but the screen showed {found_lines}.")
 
 
 class AssetShipmentPage(BasePage):
@@ -476,6 +461,6 @@ class AssetShipmentPage(BasePage):
     def verify_toast(self, found_text: str, expected_lines: list) -> None:
         """
         Confirm a toast text (returned by a *_and_get_toast method) has exactly
-        `expected_lines`, e.g. ['Asset Shipment Initiated Successfuly'].
+        `expected_lines`, e.g. SHIPMENT_CREATED_TOAST (test_data/toast_messages.py).
         """
-        check_toast_lines(found_text, expected_lines)
+        self.verify_toast_text(found_text, expected_lines, "the last shipment action")

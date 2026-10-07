@@ -13,6 +13,11 @@ How to use it:
 from utils.helpers import unique_name
 
 
+# Name the approved asset that is transferred is saved under in test_data/saved_assets.json
+# (utils/transfer_helper.py, SavedTransferHelper); it is removed once its serial is added to a challan
+TRANSFER_ASSET_GROUP = "transfer_saved"
+
+
 def build_shipment_data() -> dict:
     """
     Return fresh values for the Create Shipment popup.

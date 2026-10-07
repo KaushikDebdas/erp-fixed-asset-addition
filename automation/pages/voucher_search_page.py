@@ -46,8 +46,8 @@ class VoucherSearchPage(BasePage):
         self.click(link, "Voucher Search menu link")
         self.wait_for_page_load()
         self.wait_until_visible(self.search_button, "Search button")
-        # Let the page finish loading its scripts (the calendars need them)
-        self.wait_for_grid_refresh()
+        # The calendars need the page scripts: wait until their icons are shown
+        self.calendar_icons.first.wait_for(state="visible")
 
     def get_accounting_date(self) -> str:
         """Return the accounting (business) date shown in the page header, dd/mm/yyyy."""
@@ -103,13 +103,11 @@ class VoucherSearchPage(BasePage):
         self.transaction_no_field.fill("")
         self.transaction_no_field.press_sequentially(transaction_no, delay=40)
         self.click(self.search_button, "Search button")
-        self.wait_for_grid_refresh()
         self.wait_for_row_or_no_data(self.results_table, transaction_no)
 
     def search_without_transaction_no(self) -> None:
         """Click Search with the other filters as set and wait for the grid."""
         self.click(self.search_button, "Search button")
-        self.wait_for_grid_refresh()
         self.results_table.locator("tbody tr").first.wait_for(state="visible")
 
     def is_voucher_listed(self, transaction_no: str) -> bool:

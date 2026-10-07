@@ -48,7 +48,7 @@ class TransactionGridPage(BasePage):
             action_logger.info(f"Filter: Transaction Status -> {status}")
             self.status_filter.select_option(status)
         self.click(self.search_button, "Search button")
-        self.wait_for_grid_refresh()
+        self.wait_for_table_to_reload(self.results_table)
 
     def get_type_options(self) -> list:
         """Return every value of the Transaction Type filter, placeholder first."""

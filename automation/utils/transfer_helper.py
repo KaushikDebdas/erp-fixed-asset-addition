@@ -24,7 +24,15 @@ Example:
 The flow is a dictionary: shipment_no, shipment_data, challan_no, serial,
 in_challan_no, plus "done" (the stages finished so far).
 """
-from test_data.asset_shipment_data import build_challan_data, build_shipment_data
+from test_data.toast_messages import (
+    CHALLAN_APPROVED_TOAST,
+    CHALLAN_DRAFTED_TOAST,
+    CHALLAN_SERIAL_ADDED_TOAST,
+    CHALLAN_SUBMITTED_TOAST,
+    SHIPMENT_APPROVED_TOAST,
+    SHIPMENT_CREATED_TOAST,
+)
+from test_data.asset_shipment_data import TRANSFER_ASSET_GROUP, build_challan_data, build_shipment_data
 
 # The stages in the order they happen
 STAGES = [
@@ -151,7 +159,7 @@ class TransferHelper:
         self.shipment_page.open_create_popup()
         self.shipment_page.fill_shipment_form(data)
         toast = self.shipment_page.save_shipment_and_get_toast()
-        self.shipment_page.verify_toast(toast, ["Asset Shipment Initiated Successfuly"])
+        self.shipment_page.verify_toast(toast, SHIPMENT_CREATED_TOAST)
         self.shipment_page.search()
         self.flow()["shipment_data"] = data
         self.flow()["shipment_no"] = self.shipment_page.get_newest_shipment_no()
@@ -162,7 +170,7 @@ class TransferHelper:
         self.challan_page.click_create_challan()
         self.fill_challan_form(build_challan_data())
         toast = self.challan_page.draft_and_get_toast()
-        self.challan_page.verify_toast(toast, ["Challan drafted successfully"])
+        self.challan_page.verify_toast(toast, CHALLAN_DRAFTED_TOAST)
         self.flow()["challan_no"] = self.challan_page.get_newest_challan_no()
 
     def create_extra_draft_challan(self) -> str:
@@ -172,7 +180,7 @@ class TransferHelper:
         self.challan_page.click_create_challan()
         self.fill_challan_form(build_challan_data())
         toast = self.challan_page.draft_and_get_toast()
-        self.challan_page.verify_toast(toast, ["Challan drafted successfully"])
+        self.challan_page.verify_toast(toast, CHALLAN_DRAFTED_TOAST)
         return self.challan_page.find_new_challan_no(numbers_before)
 
     def add_serial(self) -> None:
@@ -184,7 +192,7 @@ class TransferHelper:
         self.challan_page.choose_serial(asset["serial"])
         self.challan_page.add_serial_to_popup_grid()
         toast = self.challan_page.save_serial_and_get_toast()
-        self.challan_page.verify_toast(toast, ["Asset serial added Successfuly"])
+        self.challan_page.verify_toast(toast, CHALLAN_SERIAL_ADDED_TOAST)
         self.flow()["serial"] = asset["serial"]
 
     def submit_challan(self) -> None:
@@ -192,7 +200,7 @@ class TransferHelper:
         self.open_challan_tab()
         self.challan_page.open_update_challan(self.flow()["challan_no"])
         toast = self.challan_page.submit_update_challan_and_get_toast()
-        self.challan_page.verify_toast(toast, ["Challan submitted successfully"])
+        self.challan_page.verify_toast(toast, CHALLAN_SUBMITTED_TOAST)
 
     def approve_challan(self) -> None:
         """Approve the challan in the Asset Shipment Challan Approval List."""
@@ -202,7 +210,7 @@ class TransferHelper:
         self.challan_approval_page.open_popup(challan_no)
         self.challan_approval_page.enter_comment("AUTOMATION_TEST approve challan")
         toast = self.challan_approval_page.approve_and_get_toast()
-        self.challan_approval_page.verify_toast(toast, "Challan approved successfully.")
+        self.challan_approval_page.verify_toast(toast, CHALLAN_APPROVED_TOAST)
 
     def approve_shipment(self) -> None:
         """Approve the shipment from its Details popup, and remember the In Challan No."""
@@ -212,7 +220,7 @@ class TransferHelper:
         self.shipment_page.open_details(shipment_no)
         toast = self.shipment_page.approve_shipment_and_get_toast()
         self.shipment_page.verify_toast(
-            toast, ["Shipment approved successfully", "Gate pass generated successfully"]
+            toast, SHIPMENT_APPROVED_TOAST
         )
         self.in_challan_page.navigate_here()
         self.in_challan_page.filter_by_out_challan_no(self.flow()["challan_no"])
@@ -229,3 +237,36 @@ class TransferHelper:
         self.in_challan_page.close_popup_if_open()
         self.in_challan_page.filter_by_out_challan_no(challan_no)
         self.in_challan_page.verify_row_status(challan_no, "ACKNOWLEDGED")
+
+
+class SavedTransferHelper(TransferHelper):
+    """
+    The same shipment stages, with the transferred asset saved in
+    test_data/saved_assets.json: an individual run reuses an approved asset that
+    is not in a challan yet, and a new one is created only when none is saved.
+    Once its serial is added to a challan the asset is used up and its record is removed.
+    The shipment stages themselves stay in memory, because every run needs a new shipment.
+    """
+
+    def get_asset(self) -> dict:
+        """Return the approved asset to transfer (a new one is created when none is saved)."""
+        return self.registrations.get_approved("furniture", "spot", TRANSFER_ASSET_GROUP)
+
+    def add_serial(self) -> None:
+        """Add the serial of the saved transfer asset to the challan, and remember the serial."""
+        asset = self.get_asset()
+        self.open_challan_tab()
+        self.challan_page.open_challan_details(self.flow()["challan_no"])
+        self.challan_page.click_add_serial_link()
+        self.challan_page.choose_serial(asset["serial"])
+        self.challan_page.add_serial_to_popup_grid()
+        toast = self.challan_page.save_serial_and_get_toast()
+        self.challan_page.verify_toast(toast, CHALLAN_SERIAL_ADDED_TOAST)
+        self.flow()["serial"] = asset["serial"]
+
+    def mark_done(self, stage: str) -> None:
+        """Record a finished stage; the asset is used up once its serial is in a challan, so its saved record is removed."""
+        super().mark_done(stage)
+        if stage == "serial_added":
+            key = self.registrations.make_key("furniture", "APPROVED", "spot", TRANSFER_ASSET_GROUP)
+            self.registrations.remembered.pop(key, None)

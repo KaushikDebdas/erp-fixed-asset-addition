@@ -28,7 +28,7 @@ MOVE_BUILDING = "Head Office"
 SETUP_ASSIGN_NOTE = "AUTOMATION_TEST setup assignment"
 
 # Message shown when the assigned employee acknowledges an assignment
-ACKNOWLEDGE_TOAST = "Acknowledged successfully"
+from test_data.toast_messages import ACKNOWLEDGE_TOAST  # noqa: F401 (also imported from here by the smoke suite)
 
 # Notes typed on the transactions the helper (utils/transaction_helper.py) makes
 # to bring the saved asset into the state a test needs

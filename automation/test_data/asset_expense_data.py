@@ -30,16 +30,14 @@ VENDOR_OPTION = "ACE IT[P008937]"
 EXPENSE_AMOUNT = "5000"
 EXPENSE_AMOUNT_ON_VOUCHER = "5,000.00"
 
-# The messages the screens show
-DRAFT_TOAST = "Asset expense successfully drafted."
-SUBMIT_TOAST = "Asset expense successfully submitted."
-APPROVE_TOAST_START = "Asset Expense approved successfully."
-VENDOR_REQUIRED_TOAST = "Vendor/Supplier/Lessor Name is required."
-
 
 def new_expense_ref() -> str:
     """Return a random Expense Ref., for example EXP428774 (it must be different every run)."""
     return "EXP" + random_number(6)
+
+# The saved Furniture asset every Asset Expense test uses (see utils/expense_helper.py)
+EXPENSE_ASSET_ITEM = "furniture"
+EXPENSE_ASSET_SUB_TYPE = "spot"
 
 # The voucher lines expected after approval: (account code, head of accounts)
 VOUCHER_DEBIT = ("5108010101-07", "Other Maintenance Expenses")

@@ -12,13 +12,12 @@ from playwright.sync_api import expect
 
 from pages.asset_split_view_popup import AssetSplitViewPopup
 from pages.base_page import GRID_RELOAD_TIMEOUT, BasePage
+from test_data.toast_messages import SPLIT_APPROVED_MESSAGE, SPLIT_NOTHING_TICKED_MESSAGE
 from utils.logger import action_logger, assertion_logger
 
 # Message shown when Approve or Reject is clicked with no row ticked
-NOTHING_TICKED_MESSAGE = "You have to select a split first"
 
 # Text the success message of Approve contains
-APPROVED_MESSAGE = "Asset Split approved successfully"
 
 # How a date is shown in the grid, e.g. 20/09/2026
 DATE_PATTERN = r"\d{2}/\d{2}/\d{4}"
@@ -42,22 +41,26 @@ class AssetSerialSplitApprovalListPage(BasePage):
         self.popup_close_button = self.popup.get_by_role("button", name="Close").first
         self.popup_split_grid = self.popup.locator("#assetSerialSplitList")
         self.view_popup = AssetSplitViewPopup(page)
+        # The line under the grid ("Showing 1 to 10 of N entries"), refilled when a search finishes
+        self.entries_info = page.locator("#assetSplitList_info")
 
     def navigate_here(self) -> None:
         """Open the Asset Serial Split Approval List screen via the Asset Profile menu."""
         self.open_asset_profile_submenu("Asset Serial Split Approval List")
         self.wait_until_visible(self.search_button, "Search button")
+        # The list loads its first rows after the screen appears; a search started
+        # before that is overwritten by the first load
+        self.results_table.locator("tbody tr").first.wait_for(state="visible")
 
     def search(self) -> None:
         """Run the search with the default filters and wait for the grid."""
         self.click(self.search_button, "Search button")
-        self.wait_for_grid_refresh()
+        self.wait_for_grid_to_reload(self.entries_info)
 
     def search_by_serial(self, serial: str) -> None:
         """Filter by Asset Serial and wait for the result (or the empty message)."""
         self.type_text(self.asset_serial_filter, serial, "Asset Serial filter")
         self.click(self.search_button, "Search button")
-        self.wait_for_grid_refresh()
         self.wait_for_row_or_no_data(self.results_table, serial)
 
     def get_grid_headers(self) -> list:
@@ -157,7 +160,7 @@ class AssetSerialSplitApprovalListPage(BasePage):
         self.wait_for_toast_to_clear()
         self.click(button, f"{button_name} button")
         toast = self.get_toast_text()
-        self.verify_toast_text(toast, NOTHING_TICKED_MESSAGE, f"{button_name} clicked with nothing ticked")
+        self.verify_toast_text(toast, SPLIT_NOTHING_TICKED_MESSAGE, f"{button_name} clicked with nothing ticked")
 
     def click_approve_and_get_toast(self) -> str:
         """Click Approve for the ticked rows and return the message shown, or an empty text if none was seen."""
@@ -167,15 +170,20 @@ class AssetSerialSplitApprovalListPage(BasePage):
 
     def verify_approve_message(self, toast: str) -> None:
         """Confirm the Approve message (when one was seen) says the split was approved."""
-        self.verify_toast_if_shown(toast, APPROVED_MESSAGE, "Approve of the split")
+        self.verify_toast_if_shown(toast, SPLIT_APPROVED_MESSAGE, "Approve of the split")
 
     def approve_split(self, serial: str) -> None:
         """
-        Approve the split of one serial: search it, tick its row, click
-        Approve, confirm the message and wait until the row shows APPROVED.
+        Approve the split of one serial: search it, click its Asset Split No. to
+        open the Asset Split View popup, click Approve there, confirm the
+        message and wait until the row shows APPROVED.
         """
         self.search_by_serial(serial)
-        self.tick_row(serial)
-        toast = self.click_approve_and_get_toast()
+        self.open_split_view(serial)
+        self.wait_for_toast_to_clear()
+        self.click(self.popup.locator("#approveButtonDetails #btnApprove"), "Approve button of the popup")
+        toast = self.get_toast_text_or_empty()
         self.verify_approve_message(toast)
+        self.navigate_here()
+        self.search_by_serial(serial)
         self.wait_for_status(serial, "APPROVED")

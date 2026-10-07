@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Page class | `pages/asset_assign_acknowledgement_page.py` → `AssetAssignAcknowledgementPage` (works in the assigned employee's tab, fixture `assignee_logged_in_page`); tests in `tests/test_15_asset_assign_acknowledgement.py` and `tests/test_15_asset_assign_acknowledgement_new.py` (saved Furniture asset, acknowledgement made pending by `utils/transaction_helper.py`) |
+| Page class | `pages/asset_assign_acknowledgement_page.py` → `AssetAssignAcknowledgementPage` (works in the assigned employee's tab, fixture `assignee_logged_in_page`); tests in `tests/test_15_asset_assign_acknowledgement.py` and `tests/test_15_asset_assign_acknowledgement.py` (saved Furniture asset, acknowledgement made pending by `utils/transaction_helper.py`) |
 | Module / menu path | Fixed Asset >> Asset Transaction >> Asset Assign Acknowledgement |
 | Entry URL | `https://erpstaging.brac.net/nodef/fixedasset#!faAssetTransaction/showAcknowledgementList` (reach via menu click) |
 | Role needed | **The assigned employee**, a different login from the user who creates the assignment. Tested with the second user from `.env` (`ASSIGN_USER_USERNAME`, `ASSIGN_USER_PASSWORD`, read from `config/settings.py`), who is employee `00015370` (Sachindra Nath Ghosh). |

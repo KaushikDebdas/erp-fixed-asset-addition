@@ -57,8 +57,24 @@ class SplitHelper:
         self.remembered = remembered
 
     def get_land(self) -> dict:
-        """Return the approved Land asset that may be split (a new one is created when none is left)."""
-        return self.registrations.get_approved(LAND_ITEM, LAND_SUB_TYPE, AAQ_ASSET_GROUP)
+        """
+        Return the approved Land asset that may be split. A Land asset that
+        already has a split on the Split List (waiting for approval or approved)
+        is used up: it is forgotten and a new Land asset is created.
+        """
+        land = self.registrations.get_approved(LAND_ITEM, LAND_SUB_TYPE, AAQ_ASSET_GROUP)
+        if ("split_list_checked", land["serial"]) not in self.remembered.trusted:
+            if self.is_on_split_list(land["serial"]):
+                self.registrations.forget(land, "APPROVED", AAQ_ASSET_GROUP)
+                land = self.registrations.get_approved(LAND_ITEM, LAND_SUB_TYPE, AAQ_ASSET_GROUP)
+            self.remembered.trusted.add(("split_list_checked", land["serial"]))
+        return land
+
+    def is_on_split_list(self, serial: str) -> bool:
+        """Return True if the Split List already has a split (any status) for this Asset Serial."""
+        self.split_list_page.navigate_here()
+        self.split_list_page.search_by_serial(serial)
+        return self.split_list_page.results_table.locator("tbody tr", has_text=serial).count() > 0
 
     def is_still_valid(self, status: str) -> bool:
         """

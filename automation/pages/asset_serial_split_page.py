@@ -16,13 +16,12 @@ import re
 from playwright.sync_api import expect
 
 from pages.base_page import BasePage
+from test_data.toast_messages import SPLIT_REFUSED_MESSAGE, SPLIT_SUBMITTED_MESSAGE
 from utils.logger import action_logger, assertion_logger
 
 # Message shown when SPLIT is clicked for an asset with no measurement
-REFUSED_MESSAGE = "Cannot split: Please set a valid measurement above zero."
 
 # Text the success message of Submit contains
-SUBMITTED_MESSAGE = "Asset split submitted successfully"
 
 # Two numbers closer than this are treated as equal (the grid shows 2 decimals)
 NUMBER_TOLERANCE = 0.005
@@ -57,12 +56,14 @@ class AssetSerialSplitPage(BasePage):
         """Open the Asset Serial Split screen via the Asset Profile menu."""
         self.open_asset_profile_submenu("Asset Serial Split")
         self.wait_until_visible(self.search_button, "Search button")
+        # The list loads its first rows after the screen appears; a search started
+        # before that is overwritten by the first load
+        self.results_table.locator("tbody tr").first.wait_for(state="visible")
 
     def search_by_serial(self, serial: str) -> None:
         """Filter by Asset Serial and wait for the result (or the empty message)."""
         self.type_text(self.asset_serial_filter, serial, "Asset Serial filter")
         self.click(self.search_button, "Search button")
-        self.wait_for_grid_refresh()
         self.wait_for_row_or_no_data(self.results_table, serial)
 
     def get_grid_headers(self) -> list:
@@ -98,7 +99,7 @@ class AssetSerialSplitPage(BasePage):
     def verify_split_is_refused(self, serial: str) -> None:
         """Click SPLIT for an asset with no measurement and confirm the refusal message."""
         toast = self.click_split_and_get_toast(serial)
-        self.verify_toast_text(toast, REFUSED_MESSAGE, f"SPLIT clicked for {serial} (no measurement)")
+        self.verify_toast_text(toast, SPLIT_REFUSED_MESSAGE, f"SPLIT clicked for {serial} (no measurement)")
 
     def open_split_form(self, serial: str) -> None:
         """Click SPLIT for this serial and wait for the Asset Split form."""
@@ -287,7 +288,7 @@ class AssetSerialSplitPage(BasePage):
 
     def verify_submit_message(self, toast: str) -> None:
         """Confirm the Submit message (when one was seen) says the split was submitted."""
-        self.verify_toast_if_shown(toast, SUBMITTED_MESSAGE, "Submit of the split")
+        self.verify_toast_if_shown(toast, SPLIT_SUBMITTED_MESSAGE, "Submit of the split")
 
     def submit_split(self) -> None:
         """Click Submit, confirm the message and wait until the Split screen is shown again."""

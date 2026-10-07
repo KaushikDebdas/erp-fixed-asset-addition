@@ -79,6 +79,15 @@ class TransactionHelper:
         self.global_list_page.search_by_serial(serial)
         return self.global_list_page.get_row_values(serial)
 
+    def ensure_unassigned_if_saved_asset(self, item: str, sub_type: str) -> None:
+        """
+        Make the saved Furniture asset UNASSIGNED when `item` and `sub_type` name
+        it. Only that asset is assigned by the transaction tests; every other
+        asset is always UNASSIGNED, so nothing is done for them.
+        """
+        if item == ASSET_ITEM and sub_type == ASSET_SUB_TYPE:
+            self.ensure_unassigned()
+
     def require_status(self, serial: str, found: str, wanted: str) -> None:
         """Fail with a clear message when the asset's Assign Status is not the one a test needs."""
         assert found == wanted, (

@@ -23,12 +23,37 @@ Every test also runs on its own: it does the earlier stages first. Run in file
 order, each stage is done once and reused. Do not run a later test before an
 earlier one that checks the older state (for example 'Pending') in the same run.
     pytest tests/test_19_asset_shipment.py
+
+The approved asset that is transferred is saved in test_data/saved_assets.json
+(`transfer.get_asset()`, utils/transfer_helper.py): a separate run reuses it, a
+new one is created only when none is saved, and it is removed once the shipment
+is in a challan. The shipment itself is new in every run.
     pytest "tests/test_19_asset_shipment.py::test_challan_approve"
 """
 import pytest
 
 from test_data.asset_shipment_data import build_challan_data, build_shipment_data
+from test_data.toast_messages import (
+    CHALLAN_APPROVED_TOAST,
+    CHALLAN_DELETED_TOAST,
+    CHALLAN_DRAFTED_TOAST,
+    CHALLAN_NO_FROM_PROJECT_TOAST,
+    CHALLAN_NO_ITEMS_TOAST,
+    CHALLAN_NO_TO_PROJECT_TOAST,
+    CHALLAN_SERIAL_ADDED_TOAST,
+    CHALLAN_SUBMITTED_TOAST,
+    SHIPMENT_APPROVED_TOAST,
+    SHIPMENT_CREATED_TOAST,
+    SHIPMENT_NO_APPROVED_CHALLAN_TOAST,
+    SHIPMENT_NO_CHALLAN_TOAST,
+)
 from utils.run_context import trace_one_test
+
+
+@pytest.fixture
+def transfer(saved_transfer):
+    """The shipment stages, with the transferred asset saved in the JSON file."""
+    return saved_transfer
 
 
 @pytest.fixture
@@ -133,7 +158,7 @@ def test_shipment_create_saved(shipment_page, transfer, assignee_screenshot):
 
     # Step 2: Save shows the success message
     toast = shipment_page.save_shipment_and_get_toast()
-    shipment_page.verify_toast(toast, ["Asset Shipment Initiated Successfuly"])
+    shipment_page.verify_toast(toast, SHIPMENT_CREATED_TOAST)
     assignee_screenshot("shipment saved")
 
     # Step 3: the newest row is the new shipment, with Status PENDING
@@ -215,7 +240,7 @@ def test_shipment_approve_without_challan_is_refused(shipment_page, transfer, as
     assignee_screenshot("approve refused without a challan")
 
     # Step 3: the message asks for a challan
-    shipment_page.verify_toast(toast, ["Please add at least one challan"])
+    shipment_page.verify_toast(toast, SHIPMENT_NO_CHALLAN_TOAST)
 
 
 # ---------------------------------------------------------------------------
@@ -272,7 +297,7 @@ def test_challan_add_without_from_project_is_refused(challan_page, transfer, ass
     assignee_screenshot("add refused without a from project")
 
     # Step 3: the message asks for the From Project
-    challan_page.verify_toast(toast, ["Please select from project"])
+    challan_page.verify_toast(toast, CHALLAN_NO_FROM_PROJECT_TOAST)
 
 
 @pytest.mark.regression
@@ -293,7 +318,7 @@ def test_challan_add_without_to_project_is_refused(challan_page, transfer, assig
     assignee_screenshot("add refused without a to project")
 
     # Step 3: the message asks for the To Project
-    challan_page.verify_toast(toast, ["Please select to project"])
+    challan_page.verify_toast(toast, CHALLAN_NO_TO_PROJECT_TOAST)
 
 
 @pytest.mark.regression
@@ -313,7 +338,7 @@ def test_challan_draft_without_item_is_refused(challan_page, transfer, assignee_
     assignee_screenshot("draft refused without an item")
 
     # Step 3: the message says there is no item
-    challan_page.verify_toast(toast, ["No Items in Challan to perform operation"])
+    challan_page.verify_toast(toast, CHALLAN_NO_ITEMS_TOAST)
 
 
 @pytest.mark.regression
@@ -374,7 +399,7 @@ def test_challan_draft_saved(challan_page, transfer, assignee_screenshot):
 
     # Step 2: Draft shows the success message
     toast = challan_page.draft_and_get_toast()
-    challan_page.verify_toast(toast, ["Challan drafted successfully"])
+    challan_page.verify_toast(toast, CHALLAN_DRAFTED_TOAST)
     assignee_screenshot("challan drafted")
 
     # Step 3: the new challan is listed as DRAFT, with no serial yet
@@ -409,7 +434,7 @@ def test_challan_add_serial_popup_fills_details(challan_page, transfer, assignee
     """Transfer Challan: picking a serial fills the item name, quantity, sub category and category."""
     # Step 1: open the Add Serial popup of a Draft challan
     challan_no = transfer.reach("draft_challan")["challan_no"]
-    asset = transfer.registrations.get_approved("furniture", owner="transfer")
+    asset = transfer.get_asset()
     transfer.open_challan_tab()
     challan_page.open_challan_details(challan_no)
     challan_page.click_add_serial_link()
@@ -429,7 +454,7 @@ def test_challan_serial_saved(challan_page, transfer, assignee_screenshot):
     """Transfer Challan: a serial can be added and saved; the challan then shows All Serial Added."""
     # Step 1: get a Draft challan and an approved asset
     challan_no = transfer.reach("draft_challan")["challan_no"]
-    asset = transfer.registrations.get_approved("furniture", owner="transfer")
+    asset = transfer.get_asset()
     transfer.open_challan_tab()
     challan_page.open_challan_details(challan_no)
 
@@ -439,7 +464,7 @@ def test_challan_serial_saved(challan_page, transfer, assignee_screenshot):
     challan_page.add_serial_to_popup_grid()
     assignee_screenshot("serial added to the popup grid")
     toast = challan_page.save_serial_and_get_toast()
-    challan_page.verify_toast(toast, ["Asset serial added Successfuly"])
+    challan_page.verify_toast(toast, CHALLAN_SERIAL_ADDED_TOAST)
 
     # Step 3: remember it; the Asset Serials tab shows the serial
     transfer.record("serial_added", serial=asset["serial"])
@@ -488,7 +513,7 @@ def test_shipment_approve_with_draft_challan_is_refused(shipment_page, transfer,
     assignee_screenshot("approve refused with a draft challan")
 
     # Step 3: the message asks for an approved challan
-    shipment_page.verify_toast(toast, ["Approve at least one challan"])
+    shipment_page.verify_toast(toast, SHIPMENT_NO_APPROVED_CHALLAN_TOAST)
 
 
 @pytest.mark.regression
@@ -518,7 +543,7 @@ def test_extra_draft_challan_can_be_deleted(challan_page, transfer, assignee_scr
     assignee_screenshot("extra challan deleted")
 
     # Step 3: the delete message is shown
-    challan_page.verify_toast(toast, ["Challan deleted successfuly"])
+    challan_page.verify_toast(toast, CHALLAN_DELETED_TOAST)
 
 
 # ---------------------------------------------------------------------------
@@ -536,7 +561,7 @@ def test_challan_submit(challan_page, transfer, assignee_screenshot):
 
     # Step 2: Submit shows the success message
     toast = challan_page.submit_update_challan_and_get_toast()
-    challan_page.verify_toast(toast, ["Challan submitted successfully"])
+    challan_page.verify_toast(toast, CHALLAN_SUBMITTED_TOAST)
     assignee_screenshot("challan submitted")
 
     # Step 3: the challan is PENDING
@@ -608,7 +633,7 @@ def test_challan_approve(challan_approval_page, transfer, assignee_screenshot):
 
     # Step 2: Approve shows the success message
     toast = challan_approval_page.approve_and_get_toast()
-    challan_approval_page.verify_toast(toast, "Challan approved successfully.")
+    challan_approval_page.verify_toast(toast, CHALLAN_APPROVED_TOAST)
     assignee_screenshot("challan approved")
 
     # Step 3: the row is APPROVED and now has a Preview link
@@ -634,7 +659,7 @@ def test_shipment_approve(shipment_page, transfer, assignee_screenshot):
 
     # Step 2: Approve shows both messages
     toast = shipment_page.approve_shipment_and_get_toast()
-    shipment_page.verify_toast(toast, ["Shipment approved successfully", "Gate pass generated successfully"])
+    shipment_page.verify_toast(toast, SHIPMENT_APPROVED_TOAST)
     assignee_screenshot("shipment approved")
 
     # Step 3: the shipment is APPROVED and has a Preview link (remembered as soon as it is APPROVED)

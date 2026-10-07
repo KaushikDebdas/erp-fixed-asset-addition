@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Page class | `pages/asset_serial_split_approval_list_page.py` → `AssetSerialSplitApprovalListPage`; tests in `tests/test_09_asset_serial_split_approval_list.py` (old) and `tests/test_09_asset_serial_split_approval_list_new.py` (new; popup class `pages/asset_split_view_popup.py`) |
+| Page class | `pages/asset_serial_split_approval_list_page.py` → `AssetSerialSplitApprovalListPage`; tests in `tests/test_09_asset_serial_split_approval_list.py` (old) and `tests/test_09_asset_serial_split_approval_list.py` (new; popup class `pages/asset_split_view_popup.py`) |
 | Module / menu path | Fixed Asset >> Asset Profile >> Asset Serial Split Approval List |
 | Entry URL | `https://erpstaging.brac.net/nodef/fixedasset#!faAssetProfile/showAssetSplitApprovalList` (reach via menu click, see Notes) |
 | Role needed | ERP External User (tested with `abushoaib.asik`, branch Head Office [ BDHO ]; the same user can approve a split it created) |

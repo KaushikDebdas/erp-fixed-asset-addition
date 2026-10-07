@@ -308,10 +308,10 @@ class AssetRegistrationAaqPage(BasePage):
         """
         draft_toast = self.click_draft_and_get_toast()
         assertion_logger.info("Verifying Draft is rejected with the validation toast")
-        assert draft_toast == expected_toast, f"Draft: expected toast '{expected_toast}' but found '{draft_toast}'."
+        self.verify_toast_text(draft_toast, expected_toast, "Draft")
         submit_toast = self.click_submit_and_get_toast()
         assertion_logger.info("Verifying Submit is rejected with the validation toast")
-        assert submit_toast == expected_toast, f"Submit: expected toast '{expected_toast}' but found '{submit_toast}'."
+        self.verify_toast_text(submit_toast, expected_toast, "Submit")
 
     def fill_form_until_add(self, data: dict) -> str:
         """

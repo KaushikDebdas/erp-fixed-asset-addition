@@ -11,14 +11,12 @@ that currently blocks Approve from succeeding.
 import re
 
 from pages.base_page import BasePage
+from test_data.toast_messages import APPROVE_SUCCESS_TOAST
 from utils.logger import action_logger, assertion_logger
 
 # Position of the Asset Serial cell in a row of the Asset Serials grid
 # (0-based: a hidden ID column comes first, then SL, then Asset Serial)
 ASSET_SERIAL_COLUMN_INDEX = 2
-
-# Exact toast shown when an Approve succeeds
-APPROVE_SUCCESS_TOAST = "Asset registration approved successfully."
 
 
 class AssetRegistrationApprovalListPage(BasePage):
@@ -293,12 +291,7 @@ class AssetRegistrationApprovalListPage(BasePage):
         self.wait_for_toast_to_clear()
         self.click(self.popup_approve_button, "Approve button in popup")
         toast_text = self.get_toast_text()
-        assertion_logger.info(f"Verifying Approve success toast for Registration {registration_number}")
-        assert toast_text == APPROVE_SUCCESS_TOAST, (
-            f"Expected Approve toast '{APPROVE_SUCCESS_TOAST}' for Registration "
-            f"{registration_number} but found '{toast_text}'."
-        )
-        assertion_logger.info("Approve success toast matched exactly")
+        self.verify_toast_text(toast_text, APPROVE_SUCCESS_TOAST, f"Approve of Registration {registration_number}")
 
     def open_asset_serials_tab(self) -> None:
         """Switch the open popup to its Asset Serials tab."""
@@ -550,9 +543,7 @@ class AssetRegistrationApprovalListPage(BasePage):
 
     def verify_toast(self, expected_text: str) -> None:
         """Confirm the toast on screen has exactly `expected_text`; any other message, or none, fails."""
-        found = self.get_toast_text()
-        assertion_logger.info(f"Verifying toast '{expected_text}'")
-        assert found == expected_text, f"Expected toast '{expected_text}' but found '{found}'."
+        self.verify_toast_text(self.get_toast_text(), expected_text, "the last action on the approval list")
 
     def approve_ticked_rows(self) -> None:
         """Click the page-level Approve for the ticked rows (read the result with verify_toast)."""

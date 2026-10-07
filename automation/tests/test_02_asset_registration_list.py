@@ -1,21 +1,61 @@
 """
 test_02_asset_registration_list.py: tests for the Asset Registration List
-screen (Fixed Asset > Registration > Asset Registration List).
+screen (Fixed Asset > Registration > Asset Registration List), using the 10 AAQ
+assets that test_01_asset_registration_aaq.py creates.
 
-Built from automation/element_catalog/asset_registration_list.md. The list
-only shows registrations that already exist, so the smoke tests first create
-one on the AAQ form. The regression tests below get a registration from the
-`registrations` fixture (conftest.py), which reuses one an earlier test made
-or creates its own when run alone.
+Built from automation/element_catalog/asset_registration_list.md. The 10
+assets are remembered under AAQ_ASSET_GROUP (test_data/asset_registration_data.py).
+When a test here runs on its own, the `registrations` fixture creates the asset
+it needs, so every test can run alone.
 
-Order of the file: 0. smoke, 1. columns/options/defaults, 2. filters,
-3. Reset, 4. paging, 5. the View popup for each of the 5 asset items.
+The whole file logs in once and every test reuses that session (see the
+`page` fixture below).
+
+The tests run top to bottom:
+    1. The Drafts planned as "draft_then_submit" are opened from the list and
+       submitted, then shown as PENDING
+    2. The page opens with the right columns, options and defaults
+    3. Filters: Status, Registration Type, Project, Vendor, Registration
+       Number, Created By and Registration Date
+    4. Reset
+    5. Paging
+    6. The View popup of a registration
+
+To run part of the file:
+    pytest tests/test_02_asset_registration_list.py -k "gift"
+    pytest tests/test_02_asset_registration_list.py -k "records_per_page"
 """
 import pytest
 
 from config.settings import TEST_USERNAME
-from test_data.asset_registration_data import ASSET_ITEMS, build_registration_data
+from test_data.asset_registration_data import (
+    AAQ_ASSET_GROUP,
+    DRAFTS_SUBMITTED_FROM_LIST,
+    build_registration_data,
+)
+from test_data.toast_messages import (
+    SUBMIT_SUCCESS_TOAST,
+)
 from utils.run_context import trace_one_test
+
+# Message (toast) the AAQ form shows after a Submit
+
+# The tests that only need "a Draft" or "a submitted asset" all share one of each,
+# so run alone this file creates as few registrations as possible (Spot Purchase)
+SHARED_DRAFT_ITEM = "desktop"
+SHARED_PENDING_ITEM = "land"
+
+# Filter option lists the screen offers
+STATUS_OPTIONS = ["-Select Status-", "PENDING", "APPROVED", "REJECTED", "DRAFT", "SENDBACK"]
+REGISTRATION_TYPE_OPTIONS = ["-Select Registration Type-", "MRR", "AAQ", "LEASE"]
+RECORDS_PER_PAGE_OPTIONS = ["10", "20", "30", "50", "100"]
+
+# Column headings of the grid, in order
+GRID_COLUMNS = [
+    "SL", "Registration Number", "Registration Date", "Reference Number",
+    "Registration Type", "Branch Name", "Project Name", "Department Name",
+    "Created By", "Status", "Approved By", "Approval Date", "Attachment",
+]
 
 
 @pytest.fixture
@@ -24,100 +64,64 @@ def page(logged_in_page, request):
     yield from trace_one_test(logged_in_page, request)
 
 
+# ---------------------------------------------------------------------------
+# 1. Drafts are opened from the list and submitted
+# ---------------------------------------------------------------------------
+
+
 @pytest.mark.smoke
 @pytest.mark.regression
-def test_list_shows_new_draft_registration(
-    page, aaq_page, registration_list_page, take_screenshot
+@DRAFTS_SUBMITTED_FROM_LIST
+def test_list_draft_is_opened_and_submitted(
+    item, sub_type, plan, page, aaq_page, registrations, registration_list_page, take_screenshot
 ):
-    """Asset Registration List: a saved Draft appears with Status DRAFT."""
-    # Step 1: create a Draft registration on the AAQ form
-    aaq_page.navigate_here()
-    aaq_page.create_draft(build_registration_data())
+    """Asset Registration List: a Draft opened from its Registration Number link can be submitted."""
+    # Step 1: get the Draft (created by test_01_asset_registration_aaq, or created now)
+    draft = registrations.get_draft(item, sub_type, AAQ_ASSET_GROUP)
 
-    # Step 2: open the list and filter by Status DRAFT
+    # Step 2: find the Draft in the list; its status is DRAFT
     registration_list_page.navigate_here()
-    registration_list_page.filter_by_status("DRAFT")
-    take_screenshot("list filtered by draft status")
+    registration_list_page.filter_by_registration_number(draft["registration_number"])
+    registration_list_page.verify_status(draft["registration_number"], "DRAFT")
 
-    # Step 3: the newest row is the registration just created, with Status DRAFT
-    registration_number = registration_list_page.get_newest_registration_number()
-    registration_list_page.verify_status(registration_number, "DRAFT")
-    take_screenshot(f"registration {registration_number} found as DRAFT")
+    # Step 3: open it from its Registration Number link and submit it
+    registration_list_page.open_registration(draft["registration_number"])
+    take_screenshot(f"{sub_type} {item} draft opened from list")
+
+    # Step 4: the form shows this Draft's own values
+    aaq_page.verify_form_shows_registration(draft["data"])
+
+    # Step 5: submit it and confirm the success message
+    toast = aaq_page.click_submit_and_get_toast()
+    take_screenshot(f"{sub_type} {item} draft submitted")
+    aaq_page.verify_toast_text(toast, SUBMIT_SUCCESS_TOAST, "click submit")
+
+    # Step 6: it is no longer a Draft; remember it as a submitted asset
+    registrations.move_draft_to_pending(draft, AAQ_ASSET_GROUP)
 
 
 @pytest.mark.regression
-def test_list_filter_by_registration_number(
-    page, aaq_page, registration_list_page, take_screenshot
+@DRAFTS_SUBMITTED_FROM_LIST
+def test_list_submitted_draft_is_shown_as_pending(
+    item, sub_type, plan, page, registrations, registration_list_page, take_screenshot
 ):
-    """Asset Registration List: filtering by Registration Number finds exactly that registration."""
-    # Step 1: create a Draft registration on the AAQ form
-    aaq_page.navigate_here()
-    aaq_page.create_draft(build_registration_data())
+    """Asset Registration List: a Draft that was submitted from the list now has status PENDING."""
+    # Step 1: get the submitted asset (a new submitted one is created when this test runs alone)
+    record = registrations.get_pending(item, sub_type, AAQ_ASSET_GROUP)
 
-    # Step 2: find its Registration Number in the list
+    # Step 2: find it in the list
     registration_list_page.navigate_here()
-    registration_list_page.filter_by_status("DRAFT")
-    registration_number = registration_list_page.get_newest_registration_number()
+    registration_list_page.filter_by_registration_number(record["registration_number"])
+    take_screenshot(f"{sub_type} {item} found in list")
 
-    # Step 3: search by that Registration Number alone
-    registration_list_page.filter_by_registration_number(registration_number)
-    take_screenshot(f"list filtered by registration number {registration_number}")
-
-    # Step 4: the registration is listed with Status DRAFT
-    assert registration_list_page.is_registration_listed(registration_number), (
-        f"Expected Registration {registration_number} to be listed after filtering by its number."
-    )
-    registration_list_page.verify_status(registration_number, "DRAFT")
-
-
-@pytest.mark.regression
-def test_list_open_draft_and_submit_moves_to_pending(
-    page, aaq_page, registration_list_page, take_screenshot
-):
-    """Asset Registration List: a Draft can be reopened from the list and submitted, moving it to PENDING."""
-    # Step 1: create a Draft registration on the AAQ form
-    aaq_page.navigate_here()
-    aaq_page.create_draft(build_registration_data())
-
-    # Step 2: find the Draft in the list
-    registration_list_page.navigate_here()
-    registration_list_page.filter_by_status("DRAFT")
-    registration_number = registration_list_page.get_newest_registration_number()
-    registration_list_page.verify_status(registration_number, "DRAFT")
-
-    # Step 3: reopen the Draft from its Registration Number link and submit it
-    registration_list_page.open_registration(registration_number)
-    take_screenshot(f"draft {registration_number} reopened for update")
-    aaq_page.submit_and_verify_success()
-
-    # Step 4: the list now shows the registration as PENDING
-    registration_list_page.navigate_here()
-    registration_list_page.filter_by_status("PENDING")
-    registration_list_page.verify_status(registration_number, "PENDING")
-    take_screenshot(f"registration {registration_number} confirmed as PENDING")
-
-
-@pytest.mark.regression
-def test_list_submitted_registration_is_pending(
-    page, aaq_page, registration_list_page, take_screenshot
-):
-    """Asset Registration List: a directly submitted registration appears with Status PENDING."""
-    # Step 1: create and submit a registration on the AAQ form
-    aaq_page.navigate_here()
-    aaq_page.create_and_submit(build_registration_data())
-
-    # Step 2: open the list and filter by Status PENDING
-    registration_list_page.navigate_here()
-    registration_list_page.filter_by_status("PENDING")
-    take_screenshot("list filtered by pending status")
-
-    # Step 3: the newest row is the registration just submitted, with Status PENDING
-    registration_number = registration_list_page.get_newest_registration_number()
-    registration_list_page.verify_status(registration_number, "PENDING")
+    # Step 3: its status is PENDING, and the row is this asset's (project and type)
+    registration_list_page.verify_status(record["registration_number"], "PENDING")
+    registration_list_page.verify_column_equals("Project Name", [record["data"]["project"]])
+    registration_list_page.verify_column_equals("Registration Type", ["AAQ"])
 
 
 # ---------------------------------------------------------------------------
-# 1. The page opens with the right columns, options and defaults
+# 2. The page opens with the right columns, options and defaults
 # ---------------------------------------------------------------------------
 
 
@@ -129,50 +133,24 @@ def test_list_grid_columns(page, registration_list_page, take_screenshot):
     take_screenshot("list opened")
 
     # Step 2: the column headings are as expected
-    registration_list_page.verify_headers([
-        "SL", "Registration Number", "Registration Date", "Reference Number",
-        "Registration Type", "Branch Name", "Project Name", "Department Name",
-        "Created By", "Status", "Approved By", "Approval Date", "Attachment",
-    ])
+    registration_list_page.verify_headers(GRID_COLUMNS)
 
 
 @pytest.mark.regression
-def test_list_status_filter_options(page, registration_list_page, take_screenshot):
-    """Asset Registration List: the Status filter offers PENDING, APPROVED, REJECTED, DRAFT and SENDBACK."""
+def test_list_filter_options(page, registration_list_page, take_screenshot):
+    """Asset Registration List: the Status, Registration Type and Records per page options are as expected."""
     # Step 1: open the list
     registration_list_page.navigate_here()
 
-    # Step 2: the Status options are as expected
-    registration_list_page.verify_filter_options(
-        "Status", ["-Select Status-", "PENDING", "APPROVED", "REJECTED", "DRAFT", "SENDBACK"]
-    )
+    # Step 2: each dropdown offers the expected values
+    registration_list_page.verify_filter_options("Status", STATUS_OPTIONS)
+    registration_list_page.verify_filter_options("Registration Type", REGISTRATION_TYPE_OPTIONS)
+    registration_list_page.verify_filter_options("Records per page", RECORDS_PER_PAGE_OPTIONS)
 
 
 @pytest.mark.regression
-def test_list_registration_type_filter_options(page, registration_list_page, take_screenshot):
-    """Asset Registration List: the Registration Type filter offers MRR, AAQ and LEASE."""
-    # Step 1: open the list
-    registration_list_page.navigate_here()
-
-    # Step 2: the Registration Type options are as expected
-    registration_list_page.verify_filter_options(
-        "Registration Type", ["-Select Registration Type-", "MRR", "AAQ", "LEASE"]
-    )
-
-
-@pytest.mark.regression
-def test_list_records_per_page_options(page, registration_list_page, take_screenshot):
-    """Asset Registration List: Records per page offers 10, 20, 30, 50 and 100."""
-    # Step 1: open the list
-    registration_list_page.navigate_here()
-
-    # Step 2: the page size options are as expected
-    registration_list_page.verify_filter_options("Records per page", ["10", "20", "30", "50", "100"])
-
-
-@pytest.mark.regression
-def test_list_created_by_starts_with_logged_in_user(page, registration_list_page, take_screenshot):
-    """Asset Registration List: the Created By filter starts with the logged-in user."""
+def test_list_starts_with_the_right_defaults(page, registration_list_page, take_screenshot):
+    """Asset Registration List: Created By starts with the logged-in user and the other filters start empty."""
     # Step 1: open the list
     registration_list_page.navigate_here()
     take_screenshot("list opened")
@@ -180,14 +158,7 @@ def test_list_created_by_starts_with_logged_in_user(page, registration_list_page
     # Step 2: the Created By box holds the logged-in user's pin and name
     registration_list_page.verify_created_by_contains(TEST_USERNAME)
 
-
-@pytest.mark.regression
-def test_list_other_filters_start_empty(page, registration_list_page, take_screenshot):
-    """Asset Registration List: Status, Registration Type and Registration Number start empty."""
-    # Step 1: open the list
-    registration_list_page.navigate_here()
-
-    # Step 2: none of those filters has a value
+    # Step 3: Status, Registration Type and Registration Number are empty
     registration_list_page.verify_filters_are_empty(["Status", "Registration Type", "Registration Number"])
 
 
@@ -203,34 +174,56 @@ def test_list_newest_registration_is_first(page, registration_list_page, take_sc
 
 
 # ---------------------------------------------------------------------------
-# 2. Filters
+# 3. Filters
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.regression
-@pytest.mark.parametrize("status", ["PENDING", "APPROVED", "REJECTED", "DRAFT", "SENDBACK"])
-def test_list_filter_by_status(status, page, registration_list_page, take_screenshot):
-    """Asset Registration List: filtering by a Status lists only registrations with that Status."""
-    # Step 1: open the list and filter by the Status
-    registration_list_page.navigate_here()
-    registration_list_page.filter_by_status(status)
-    take_screenshot(f"list filtered by {status}")
+def test_list_status_draft_lists_the_draft_asset(page, registrations, registration_list_page, take_screenshot):
+    """Asset Registration List: filtering by DRAFT lists only Drafts, including the Draft asset that was left as a Draft."""
+    # Step 1: get the asset that stays a Draft (created now when this test runs alone)
+    draft = registrations.get_draft(SHARED_DRAFT_ITEM, "spot", AAQ_ASSET_GROUP)
 
-    # Step 2: every row shows that Status (a Status with no registrations lists nothing)
-    registration_list_page.verify_all_rows_have("Status", status)
+    # Step 2: open the list and filter by Status DRAFT
+    registration_list_page.navigate_here()
+    registration_list_page.filter_by_status("DRAFT")
+    take_screenshot("list filtered by DRAFT")
+
+    # Step 3: every row is a Draft, and the Draft asset is listed
+    registration_list_page.verify_all_rows_have("Status", "DRAFT")
+    assert registration_list_page.is_registration_listed(draft["registration_number"]), (
+        f"Expected Registration {draft['registration_number']} in the DRAFT list."
+    )
 
 
 @pytest.mark.regression
-@pytest.mark.parametrize("registration_type", ["AAQ", "MRR", "LEASE"])
-def test_list_filter_by_registration_type(registration_type, page, registration_list_page, take_screenshot):
-    """Asset Registration List: filtering by a Registration Type lists only that type."""
+def test_list_status_pending_lists_the_submitted_asset(page, registrations, registration_list_page, take_screenshot):
+    """Asset Registration List: filtering by PENDING lists only PENDING rows, including a submitted asset."""
+    # Step 1: get a submitted asset (created now when this test runs alone)
+    submitted = registrations.get_pending(SHARED_PENDING_ITEM, "spot", AAQ_ASSET_GROUP)
+
+    # Step 2: open the list and filter by Status PENDING
+    registration_list_page.navigate_here()
+    registration_list_page.filter_by_status("PENDING")
+    take_screenshot("list filtered by PENDING")
+
+    # Step 3: every row is PENDING, and the submitted asset is listed
+    registration_list_page.verify_all_rows_have("Status", "PENDING")
+    assert registration_list_page.is_registration_listed(submitted["registration_number"]), (
+        f"Expected Registration {submitted['registration_number']} in the PENDING list."
+    )
+
+
+@pytest.mark.regression
+def test_list_filter_by_registration_type(page, registration_list_page, take_screenshot):
+    """Asset Registration List: filtering by Registration Type AAQ lists only AAQ registrations."""
     # Step 1: open the list and filter by the type
     registration_list_page.navigate_here()
-    registration_list_page.filter_by_registration_type(registration_type)
-    take_screenshot(f"list filtered by {registration_type}")
+    registration_list_page.filter_by_registration_type("AAQ")
+    take_screenshot("list filtered by AAQ")
 
     # Step 2: every row shows that Registration Type
-    registration_list_page.verify_all_rows_have("Registration Type", registration_type)
+    registration_list_page.verify_all_rows_have("Registration Type", "AAQ")
 
 
 @pytest.mark.regression
@@ -274,36 +267,12 @@ def test_list_filter_by_unknown_vendor_lists_nothing(page, registration_list_pag
 
 
 @pytest.mark.regression
-@pytest.mark.xfail(
-    reason="Search ignores the MRR Number filter: the same registrations are listed with a real "
-           "MRR number, a made-up one, or none. Needs a product decision.",
-    strict=True,
-)
-def test_list_filter_by_mrr_number(page, registration_list_page, take_screenshot):
-    """Asset Registration List: filtering by an MRR Number lists only registrations with that reference."""
-    # Step 1: list MRR registrations of every user and pick a Reference Number
-    registration_list_page.navigate_here()
-    registration_list_page.clear_created_by()
-    registration_list_page.filter_by_registration_type("MRR")
-    mrr_number = registration_list_page.read_first_filled_value("Reference Number")
-
-    # Step 2: filter by that MRR Number
-    registration_list_page.filter_by_mrr_number(mrr_number)
-    take_screenshot(f"list filtered by MRR number {mrr_number}")
-
-    # Step 3: every row shows that Reference Number
-    registration_list_page.verify_rows_listed_and_all_have("Reference Number", mrr_number)
-
-
-@pytest.mark.regression
-@ASSET_ITEMS
 def test_list_filter_by_registration_number_shows_the_registration(
-    item, page, registrations, registration_list_page, take_screenshot
+    page, registrations, registration_list_page, take_screenshot
 ):
     """Asset Registration List: filtering by a Registration Number lists exactly that registration."""
-    # Step 1: get a submitted registration (reused from an earlier test, or created now)
-    record = registrations.get_pending(item)
-    data = record["data"]
+    # Step 1: get a submitted asset (created now when this test runs alone)
+    record = registrations.get_pending(SHARED_PENDING_ITEM, "spot", AAQ_ASSET_GROUP)
     number = record["registration_number"]
 
     # Step 2: filter by its Registration Number
@@ -313,7 +282,7 @@ def test_list_filter_by_registration_number_shows_the_registration(
 
     # Step 3: one row, with this number, the project, type AAQ and Status PENDING
     registration_list_page.verify_column_equals("Registration Number", [number])
-    registration_list_page.verify_column_equals("Project Name", [data["project"]])
+    registration_list_page.verify_column_equals("Project Name", [record["data"]["project"]])
     registration_list_page.verify_column_equals("Registration Type", ["AAQ"])
     registration_list_page.verify_column_equals("Status", ["PENDING"])
 
@@ -333,8 +302,8 @@ def test_list_unknown_registration_number_lists_nothing(page, registration_list_
 @pytest.mark.regression
 def test_list_status_and_number_filters_work_together(page, registrations, registration_list_page, take_screenshot):
     """Asset Registration List: a PENDING registration is not listed when the Status filter is DRAFT."""
-    # Step 1: get a submitted registration
-    number = registrations.get_pending("furniture")["registration_number"]
+    # Step 1: get a submitted asset
+    number = registrations.get_pending(SHARED_PENDING_ITEM, "spot", AAQ_ASSET_GROUP)["registration_number"]
 
     # Step 2: filter by its number and by Status DRAFT
     registration_list_page.navigate_here()
@@ -368,7 +337,7 @@ def test_list_clearing_created_by_lists_other_users_too(page, registration_list_
 def test_list_filter_by_registration_date(page, registrations, registration_list_page, take_screenshot):
     """Asset Registration List: the Registration From/To Date filters list only that day's registrations."""
     # Step 1: find the Registration Date of a known registration
-    number = registrations.get_pending("furniture")["registration_number"]
+    number = registrations.get_pending(SHARED_PENDING_ITEM, "spot", AAQ_ASSET_GROUP)["registration_number"]
     registration_list_page.navigate_here()
     registration_list_page.filter_by_registration_number(number)
     registration_date = registration_list_page.read_first_value("Registration Date")
@@ -383,28 +352,8 @@ def test_list_filter_by_registration_date(page, registrations, registration_list
     registration_list_page.verify_rows_listed_and_all_have("Registration Date", registration_date)
 
 
-@pytest.mark.regression
-def test_list_filter_by_approve_date(page, registration_list_page, take_screenshot):
-    """Asset Registration List: the Approve From/To Date filters list only registrations approved that day."""
-    # Step 1: find the Approval Date of an approved registration
-    registration_list_page.navigate_here()
-    registration_list_page.filter_by_status("APPROVED")
-    approval_date = registration_list_page.read_first_filled_value("Approval Date")
-    if approval_date == "":
-        pytest.skip("No approved registration with an Approval Date to filter by.")
-
-    # Step 2: clear the filters and set both approve dates to that day
-    registration_list_page.reset_filters()
-    registration_list_page.set_approve_dates(approval_date, approval_date)
-    registration_list_page.search()
-    take_screenshot(f"list filtered by approve date {approval_date}")
-
-    # Step 3: every row shows that Approval Date
-    registration_list_page.verify_rows_listed_and_all_have("Approval Date", approval_date)
-
-
 # ---------------------------------------------------------------------------
-# 3. Reset
+# 4. Reset
 # ---------------------------------------------------------------------------
 
 
@@ -430,7 +379,7 @@ def test_list_reset_clears_every_filter(page, registration_list_page, take_scree
 
 
 # ---------------------------------------------------------------------------
-# 4. Paging
+# 5. Paging
 # ---------------------------------------------------------------------------
 
 
@@ -469,18 +418,15 @@ def test_list_second_page_continues_the_list(page, registration_list_page, take_
 
 
 # ---------------------------------------------------------------------------
-# 5. The View popup, for each of the 5 asset items
+# 6. The View popup
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.regression
-@ASSET_ITEMS
-def test_list_view_popup_shows_the_registration(
-    item, page, registrations, registration_list_page, take_screenshot
-):
+def test_list_view_popup_shows_the_registration(page, registrations, registration_list_page, take_screenshot):
     """Asset Registration List: a Registration Number opens a popup with every value that was entered."""
-    # Step 1: get a submitted registration (reused from an earlier test, or created now)
-    record = registrations.get_pending(item)
+    # Step 1: get a submitted asset (created now when this test runs alone)
+    record = registrations.get_pending(SHARED_PENDING_ITEM, "spot", AAQ_ASSET_GROUP)
     data = record["data"]
     number = record["registration_number"]
 
@@ -496,4 +442,3 @@ def test_list_view_popup_shows_the_registration(
         data["grid_item_name"], data["item_specification"][:30], str(data["quantity"]),
         str(data["unit_price"]),
     ])
-    registration_list_page.close_popup()

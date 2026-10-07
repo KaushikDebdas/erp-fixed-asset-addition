@@ -19,7 +19,6 @@ from playwright.sync_api import expect
 from pages.asset_shipment_page import (
     NO_DATA_TEXT,
     POPUP_TIMEOUT,
-    check_toast_lines,
     read_field_value,
     read_headings,
     row_to_dict,
@@ -530,6 +529,6 @@ class ShipmentChallanPage(BasePage):
     def verify_toast(self, found_text: str, expected_lines: list) -> None:
         """
         Confirm a toast text (returned by a *_and_get_toast method) has exactly
-        `expected_lines`, e.g. ['Challan drafted successfully'].
+        `expected_lines`, e.g. CHALLAN_DRAFTED_TOAST (test_data/toast_messages.py).
         """
-        check_toast_lines(found_text, expected_lines)
+        self.verify_toast_text(found_text, expected_lines, "the last challan action")

@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Page class | `pages/asset_internal_movement_page.py` → `AssetInternalMovementPage` (form screens share `pages/asset_transaction_form_page.py`, grids share `pages/transaction_grid_page.py`); tests in `tests/test_11_asset_internal_movement.py` and `tests/test_11_asset_internal_movement_new.py` (saved Furniture asset, state set by `utils/transaction_helper.py`) |
+| Page class | `pages/asset_internal_movement_page.py` → `AssetInternalMovementPage` (form screens share `pages/asset_transaction_form_page.py`, grids share `pages/transaction_grid_page.py`); tests in `tests/test_11_asset_internal_movement.py` and `tests/test_11_asset_internal_movement.py` (saved Furniture asset, state set by `utils/transaction_helper.py`) |
 | Module / menu path | Fixed Asset >> Asset Transaction >> Asset Internal Movement |
 | Entry URL | `https://erpstaging.brac.net/nodef/fixedasset#!faAssetTransaction/showInternalTransfer` (reach via menu click, see Notes) |
 | Role needed | ERP External User (tested with `abushoaib.asik`, branch Head Office [ BDHO ]) |

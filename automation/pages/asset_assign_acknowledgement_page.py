@@ -15,6 +15,10 @@ A row is always found by the serial inside its Details popup, and only that
 row is acknowledged. The select-all checkbox is never used, because the
 pending list can also hold assignments made by other people.
 """
+import re
+
+from playwright.sync_api import expect
+
 from pages.base_page import BasePage
 from utils.logger import action_logger, assertion_logger
 
@@ -29,6 +33,8 @@ class AssetAssignAcknowledgementPage(BasePage):
         super().__init__(page)
         # "Pending Asset Acknowledgement" grid
         self.pending_table = page.locator("#assetAcknowledgementList")
+        # The line under it, "Showing 1 to 10 of 23 entries": the grid shows 10 rows a page, this line has the total
+        self.pending_info = page.locator("#assetAcknowledgementList_info")
         # Acknowledge button for the ticked rows (the popup has its own button with the same id)
         self.page_acknowledge_button = page.locator("#btnAcknowledgement").first
         # "My Assigned Asset" grid (the id is spelled this way on the page)
@@ -43,7 +49,7 @@ class AssetAssignAcknowledgementPage(BasePage):
         """Open the Asset Assign Acknowledgement screen via the Asset Transaction menu."""
         self.open_asset_transaction_submenu("Asset Assign Acknowledgement")
         self.wait_until_visible(self.pending_table, "Pending Asset Acknowledgement grid")
-        self.wait_for_grid_refresh()
+        self.pending_table.locator("tbody tr").first.wait_for(state="visible")
 
     # ---- the two grids ----------------------------------------------------------
 
@@ -58,9 +64,27 @@ class AssetAssignAcknowledgementPage(BasePage):
         return [h.strip() for h in headers if h.strip()]
 
     def get_pending_count(self) -> int:
-        """Return how many assignments are waiting for acknowledgement."""
-        rows = self.pending_table.locator("tbody tr").filter(has_not_text="No data available")
-        return rows.count()
+        """
+        Return how many assignments are waiting for acknowledgement, all pages
+        together: the total on the line under the grid ("Showing 1 to 10 of 23
+        entries"). The rows on the screen are at most one page (10), so counting
+        them would give 10 whenever more than 10 are waiting.
+        """
+        expect(self.pending_info).not_to_have_text("")
+        match = re.search(r"of ([\d,]+) entries", self.pending_info.inner_text())
+        assert match, f"Expected the pending grid to say 'of N entries' but it says '{self.pending_info.inner_text()}'."
+        return int(match.group(1).replace(",", ""))
+
+    def wait_for_pending_count(self, expected: int) -> None:
+        """
+        Wait until the line under the pending grid shows `expected` entries, for
+        up to 10 seconds. It does not fail: a count that never arrives is
+        reported by the caller, with the number that was found.
+        """
+        try:
+            expect(self.pending_info).to_contain_text(f"of {expected} entries", timeout=10000)
+        except AssertionError:
+            action_logger.info(f"The pending grid did not show {expected} entries within 10 seconds")
 
     def get_pending_assigned_employees(self) -> list:
         """Return the Assigned Employee text (`[PIN] NAME`, the 6th cell after the checkbox) of every pending row."""
@@ -193,6 +217,7 @@ class AssetAssignAcknowledgementPage(BasePage):
         asset is in My Assigned Asset, assigned to the employee `pin`.
         """
         assertion_logger.info(f"Verifying {serial} was acknowledged")
+        self.wait_for_pending_count(pending_before - 1)
         pending_after = self.get_pending_count()
         assert pending_after == pending_before - 1, (
             f"Expected {pending_before - 1} pending acknowledgements after acknowledging but found {pending_after}."
@@ -208,5 +233,5 @@ class AssetAssignAcknowledgementPage(BasePage):
         self.click(self.popup_acknowledge_button, "Acknowledge button in popup")
         toast_text = self.get_toast_text()
         self.popup.wait_for(state="hidden")
-        self.wait_for_grid_refresh()
+        self.wait_for_table_to_reload(self.pending_table)
         return toast_text

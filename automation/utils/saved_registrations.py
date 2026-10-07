@@ -7,10 +7,11 @@ How it works:
     SavedRegistrations behaves like the plain dictionary the registration
     helper (utils/registration_helper.py) has always used. The difference:
     - when it is created it loads test_data/saved_assets.json, and
-    - every time a record of the group AAQ_ASSET_GROUP or AAQ_PENDING_GROUP is added, changed or
-      removed, the file is written again.
+    - every time a record of the group AAQ_ASSET_GROUP, AAQ_PENDING_GROUP or
+      TRANSFER_ASSET_GROUP is added, changed or removed, the file is written again.
     Records of any other owner stay in memory only, because other tests use
-    those assets up (assign, transfer, ...) and need a fresh one every run.
+    those assets up and need a fresh one every run. The transfer asset is saved
+    too, and removed again once its serial is added to a challan (it is used up).
 
     A record loaded from the file may be out of date (someone approved or
     changed it since). The helper therefore checks its real status in the
@@ -23,12 +24,13 @@ import json
 from pathlib import Path
 
 from test_data.asset_registration_data import AAQ_ASSET_GROUP, AAQ_PENDING_GROUP
+from test_data.asset_shipment_data import TRANSFER_ASSET_GROUP
 
 # Where the saved records are kept
 SAVED_FILE = Path(__file__).resolve().parent.parent / "test_data" / "saved_assets.json"
 
 # Only records of these owners are saved in the file
-SAVED_OWNERS = [AAQ_ASSET_GROUP, AAQ_PENDING_GROUP]
+SAVED_OWNERS = [AAQ_ASSET_GROUP, AAQ_PENDING_GROUP, TRANSFER_ASSET_GROUP]
 
 
 class SavedRegistrations(dict):

@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Page class | `pages/transaction_approval_list_page.py` → `TransactionApprovalListPage` (form screens share `pages/asset_transaction_form_page.py`, grids share `pages/transaction_grid_page.py`); tests in `tests/test_14_transaction_approval_list.py` and `tests/test_14_transaction_approval_list_new.py` (adds per-asset checks of the saved Furniture asset's transactions) |
+| Page class | `pages/transaction_approval_list_page.py` → `TransactionApprovalListPage` (form screens share `pages/asset_transaction_form_page.py`, grids share `pages/transaction_grid_page.py`); tests in `tests/test_14_transaction_approval_list.py` and `tests/test_14_transaction_approval_list.py` (adds per-asset checks of the saved Furniture asset's transactions) |
 | Module / menu path | Fixed Asset >> Asset Transaction >> Transaction Approval List |
 | Entry URL | `https://erpstaging.brac.net/nodef/fixedasset#!faAssetTransaction/showList` (reach via menu click, see Notes) |
 | Role needed | ERP External User (tested with `abushoaib.asik`, branch Head Office [ BDHO ]) |

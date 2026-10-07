@@ -228,6 +228,4 @@ class ShipmentChallanApprovalPage(BasePage):
 
     def verify_toast(self, found_text: str, expected_text: str) -> None:
         """Confirm a toast text (e.g. from approve_and_get_toast) contains the expected message."""
-        assertion_logger.info(f"Verifying the toast says: {expected_text}")
-        if expected_text not in found_text:
-            raise AssertionError(f"Expected the toast '{expected_text}' but found '{found_text}'.")
+        self.verify_toast_contains(found_text, expected_text, "Approve of the challan")

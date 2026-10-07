@@ -18,6 +18,22 @@
    Claude Code asks, then check with `/mcp` (or `claude mcp list`) —
    `playwright` must show as connected.
 
+## Which Python runs the tests
+Use this project's own `.venv` (it has `pypdf`, which the voucher checks need). Other projects on
+this PC have a `.venv` too and the prompt shows `(.venv)` for all of them, so check first:
+```
+cd D:\fixedasset-automation
+where pytest          (the first line must be D:\fixedasset-automation\.venv\Scripts\pytest.exe)
+```
+Safest command, from `D:\fixedasset-automation`, with no activation needed:
+```
+.venv\Scripts\python.exe -m pytest automation/tests/test_05_generate_barcode.py
+```
+If the run stops at once with "pypdf is not installed in this Python (...)", the terminal is using
+another project's Python: run `deactivate`, then `.venv\Scripts\activate` in this folder.
+
+Small screen: add `--screen-size 1280x720` to run in a window of that size.
+
 ## Running tests
 
 | Command | What it does |
@@ -41,10 +57,10 @@ file has a play button. After pulling the project: press Ctrl+Shift+P, run
 the play button runs with the browser visible and the same logs.
 
 ## The 10 AAQ assets are saved between runs
-The `*_new` Asset Registration tests share 10 assets (see
+The Asset Registration tests share 10 assets (see
 `test_data/asset_registration_data.py`). Their registration numbers are saved in
 `automation/test_data/saved_assets.json` (not committed to git), so you can run
-`test_01_..._new`, `test_02_..._new` and `test_03_..._new` in separate commands
+`test_01_...`, `test_02_...` and `test_03_...` in separate commands
 without creating the assets again. A saved asset is checked once per run: its
 Registration Number is searched in the list and its real Status must be the one
 saved. If it is not (for example someone approved it), a new asset is created.

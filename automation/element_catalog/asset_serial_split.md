@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Page class | `pages/asset_serial_split_page.py` → `AssetSerialSplitPage`; tests in `tests/test_07_asset_serial_split.py` (old) and `tests/test_07_asset_serial_split_new.py` (new; helper `utils/split_helper.py`) |
+| Page class | `pages/asset_serial_split_page.py` → `AssetSerialSplitPage`; tests in `tests/test_07_asset_serial_split.py` (old) and `tests/test_07_asset_serial_split.py` (new; helper `utils/split_helper.py`) |
 | Module / menu path | Fixed Asset >> Asset Profile >> Asset Serial Split |
 | Entry URL | `https://erpstaging.brac.net/nodef/fixedasset#!faAssetProfile/showAssetSerialForSplitList` (reach via menu click, see Notes) |
 | Role needed | ERP External User (tested with `abushoaib.asik`, branch Head Office [ BDHO ]) |

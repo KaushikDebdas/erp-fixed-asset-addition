@@ -110,7 +110,7 @@ grid is empty ("No data available in table").
 ## Why the expense is last
 An Asset Expense is not offered for an asset that has a transaction still pending, and a submitted Un Assign locks the asset until it is approved. The expense (rows 25-28) therefore comes after the Un Assign is approved. Only the Inventory source saved as a Draft is in this smoke flow; the Accounts source and the direct-Submit path are covered by the regression tests in `tests/test_16_asset_expense.py`.
 
-## The 10 AAQ assets (`tests/test_01_asset_registration_aaq_new.py`)
+## The 10 AAQ assets (`tests/test_01_asset_registration_aaq.py`)
 The new AAQ test file creates 10 assets, 5 with Spot Purchase and 5 with Gift Item, and records them under the group `aaq_ten_assets` (`AAQ_ASSET_GROUP` in the test file) so later tests can reuse them with `registrations.get_pending(item, sub_type, "aaq_ten_assets")` or `get_draft(...)`. The plan per asset is the same for both sub types; change a row in the `TEN_AAQ_ASSETS` table to change it.
 
 | Asset item | Plan | Ends as |
@@ -123,4 +123,4 @@ The new AAQ test file creates 10 assets, 5 with Spot Purchase and 5 with Gift It
 
 There is no Reject row: the Asset Registration Approval List has no Reject control (re-checked 2026-10-05). The mandatory-field checks (Draft and Submit) and the amount rules run once in the same file, not once per asset.
 
-The Drafts planned as `draft_then_submit` are opened from the Registration List and submitted in `tests/test_02_asset_registration_list_new.py`; `test_01_asset_registration_aaq_new.py` creates them.
+The Drafts planned as `draft_then_submit` are opened from the Registration List and submitted in `tests/test_02_asset_registration_list.py`; `test_01_asset_registration_aaq.py` creates them.

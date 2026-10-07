@@ -206,16 +206,40 @@ class BasePage:
         self.click(link, f"{link_name} menu link")
         self.wait_for_page_load()
 
-    def wait_for_grid_refresh(self) -> None:
+    def wait_for_table_to_reload(self, table: Locator) -> None:
         """
-        Wait until a grid has finished reloading after a Search. The page
-        has no spinner to watch, so this waits for the network to go quiet,
-        for at most 10 seconds, and then carries on.
+        Wait until a grid has shown the result of a Search. The line under the
+        grid ("Showing 1 to 10 of N entries") is emptied when Search is clicked
+        and filled again when the rows arrive. A grid without that line is
+        ready when its first row (or the "No data" row) is shown.
         """
+        info = table.locator("xpath=ancestor::div[contains(@class,'dataTables_wrapper')][1]//div[contains(@class,'dataTables_info')]")
+        if info.count() == 0:
+            table.locator("tbody tr").first.wait_for(state="visible")
+            return
+        self.wait_for_grid_to_reload(info)
+
+    def wait_for_loader_to_finish(self) -> None:
+        """
+        Wait until the full-screen loading overlay (`.modalLoader`) that shows
+        for a moment after a Search is gone. It is not shown when nothing is
+        loading, so this returns at once in that case.
+        """
+        action_logger.info("Wait until: the loader has finished")
+        self.page.locator(".modalLoader").first.wait_for(state="hidden")
+
+    def scroll_into_view(self, element: Locator, element_name: str) -> None:
+        """
+        Scroll the page until the element is on screen, so on a small screen
+        the person watching the test sees what the test is looking at. The
+        scrolling is only for the viewer: when it cannot be done (for example
+        the grid reloads at that moment) the test goes on.
+        """
+        action_logger.info(f"Scroll to: {element_name}")
         try:
-            self.page.wait_for_load_state("networkidle", timeout=10000)
+            element.scroll_into_view_if_needed(timeout=5000)
         except Exception:
-            action_logger.info("Network still busy after 10 seconds, continuing")
+            action_logger.info(f"Could not scroll to {element_name}; the next action scrolls to it itself")
 
     def wait_for_grid_to_reload(self, entries_info: Locator) -> None:
         """
@@ -252,11 +276,13 @@ class BasePage:
         """
         Wait until the grid shows either a row containing `text` or the
         "No data available in table" message, so a check made right after a
-        Search never reads the previous result.
+        Search never reads the previous result. It then scrolls that row into view.
         """
         row = table.locator("tbody tr", has_text=text)
         no_data = table.locator("tbody tr", has_text="No data available in table")
         row.or_(no_data).first.wait_for(state="visible")
+        # Show the result on a small screen, where the grid is below the filters
+        self.scroll_into_view(row.or_(no_data).first, "search result")
 
     def wait_for_toast_to_clear(self, timeout: int = 15000) -> None:
         """
@@ -291,11 +317,26 @@ class BasePage:
             action_logger.info("No toast message was seen on screen")
             return ""
 
-    def verify_toast_text(self, actual: str, expected: str, action: str) -> None:
-        """Confirm the toast read after `action` is exactly `expected`; the failure names both texts."""
+    def verify_toast_text(self, actual: str, expected, action: str) -> None:
+        """
+        Confirm the toast read after `action` is exactly `expected`; the failure
+        names both texts. `expected` is the text of a one-line toast, or a list
+        with one entry per line for a toast with several lines (the screen's
+        lines are compared with it, empty lines ignored).
+        """
         assertion_logger.info(f"Verifying the message after: {action}")
-        assert actual == expected, (
-            f"After {action} the expected message was '{expected}' but the message on screen was '{actual}'."
+        found = actual
+        if isinstance(expected, list):
+            found = [line.strip() for line in actual.split(chr(10)) if line.strip() != ""]
+        assert found == expected, (
+            f"After {action} the expected message was {expected!r} but the message on screen was {found!r}."
+        )
+
+    def verify_toast_contains(self, actual: str, expected_text: str, action: str) -> None:
+        """Confirm the toast read after `action` contains `expected_text`; the failure names both texts."""
+        assertion_logger.info(f"Verifying the message after: {action}")
+        assert expected_text in actual, (
+            f"After {action} the expected message was '{expected_text}' but the message on screen was '{actual}'."
         )
 
     def verify_toast_if_shown(self, actual: str, expected_text: str, action: str) -> None:

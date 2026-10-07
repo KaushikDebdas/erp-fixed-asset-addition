@@ -6,6 +6,12 @@ tests first need an approved asset. `create_approved_asset` registers one on
 the AAQ form, submits it, approves it from the Approval List, and returns
 its Registration Number and Asset Serial Number.
 """
+from test_data.toast_messages import (
+    ASSIGN_SUBMIT_TOAST,
+    MOVEMENT_SUBMIT_TOAST,
+    TRANSACTION_APPROVE_TOAST,
+    UNASSIGN_SUBMIT_TOAST,
+)
 from utils.logger import action_logger
 
 
@@ -51,11 +57,11 @@ def assign_and_approve(assign_page, approval_list_page, serial: str, employee_pi
     assign_page.select_employee(employee_pin)
     assign_page.enter_note(note)
     toast = assign_page.submit_and_get_toast()
-    assert toast == "Asset Assign Submit Successfully", f"Unexpected toast: '{toast}'"
+    assign_page.verify_toast_text(toast, ASSIGN_SUBMIT_TOAST, "Submit on Asset Assign")
 
     approval_list_page.navigate_here()
     toast = approval_list_page.approve_transaction_for_serial("ASSIGN", serial)
-    assert toast == "Approved successfully", f"Unexpected toast: '{toast}'"
+    approval_list_page.verify_toast_text(toast, TRANSACTION_APPROVE_TOAST, "Approve of the ASSIGN transaction")
     action_logger.info(f"Asset {serial} is now assigned to employee {employee_pin}")
 
 
@@ -71,11 +77,11 @@ def unassign_and_approve(unassign_page, approval_list_page, serial: str, handove
     unassign_page.select_employee(handover_search)
     unassign_page.enter_note(note)
     toast = unassign_page.submit_and_get_toast()
-    unassign_page.verify_toast_text(toast, "Asset Un-Assign Submit Successfully", "Submit on Asset Un Assign")
+    unassign_page.verify_toast_text(toast, UNASSIGN_SUBMIT_TOAST, "Submit on Asset Un Assign")
 
     approval_list_page.navigate_here()
     toast = approval_list_page.approve_transaction_for_serial("UNASSIGN", serial)
-    approval_list_page.verify_toast_text(toast, "Approved successfully", "Approve of the UNASSIGN transaction")
+    approval_list_page.verify_toast_text(toast, TRANSACTION_APPROVE_TOAST, "Approve of the UNASSIGN transaction")
     action_logger.info(f"Asset {serial} is now unassigned")
 
 
@@ -95,10 +101,10 @@ def move_and_approve(
     movement_page.enter_note(note)
     toast = movement_page.submit_and_get_toast()
     movement_page.verify_toast_text(
-        toast, "Asset Internal-Movement Submit Successfully", "Submit on Asset Internal Movement"
+        toast, MOVEMENT_SUBMIT_TOAST, "Submit on Asset Internal Movement"
     )
 
     approval_list_page.navigate_here()
     toast = approval_list_page.approve_transaction_for_serial("TRANSFER", serial)
-    approval_list_page.verify_toast_text(toast, "Approved successfully", "Approve of the TRANSFER transaction")
+    approval_list_page.verify_toast_text(toast, TRANSACTION_APPROVE_TOAST, "Approve of the TRANSFER transaction")
     action_logger.info(f"Asset {serial} is now moved to {building}")

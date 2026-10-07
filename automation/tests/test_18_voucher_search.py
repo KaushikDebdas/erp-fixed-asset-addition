@@ -5,14 +5,18 @@ Accounting module (Accounting > Voucher > Voucher Search).
 Built from automation/element_catalog/voucher_search.md. The whole file logs in
 once and every test reuses that session. These tests only search; the check of
 an Asset Expense voucher (search by the Expense ID, then the Preview PDF) is in
-the full-flow tests of test_16_asset_expense.py. The check of an Asset
+the full-flow tests of test_16_asset_expense.py. The last test here checks the
+voucher of the APPROVED Accounts expense saved in test_data/saved_assets.json
+(the `expenses` fixture, utils/expense_helper.py). The check of an Asset
 Registration voucher (search by the Registration Number, then the Preview PDF)
-is in test_03_asset_registration_approval_list_new.py.
+is in test_03_asset_registration_approval_list.py.
 """
 import re
 
 import pytest
 
+from test_data.asset_expense_data import ACCOUNTS
+from utils.expense_flow import verify_voucher
 from utils.run_context import trace_one_test
 
 
@@ -33,7 +37,7 @@ def test_voucher_search_columns_and_filter_values(page, voucher_search_page, tak
     take_screenshot("voucher search opened")
 
     # Step 2: the column headings
-    assert voucher_search_page.get_grid_headers() == [
+    expected_headers = [
         "Date",
         "Voucher No.",
         "Transaction No",
@@ -42,18 +46,23 @@ def test_voucher_search_columns_and_filter_values(page, voucher_search_page, tak
         "Status",
         "Preview",
     ]
+    found_headers = voucher_search_page.get_grid_headers()
+    assert found_headers == expected_headers, f"Expected grid columns {expected_headers} but found {found_headers}."
 
     # Step 3: the Voucher Type values
-    assert voucher_search_page.get_voucher_type_options() == [
+    expected_types = [
         "-Select Voucher Type-",
         "Journal Voucher",
         "Credit Voucher",
         "Debit Voucher",
         "Transfer Voucher",
     ]
+    found_types = voucher_search_page.get_voucher_type_options()
+    assert found_types == expected_types, f"Expected Voucher Type values {expected_types} but found {found_types}."
 
     # Step 4: the Module values include Fixed Asset
-    assert "Fixed Asset" in voucher_search_page.get_module_options()
+    module_options = voucher_search_page.get_module_options()
+    assert "Fixed Asset" in module_options, f"Expected the Module filter to include 'Fixed Asset' but found {module_options}."
 
 
 @pytest.mark.regression
@@ -64,7 +73,10 @@ def test_voucher_search_accounting_date_is_shown(page, voucher_search_page, take
     take_screenshot("voucher search opened")
 
     # Step 2: the accounting date is a dd/mm/yyyy date
-    assert re.fullmatch(r"\d{2}/\d{2}/\d{4}", voucher_search_page.get_accounting_date())
+    accounting_date = voucher_search_page.get_accounting_date()
+    assert re.fullmatch(r"\d{2}/\d{2}/\d{4}", accounting_date), (
+        f"Expected the accounting date in dd/mm/yyyy format but found '{accounting_date}'."
+    )
 
 
 @pytest.mark.regression
@@ -78,7 +90,9 @@ def test_voucher_search_unknown_transaction_number_finds_nothing(
     take_screenshot("no voucher for an unknown number")
 
     # Step 2: no voucher is listed
-    assert not voucher_search_page.is_voucher_listed("BBDEXP99999999")
+    assert not voucher_search_page.is_voucher_listed("BBDEXP99999999"), (
+        "Expected no voucher for Transaction No 'BBDEXP99999999' but a voucher was listed."
+    )
 
 
 @pytest.mark.regression
@@ -92,8 +106,11 @@ def test_voucher_search_transaction_number_must_match_exactly(
     take_screenshot("partial number")
 
     # Step 2: nothing is listed
-    assert not voucher_search_page.is_voucher_listed("BBDEXP")
-    assert voucher_search_page.results_table.locator("tbody tr", has_text="No data available in table").count() == 1
+    assert not voucher_search_page.is_voucher_listed("BBDEXP"), (
+        "Expected no voucher for the partial Transaction No 'BBDEXP' but a voucher was listed."
+    )
+    empty_rows = voucher_search_page.results_table.locator("tbody tr", has_text="No data available in table").count()
+    assert empty_rows == 1, f"Expected 1 'No data available in table' row but found {empty_rows}."
 
 
 @pytest.mark.regression
@@ -109,7 +126,7 @@ def test_voucher_search_fixed_asset_module_on_the_accounting_date(
     # Step 2: choose the Fixed Asset module and search
     voucher_search_page.choose_module("Fixed Asset")
     voucher_search_page.click(voucher_search_page.search_button, "Search button")
-    voucher_search_page.wait_for_grid_refresh()
+    voucher_search_page.wait_for_row_or_no_data(voucher_search_page.results_table, "")
     take_screenshot("fixed asset vouchers")
     rows = voucher_search_page.results_table.locator("tbody tr").filter(has_not_text="No data available")
     if rows.count() == 0:
@@ -119,4 +136,17 @@ def test_voucher_search_fixed_asset_module_on_the_accounting_date(
     day, month, year = accounting_date.split("/")
     expected_date = f"{int(day)}/{int(month)}/{year}"
     for i in range(rows.count()):
-        assert rows.nth(i).locator("td:visible").first.inner_text().strip() == expected_date
+        found_date = rows.nth(i).locator("td:visible").first.inner_text().strip()
+        assert found_date == expected_date, f"Expected voucher row {i + 1} to be dated '{expected_date}' but found '{found_date}'."
+
+
+@pytest.mark.regression
+def test_voucher_search_finds_the_voucher_of_the_saved_expense(
+    page, voucher_search_page, expenses, take_screenshot
+):
+    """Voucher Search: the saved approved expense is found by its Expense ID and its voucher PDF is right."""
+    # Step 1: take the saved approved Accounts expense
+    record = expenses.get_approved_expense(ACCOUNTS)
+
+    # Step 2: search by its Expense ID and check the row and the Preview PDF
+    verify_voucher(voucher_search_page, record["expense_id"], record["expected"], take_screenshot)

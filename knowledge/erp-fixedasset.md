@@ -190,6 +190,8 @@
 
 - [CONFIRMED] (2026-10-04) **Asset Expense is automated** in `tests/test_16_asset_expense.py`, `test_17_asset_expense_approval.py` and `test_18_voucher_search.py`: four full flows (Inventory and Accounts, each as Draft then Submit and as a direct Submit) store the generated Expense ID, approve with the same user matching the row by that ID, and check the automatic voucher (search by Expense ID, Preview PDF read with `pypdf`: Other Maintenance Expenses Dr. 5,000.00 against Other Inventory or Supplier Payable-Opex Cr. 5,000.00, totals equal, reference = the Expense ID). An expense left Draft or Pending seems to lock its asset in the Expense form's search, so finish one before starting the next on the same asset.
 
+- [CONFIRMED] (2026-10-07, by the user) **Saved test data for Asset Expense and Shipment:** `tests/test_16..19_*.py` use the saved Furniture asset in `automation/test_data/saved_assets.json` (an expense does not change the asset). The approved Inventory and Accounts expenses are saved there too, and test_17 and test_18 reuse them. Once an asset's serial is added to a Transfer Challan it cannot be chosen again for another challan (the Add Serial list does not offer it), so every shipment needs a new asset: the transfer asset is saved only until its serial is added to a challan.
+
 ## §8 Asset Depreciation
 
 - [CONFIRMED] Depreciation schedule is generated at month-end, after the day is closed and the Fixed Asset module is "initiated" for the period, via **Fixed Asset >> Asset Depreciation >> Asset Depreciation Schedule List** — click **Generate Monthly Depreciation**, review the generated grid (per-asset depreciation amounts and a total), then click **Save Depreciation** to finalize. (MD doc §8; PDF p.99-102)

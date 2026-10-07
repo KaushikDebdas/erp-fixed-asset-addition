@@ -12,9 +12,9 @@ Un Assign, Internal Movement) goes through after its Draft is saved.
     optionally building and floor.
 """
 from test_data.asset_transaction_data import USER_BRANCH
+from test_data.toast_messages import TRANSACTION_APPROVE_TOAST
 from utils.logger import assertion_logger
 
-APPROVE_TOAST = "Approved successfully"
 
 
 def build_expected(
@@ -79,14 +79,24 @@ def submit_draft_from_list(
     list_page.click_edit_of_row(row_index)
     take_screenshot(f"{transaction_type} draft edit form")
     assertion_logger.info(f"Verifying the Edit form of the {transaction_type} Draft")
-    assert form_page.get_employee_pin() == expected["employee_pin"]
-    assert form_page.get_employee_name() == expected["employee_name"]
-    assert form_page.get_value("newRemarks") == expected["note"]
-    assert form_page.get_branch_name() == USER_BRANCH
+    found_pin = form_page.get_employee_pin()
+    assert found_pin == expected["employee_pin"], (
+        f"Expected Employee PIN '{expected['employee_pin']}' on the Edit form but found '{found_pin}'."
+    )
+    found_name = form_page.get_employee_name()
+    assert found_name == expected["employee_name"], (
+        f"Expected Employee Name '{expected['employee_name']}' on the Edit form but found '{found_name}'."
+    )
+    found_note = form_page.get_value("newRemarks")
+    assert found_note == expected["note"], (
+        f"Expected Remarks '{expected['note']}' on the Edit form but found '{found_note}'."
+    )
+    found_branch = form_page.get_branch_name()
+    assert found_branch == USER_BRANCH, f"Expected Branch Name '{USER_BRANCH}' on the Edit form but found '{found_branch}'."
 
     toast = form_page.submit_and_get_toast()
     take_screenshot(f"{transaction_type} submitted")
-    assert toast == submit_toast, f"Expected Submit toast '{submit_toast}' but found '{toast}'."
+    form_page.verify_toast_text(toast, submit_toast, f"Submit of the {transaction_type} Draft")
 
 
 def approve_and_verify(approval_page, transaction_type: str, serial: str, expected: dict, take_screenshot) -> None:
@@ -103,11 +113,13 @@ def approve_and_verify(approval_page, transaction_type: str, serial: str, expect
     approval_page.enter_comment("AUTOMATION_TEST approve comment")
     toast = approval_page.approve_and_get_toast()
     take_screenshot(f"{transaction_type} approved")
-    assert toast == APPROVE_TOAST, f"Expected Approve toast '{APPROVE_TOAST}' but found '{toast}'."
+    approval_page.verify_toast_text(toast, TRANSACTION_APPROVE_TOAST, f"Approve of the {transaction_type} transaction")
 
     # The transaction is now APPROVED, with an approver and an approval date
     approval_page.open_details_of_row_with_serial(serial, transaction_type, "APPROVED")
     check_popup_matches(approval_page, transaction_type, "APPROVED", expected)
-    assert approval_page.get_popup_value("approvedBy"), "Approved By should be filled after approval."
-    assert approval_page.get_popup_value("approvalDate"), "Approval Date should be filled after approval."
+    approved_by = approval_page.get_popup_value("approvedBy")
+    assert approved_by, f"Expected Approved By to be filled after approval but found '{approved_by}'."
+    approval_date = approval_page.get_popup_value("approvalDate")
+    assert approval_date, f"Expected Approval Date to be filled after approval but found '{approval_date}'."
     approval_page.close_popup()

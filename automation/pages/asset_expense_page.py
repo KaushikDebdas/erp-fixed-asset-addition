@@ -66,7 +66,7 @@ class AssetExpensePage(BasePage):
             action_logger.info(f"Filter: Status -> {status}")
             self.status_filter.select_option(status)
         self.click(self.search_button, "Search button")
-        self.wait_for_grid_refresh()
+        self.wait_for_table_to_reload(self.results_table)
 
     def get_status_options(self) -> list:
         """Return every value of the Status filter, placeholder first."""

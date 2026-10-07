@@ -33,4 +33,4 @@
 - Evidence: `evidence/asset_in_pending_process_list.png`.
 - **First load race (2026-10-06):** the list fills its first rows a moment after the page appears. A search or an Export started before that is overwritten by the first load: the grid then shows the unfiltered list while the serial typed in the box is not applied. Wait for the first row before searching or exporting (`AssetInPendingProcessListPage.navigate_here` does).
 - **Empty result:** a serial with no pending process can show the "No data available in table" row several seconds after Search.
-- **Export (2026-10-06):** on one run Export started no download within 30 seconds. `test_pending_list_export_downloads_excel` in `test_06_asset_in_pending_process_list_new.py` fails with that message; not yet explained.
+- **Export (2026-10-06):** on one run Export started no download within 30 seconds. `test_pending_list_export_downloads_excel` in `test_06_asset_in_pending_process_list.py` fails with that message; not yet explained.

@@ -40,13 +40,11 @@ class AssetInPendingProcessListPage(BasePage):
         # The list loads its first rows after the page appears; a search or export
         # started before that is overwritten by the first load
         self.results_table.locator("tbody tr").first.wait_for(state="visible")
-        self.wait_for_grid_refresh()
 
     def search_by_serial(self, serial: str) -> None:
         """Filter by Asset Serial and wait for the result (or the empty message)."""
         self.type_text(self.asset_serial_filter, serial, "Asset Serial filter")
         self.click(self.search_button, "Search button")
-        self.wait_for_grid_refresh()
         self.wait_for_row_or_no_data(self.results_table, serial)
 
     def filter_by_status(self, status: str) -> None:
@@ -54,7 +52,7 @@ class AssetInPendingProcessListPage(BasePage):
         action_logger.info(f"Filter: Status -> {status}")
         self.status_filter.select_option(status)
         self.click(self.search_button, "Search button")
-        self.wait_for_grid_refresh()
+        self.wait_for_table_to_reload(self.results_table)
 
     def get_grid_headers(self) -> list:
         """Return the visible column headings of the results grid."""
@@ -101,7 +99,6 @@ class AssetInPendingProcessListPage(BasePage):
         """
         self.type_text(self.asset_serial_filter, serial, "Asset Serial filter")
         self.click(self.search_button, "Search button")
-        self.wait_for_grid_refresh()
         self.page.wait_for_function(
             "([tableId, serial]) => {"
             " const body = document.querySelector(tableId + ' tbody');"
