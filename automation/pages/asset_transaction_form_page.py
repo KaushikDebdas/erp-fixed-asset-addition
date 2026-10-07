@@ -14,7 +14,7 @@ icon, then click the suggestion. Only the click on the suggestion fills in
 the screen.
 """
 from pages.base_page import OPEN_LIST_ATTEMPTS, BasePage
-from utils.logger import action_logger
+from utils.logger import action_logger, assertion_logger
 
 
 class AssetTransactionFormPage(BasePage):
@@ -187,3 +187,105 @@ class AssetTransactionFormPage(BasePage):
     def is_required_message_visible(self) -> bool:
         """Return True if the inline 'This field is required' message is on screen."""
         return self.page.get_by_text("This field is required").first.is_visible()
+
+    # ---- filling the whole form ----------------------------------------------
+
+    def fill_form(self, serial: str, employee_search: str, note: str, building: str = "") -> str:
+        """
+        Fill the form the way a user does: select the asset, add it to the
+        grid, select the employee, choose the building (only when `building`
+        is given, for Internal Movement) and type the note. Returns the
+        transaction date shown on the form as dd/mm/yyyy, which the Details
+        popup shows in the same format.
+        """
+        self.select_asset_by_serial(serial)
+        self.add_to_grid()
+        self.select_employee(employee_search)
+        if building != "":
+            self.select_building_and_first_floor(building)
+        self.enter_note(note)
+        return self.get_transaction_date().replace("-", "/")
+
+    def get_floor(self) -> str:
+        """Return the floor chosen on the form (Internal Movement)."""
+        return self.get_selected_text("floor")
+
+    def draft_and_verify_toast(self, expected_toast: str) -> None:
+        """Click Draft and confirm the message shown is exactly `expected_toast`."""
+        toast = self.draft_and_get_toast()
+        self.verify_toast_text(toast, expected_toast, "Draft on the transaction form")
+
+    # ---- checks ---------------------------------------------------------------
+
+    def verify_form_shows(self, serial: str, expected: dict) -> None:
+        """
+        Confirm the form shows the selected asset: the Asset Serial box starts
+        with `serial`, and every field in `expected` ({field id: text}) holds
+        that text. Names every difference.
+        """
+        assertion_logger.info(f"Verifying the form shows asset {serial}")
+        problems = []
+        box_text = self.get_value("assetSerialId")
+        if not box_text.startswith(serial):
+            problems.append(f"assetSerialId: expected a text starting with '{serial}' but found '{box_text}'")
+        for field_id, wanted in expected.items():
+            found = self.get_value(field_id)
+            if found != wanted:
+                problems.append(f"{field_id}: expected '{wanted}' but found '{found}'")
+        assert not problems, f"The form does not show asset {serial} as expected: {problems}"
+
+    def verify_fields_read_only(self, field_ids: list) -> None:
+        """Confirm none of the fields can be typed in. Names every field that can."""
+        assertion_logger.info("Verifying the auto-filled fields are read-only")
+        editable = []
+        for field_id in field_ids:
+            if self.page.locator(f"#{field_id}").first.is_editable():
+                editable.append(field_id)
+        assert not editable, f"Expected these fields to be read-only but they can be edited: {editable}"
+
+    def verify_asset_in_list(self, serial: str, assign_status: str = "") -> None:
+        """
+        Confirm the Asset List holds `serial`. When `assign_status` is given,
+        the row must also show that Assign Status.
+        """
+        assertion_logger.info(f"Verifying the Asset List holds {serial}")
+        serials = self.get_asset_list_serials()
+        assert serial in serials, f"Expected {serial} in the Asset List but it holds {serials}."
+        if assign_status != "":
+            row_text = self.get_asset_list_row_text(serial)
+            assert assign_status in row_text, (
+                f"Expected the Asset List row of {serial} to show {assign_status} but it shows '{row_text}'."
+            )
+
+    def verify_asset_details_cleared(self) -> None:
+        """Confirm the top section is empty again (it clears after Add to Grid)."""
+        found = self.get_value("assetName")
+        assert found == "", f"Expected the asset details to be cleared after Add to Grid but Asset Item Name is '{found}'."
+
+    def verify_employee_selected(self, pin: str, name: str) -> None:
+        """Confirm the employee's PIN and name filled in after selecting the employee."""
+        assertion_logger.info(f"Verifying employee {pin} is selected")
+        found = (self.get_employee_pin(), self.get_employee_name())
+        assert found == (pin, name), f"Expected employee PIN and name {(pin, name)} but found {found}."
+
+    def verify_branch(self, branch: str) -> None:
+        """Confirm Branch Name shows the branch the user is logged in to."""
+        found = self.get_branch_name()
+        assert found == branch, f"Expected Branch Name '{branch}' but found '{found}'."
+
+    def verify_required_message_shown(self) -> None:
+        """Confirm the 'This field is required' message is on screen."""
+        assertion_logger.info("Verifying the 'This field is required' message")
+        assert self.is_required_message_visible(), (
+            "Expected the 'This field is required' message after Draft without an employee but it was not shown."
+        )
+
+    def verify_search_by_options(self) -> None:
+        """Confirm Search By offers Serial (selected) and Employee Pin (not selected)."""
+        assertion_logger.info("Verifying the Search By choices")
+        assert self.search_by_serial_radio.is_visible(), "Expected the Search By Serial choice to be shown."
+        assert self.search_by_employee_pin_radio.is_visible(), "Expected the Search By Employee Pin choice to be shown."
+        assert self.search_by_serial_radio.is_checked(), "Expected Search By Serial to be selected by default."
+        assert not self.search_by_employee_pin_radio.is_checked(), (
+            "Expected Search By Employee Pin not to be selected by default."
+        )

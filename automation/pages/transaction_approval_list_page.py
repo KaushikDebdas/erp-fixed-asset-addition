@@ -8,7 +8,7 @@ are only checked for presence here). See
 `automation/element_catalog/transaction_approval_list.md`.
 """
 from pages.transaction_grid_page import TransactionGridPage
-from utils.logger import action_logger
+from utils.logger import action_logger, assertion_logger
 
 
 class TransactionApprovalListPage(TransactionGridPage):
@@ -38,6 +38,12 @@ class TransactionApprovalListPage(TransactionGridPage):
             and self.reject_button.is_visible()
             and self.sendback_button.is_visible()
         )
+
+    def verify_no_decision_buttons(self) -> None:
+        """Confirm the open popup offers no decision: no Comment box and no Approve button."""
+        assertion_logger.info("Verifying the popup offers no decision")
+        assert not self.comment_field.is_visible(), "Expected no Comment box on a decided transaction but it is shown."
+        assert not self.approve_button.is_visible(), "Expected no Approve button on a decided transaction but it is shown."
 
     def approve_and_get_toast(self) -> str:
         """Click Approve in the open popup, return the message shown and wait for the popup to close."""

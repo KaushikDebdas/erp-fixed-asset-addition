@@ -29,3 +29,53 @@ SETUP_ASSIGN_NOTE = "AUTOMATION_TEST setup assignment"
 
 # Message shown when the assigned employee acknowledges an assignment
 ACKNOWLEDGE_TOAST = "Acknowledged successfully"
+
+# Notes typed on the transactions the helper (utils/transaction_helper.py) makes
+# to bring the saved asset into the state a test needs
+SETUP_UNASSIGN_NOTE = "AUTOMATION_TEST setup unassignment"
+SETUP_MOVE_NOTE = "AUTOMATION_TEST setup movement"
+
+# Every note typed by these tests starts with this text
+NOTE_PREFIX = "AUTOMATION_TEST"
+
+# The two values of an asset's Assign Status
+ASSIGNED = "ASSIGNED"
+UNASSIGNED = "UNASSIGNED"
+
+# What the three transaction forms show for the saved Furniture asset
+# (field id on the form -> text)
+FURNITURE_FORM_DETAILS = {
+    "assetName": "Cabinet Table",
+    "subCategoryName": "Wooden Furniture",
+    "categoryName": "Furniture",
+    "groupName": "Furniture and Fixture",
+    "projectName": "Microfinance (Dabi)",
+}
+
+# The auto-filled fields of the forms; none of them can be typed in
+FORM_READ_ONLY_FIELDS = [
+    "assetName",
+    "subCategoryName",
+    "categoryName",
+    "groupName",
+    "projectName",
+    "previousAssignStatus",
+]
+
+
+def build_form_expectation(profile: dict) -> dict:
+    """
+    Return what a transaction form must show for an asset, taken from the
+    asset's Asset Serial Global List row (see AssetSerialGlobalListPage.get_row_values).
+
+    Example:
+        expected = build_form_expectation(profile)
+        # {"assetName": "Cabinet Table", ..., "previousAssignStatus": "UNASSIGNED"}
+    """
+    return {
+        "assetName": profile["item_name"],
+        "subCategoryName": profile["sub_category"],
+        "categoryName": profile["category"],
+        "groupName": profile["group"],
+        "previousAssignStatus": profile["assign_status"],
+    }

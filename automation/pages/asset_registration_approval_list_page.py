@@ -309,6 +309,16 @@ class AssetRegistrationApprovalListPage(BasePage):
         """Return the visible text of the Asset Serials tab (the grid, or its empty message)."""
         return self.get_text(self.asset_serials_pane, "Asset Serials tab content")
 
+    def get_all_generated_asset_serials(self) -> list:
+        """Return every Asset Serial listed on the open Asset Serials tab (one per row)."""
+        rows = self.asset_serials_pane.locator("table tbody tr")
+        rows.first.wait_for(state="visible")
+        serials = []
+        for index in range(rows.count()):
+            cell = rows.nth(index).locator("td").nth(ASSET_SERIAL_COLUMN_INDEX)
+            serials.append(cell.inner_text().strip())
+        return serials
+
     def get_generated_asset_serial(self) -> str:
         """
         Return the Asset Serial value from the first row of the Asset

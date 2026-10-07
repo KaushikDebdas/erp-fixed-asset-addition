@@ -129,6 +129,50 @@ class AssetSerialGlobalListPage(BasePage):
                 problems.append(f"{name}: expected '{expected[name]}' but found '{value}'")
         assert not problems, f"The row of {serial} is not as expected: {problems}"
 
+    def verify_statuses(self, serial: str, assign_status: str, utilization_status: str) -> None:
+        """Confirm the row of this serial shows the given Assign Status and Utilization Status."""
+        assertion_logger.info(f"Verifying the statuses of {serial}")
+        assert self.is_serial_listed(serial), f"Expected {serial} to be listed on the Global List but it was not."
+        found_assign = self.get_assign_status(serial)
+        found_utilization = self.get_utilization_status(serial)
+        assert (found_assign, found_utilization) == (assign_status, utilization_status), (
+            f"Expected {serial} to be {assign_status} / {utilization_status} "
+            f"but found {found_assign} / {found_utilization}."
+        )
+
+    def open_and_read_assign_status(self, serial: str) -> str:
+        """
+        Open the Global List, search the serial and return the asset's real
+        Assign Status (ASSIGNED or UNASSIGNED). Fails with a clear message when
+        the serial is not listed.
+        """
+        self.navigate_here()
+        self.search_by_serial(serial)
+        assert self.is_serial_listed(serial), f"Expected {serial} to be listed on the Global List but it was not."
+        return self.get_assign_status(serial)
+
+    def verify_assign_status(self, serial: str, expected: str) -> None:
+        """Confirm the row of this serial (after searching it) shows this Assign Status."""
+        assertion_logger.info(f"Verifying the Assign Status of {serial}")
+        assert self.is_serial_listed(serial), f"Expected {serial} to be listed on the Global List but it was not."
+        found = self.get_assign_status(serial)
+        assert found == expected, f"Expected the Assign Status of {serial} to be {expected} but found {found}."
+
+    def verify_popup_fields(self, expected: dict) -> None:
+        """Confirm the open popup shows every field in `expected` ({field id: text}). Names every difference."""
+        assertion_logger.info("Verifying the popup fields")
+        problems = []
+        for field_id, wanted in expected.items():
+            found = self.get_popup_value(field_id)
+            if found != wanted:
+                problems.append(f"{field_id}: expected '{wanted}' but found '{found}'")
+        assert not problems, f"The popup is not as expected: {problems}"
+
+    def verify_serial_not_listed(self, serial: str) -> None:
+        """Confirm no result row shows this Asset Serial (call after searching it)."""
+        assertion_logger.info(f"Verifying {serial} is not listed")
+        assert not self.is_serial_listed(serial), f"Expected {serial} not to be listed on the Global List but it was."
+
     def verify_popup_shows(self, expected: dict) -> None:
         """Confirm the open popup shows the values in `expected` (see build_asset_profile). Names every difference."""
         fields = {

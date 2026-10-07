@@ -336,6 +336,25 @@ def asset_split_approval_list_page(page):
     return AssetSerialSplitApprovalListPage(page)
 
 
+@pytest.fixture
+def splits(
+    registrations, asset_serial_split_page, asset_split_list_page,
+    asset_split_approval_list_page, shared_registrations,
+):
+    """
+    Gives a test the saved Land asset's split in a chosen state:
+        splits.get_pending_split()
+    It returns the split an earlier test made, or performs / approves it now
+    when the test runs on its own. See utils/split_helper.py.
+    """
+    from utils.split_helper import SplitHelper
+
+    return SplitHelper(
+        registrations, asset_serial_split_page, asset_split_list_page,
+        asset_split_approval_list_page, shared_registrations,
+    )
+
+
 @pytest.fixture(scope="session")
 def profile_assets(browser):
     """
@@ -462,6 +481,25 @@ def internal_movement_page(page):
     """Asset Internal Movement page object, ready to use."""
     from pages.asset_internal_movement_page import AssetInternalMovementPage
     return AssetInternalMovementPage(page)
+
+
+@pytest.fixture
+def transactions(
+    registrations, assign_page, unassign_page, internal_movement_page,
+    transaction_approval_page, asset_serial_global_list_page,
+):
+    """
+    Gives a test the saved Furniture asset in the state it needs:
+        serial = transactions.ensure_assigned()
+    It reads the asset's real Assign Status and does only the missing steps.
+    See utils/transaction_helper.py.
+    """
+    from utils.transaction_helper import TransactionHelper
+
+    return TransactionHelper(
+        registrations, assign_page, unassign_page, internal_movement_page,
+        transaction_approval_page, asset_serial_global_list_page,
+    )
 
 
 @pytest.fixture

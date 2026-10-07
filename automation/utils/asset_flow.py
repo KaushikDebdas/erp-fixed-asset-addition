@@ -57,3 +57,48 @@ def assign_and_approve(assign_page, approval_list_page, serial: str, employee_pi
     toast = approval_list_page.approve_transaction_for_serial("ASSIGN", serial)
     assert toast == "Approved successfully", f"Unexpected toast: '{toast}'"
     action_logger.info(f"Asset {serial} is now assigned to employee {employee_pin}")
+
+
+def unassign_and_approve(unassign_page, approval_list_page, serial: str, handover_search: str, note: str) -> None:
+    """
+    Take an assigned asset back, handing it over to the employee found by
+    `handover_search`, and approve it, so the asset ends up UNASSIGNED. Used to
+    prepare test data: it submits straight from the Asset Un Assign form.
+    """
+    unassign_page.navigate_here()
+    unassign_page.select_asset_by_serial(serial)
+    unassign_page.add_to_grid()
+    unassign_page.select_employee(handover_search)
+    unassign_page.enter_note(note)
+    toast = unassign_page.submit_and_get_toast()
+    unassign_page.verify_toast_text(toast, "Asset Un-Assign Submit Successfully", "Submit on Asset Un Assign")
+
+    approval_list_page.navigate_here()
+    toast = approval_list_page.approve_transaction_for_serial("UNASSIGN", serial)
+    approval_list_page.verify_toast_text(toast, "Approved successfully", "Approve of the UNASSIGN transaction")
+    action_logger.info(f"Asset {serial} is now unassigned")
+
+
+def move_and_approve(
+    movement_page, approval_list_page, serial: str, employee_pin: str, building: str, note: str
+) -> None:
+    """
+    Move an assigned asset to a building (and its first floor) and approve the
+    movement. Used to prepare test data: it submits straight from the Asset
+    Internal Movement form.
+    """
+    movement_page.navigate_here()
+    movement_page.select_asset_by_serial(serial)
+    movement_page.add_to_grid()
+    movement_page.select_employee(employee_pin)
+    movement_page.select_building_and_first_floor(building)
+    movement_page.enter_note(note)
+    toast = movement_page.submit_and_get_toast()
+    movement_page.verify_toast_text(
+        toast, "Asset Internal-Movement Submit Successfully", "Submit on Asset Internal Movement"
+    )
+
+    approval_list_page.navigate_here()
+    toast = approval_list_page.approve_transaction_for_serial("TRANSFER", serial)
+    approval_list_page.verify_toast_text(toast, "Approved successfully", "Approve of the TRANSFER transaction")
+    action_logger.info(f"Asset {serial} is now moved to {building}")

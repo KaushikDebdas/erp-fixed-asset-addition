@@ -16,7 +16,7 @@ row is acknowledged. The select-all checkbox is never used, because the
 pending list can also hold assignments made by other people.
 """
 from pages.base_page import BasePage
-from utils.logger import action_logger
+from utils.logger import action_logger, assertion_logger
 
 # How many pending rows are looked at when searching for the row that holds a serial
 MAX_ROWS_TO_CHECK = 15
@@ -101,21 +101,106 @@ class AssetAssignAcknowledgementPage(BasePage):
         self.click(self.popup_close_button, "Close button of Details popup")
         self.popup.wait_for(state="hidden")
 
-    def open_details_of_row_with_serial(self, serial: str) -> int:
+    def find_pending_row_with_serial(self, serial: str) -> int:
         """
         Open Details on each pending row until the popup lists `serial`. Leaves
-        that popup open and returns the row's index. This makes sure only the
-        test's own assignment is ever acknowledged.
+        that popup open and returns the row's index. Returns -1 (no popup left
+        open) when none of the first rows lists the serial.
         """
-        row_count = min(self.pending_table.locator("tbody tr").count(), MAX_ROWS_TO_CHECK)
+        rows = self.pending_table.locator("tbody tr").filter(has_not_text="No data available")
+        row_count = min(rows.count(), MAX_ROWS_TO_CHECK)
         for row_index in range(row_count):
             self.open_details_of_row(row_index)
             if serial in self.get_popup_asset_serials():
                 return row_index
             self.close_popup()
-        raise AssertionError(
-            f"None of the first {row_count} pending acknowledgements lists asset {serial}."
+        return -1
+
+    def open_details_of_row_with_serial(self, serial: str) -> int:
+        """
+        Open Details on the pending row that lists `serial`, leave that popup
+        open and return the row's index. This makes sure only the test's own
+        assignment is ever acknowledged.
+        """
+        row_index = self.find_pending_row_with_serial(serial)
+        assert row_index >= 0, (
+            f"None of the first {MAX_ROWS_TO_CHECK} pending acknowledgements lists asset {serial}."
         )
+        return row_index
+
+    def has_pending_for_serial(self, serial: str) -> bool:
+        """Return True if an acknowledgement for this asset is waiting (the popup is closed again)."""
+        row_index = self.find_pending_row_with_serial(serial)
+        if row_index < 0:
+            return False
+        self.close_popup()
+        return True
+
+    # ---- checks -------------------------------------------------------------------
+
+    def verify_pending_headers(self, expected: list) -> None:
+        """Confirm the pending grid's column headings are exactly `expected`."""
+        found = self.get_pending_headers()
+        assert found == expected, f"Expected the pending grid columns {expected} but found {found}."
+
+    def verify_my_assets_headers(self, expected: list) -> None:
+        """Confirm the My Assigned Asset grid's column headings are exactly `expected`."""
+        found = self.get_my_assets_headers()
+        assert found == expected, f"Expected the My Assigned Asset columns {expected} but found {found}."
+
+    def verify_acknowledge_button_shown(self) -> None:
+        """Confirm the page's Acknowledge button is on the screen."""
+        assert self.page_acknowledge_button.is_visible(), "Expected the Acknowledge button to be shown but it is not."
+
+    def verify_pending_rows_belong_to(self, pin: str) -> None:
+        """Confirm there is at least one pending row and every row is an assignment to the employee `pin`."""
+        assertion_logger.info(f"Verifying every pending row belongs to employee {pin}")
+        employees = self.get_pending_assigned_employees()
+        assert employees, "Expected at least one pending acknowledgement but the grid is empty."
+        for assigned_employee in employees:
+            assert f"[{pin}]" in assigned_employee, (
+                f"A pending row belongs to '{assigned_employee}', not to employee {pin}."
+            )
+
+    def verify_popup_shows_assignment(self, serial: str, pin: str, name: str, note_prefix: str) -> None:
+        """
+        Confirm the open popup is the approved ASSIGN transaction of this asset
+        to this employee, and that its note starts with `note_prefix`.
+        """
+        assertion_logger.info(f"Verifying the Details popup of the assignment of {serial}")
+        wanted = {
+            "assetTransactionType": "ASSIGN",
+            "assignedEmployeePinNo": pin,
+            "assignedEmployee": name,
+            "oldTransactionStatus": "APPROVED",
+        }
+        problems = []
+        for field_id, expected in wanted.items():
+            found = self.get_popup_value(field_id)
+            if found != expected:
+                problems.append(f"{field_id}: expected '{expected}' but found '{found}'")
+        note = self.get_popup_value("remarks")
+        if not note.startswith(note_prefix):
+            problems.append(f"remarks: expected a note starting with '{note_prefix}' but found '{note}'")
+        serials = self.get_popup_asset_serials()
+        if serials != [serial]:
+            problems.append(f"asset list: expected {[serial]} but found {serials}")
+        assert not problems, f"The Details popup is not as expected: {problems}"
+
+    def verify_acknowledged(self, serial: str, pending_before: int, pin: str) -> None:
+        """
+        Confirm the acknowledgement took effect: one pending row less, and the
+        asset is in My Assigned Asset, assigned to the employee `pin`.
+        """
+        assertion_logger.info(f"Verifying {serial} was acknowledged")
+        pending_after = self.get_pending_count()
+        assert pending_after == pending_before - 1, (
+            f"Expected {pending_before - 1} pending acknowledgements after acknowledging but found {pending_after}."
+        )
+        my_serials = self.get_my_assigned_serials()
+        assert serial in my_serials, f"Expected {serial} in My Assigned Asset but it lists {my_serials}."
+        row_text = self.get_my_assigned_row_text(serial)
+        assert f"[{pin}]" in row_text, f"Expected the My Assigned Asset row of {serial} to name [{pin}] but it shows '{row_text}'."
 
     def acknowledge_in_popup_and_get_toast(self) -> str:
         """Click Acknowledge in the open popup, return the message shown, and wait for the popup to close."""

@@ -19,7 +19,7 @@ from urllib.parse import urlsplit
 
 from playwright.sync_api import Locator, Page, expect
 
-from utils.logger import action_logger
+from utils.logger import action_logger, assertion_logger
 
 # Maximum time to wait for a grid to show its new rows after a Search (milliseconds)
 GRID_RELOAD_TIMEOUT = 15000
@@ -278,6 +278,64 @@ class BasePage:
         text = toast.inner_text()
         action_logger.info(f"Toast message shown: {text}")
         return text
+
+    def get_toast_text_or_empty(self, timeout: int = 8000) -> str:
+        """
+        Return the text of the toast on screen, or an empty text when no toast
+        was seen within `timeout` ms. Use it for a success message that fades
+        quickly, together with `verify_toast_if_shown`.
+        """
+        try:
+            return self.get_toast_text(timeout=timeout)
+        except Exception:
+            action_logger.info("No toast message was seen on screen")
+            return ""
+
+    def verify_toast_text(self, actual: str, expected: str, action: str) -> None:
+        """Confirm the toast read after `action` is exactly `expected`; the failure names both texts."""
+        assertion_logger.info(f"Verifying the message after: {action}")
+        assert actual == expected, (
+            f"After {action} the expected message was '{expected}' but the message on screen was '{actual}'."
+        )
+
+    def verify_toast_if_shown(self, actual: str, expected_text: str, action: str) -> None:
+        """
+        Confirm a toast read after `action` contains `expected_text` (ignoring
+        capital letters). An empty `actual` means no toast was seen and is
+        accepted, because the caller then checks the result on the screen.
+        """
+        assertion_logger.info(f"Verifying the message after: {action}")
+        if actual == "":
+            return
+        assert expected_text.lower() in actual.lower(), (
+            f"After {action} the expected message was '{expected_text}' but the message on screen was '{actual}'."
+        )
+
+    def read_row_values(self, table: Locator, row_text: str) -> dict:
+        """
+        Return the visible cells of the first row of `table` that contains
+        `row_text`, as {column heading: cell text}. Columns with no heading
+        (for example a checkbox column) are left out.
+        """
+        headers = [h.strip() for h in table.locator("thead th:visible").all_inner_texts()]
+        row = table.locator("tbody tr", has_text=row_text).first
+        cells = [c.strip() for c in row.locator("td:visible").all_inner_texts()]
+        values = {}
+        for index, header in enumerate(headers):
+            if header and index < len(cells):
+                values[header] = cells[index]
+        return values
+
+    def verify_row_values(self, table: Locator, row_text: str, expected: dict) -> None:
+        """Confirm the row containing `row_text` shows every value in `expected` ({column heading: text}); names each difference."""
+        found = self.read_row_values(table, row_text)
+        assertion_logger.info(f"Verifying the grid row of {row_text}")
+        problems = []
+        for heading, wanted in expected.items():
+            actual = found.get(heading, "<column not found>")
+            if actual != wanted:
+                problems.append(f"{heading}: expected '{wanted}' but found '{actual}'")
+        assert not problems, f"The row of {row_text} is not as expected: {problems}"
 
     def close_popup_if_present(self, timeout: int = 3000) -> None:
         """

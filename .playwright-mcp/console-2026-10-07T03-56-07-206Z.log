@@ -1,0 +1,18 @@
+[   91300ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[  182331ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[  193403ms] [WARNING] Blocked aria-hidden on an element because its descendant retained focus. The focus must not be hidden from assistive technology users. Avoid using aria-hidden on a focused element or its ancestor. Consider using the inert attribute instead, which will also prevent focus. For more details, see the aria-hidden section of the WAI-ARIA specification at https://w3c.github.io/aria/#aria-hidden.
+Element with focus: <button.btn btn-default>
+Ancestor with aria-hidden: <div.modal fade#commonModal> @ https://erpstaging.brac.net/nodef/fixedasset#!faAssetProfile/showAssetSplitList:0
+[  273371ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[  364388ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[  455394ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25

@@ -17,6 +17,29 @@ from utils.logger import assertion_logger
 APPROVE_TOAST = "Approved successfully"
 
 
+def build_expected(
+    employee_pin: str, employee_name: str, note: str, transaction_date: str,
+    building: str = "", floor: str = ""
+) -> dict:
+    """
+    Return the `expected` dictionary the checks below compare with. Give
+    `building` and `floor` only for an Internal Movement.
+
+    Example:
+        expected = build_expected(ASSIGNEE_PIN, ASSIGNEE_NAME, NOTE, transaction_date)
+    """
+    expected = {
+        "employee_pin": employee_pin,
+        "employee_name": employee_name,
+        "note": note,
+        "transaction_date": transaction_date,
+    }
+    if building != "":
+        expected["building"] = building
+        expected["floor"] = floor
+    return expected
+
+
 def check_popup_matches(grid_page, transaction_type: str, status: str, expected: dict) -> None:
     """Compare the open Details popup with what was entered on the form."""
     assertion_logger.info(f"Verifying {transaction_type} Details popup shows status {status}")

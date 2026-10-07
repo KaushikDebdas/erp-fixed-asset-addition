@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Page class | `pages/transaction_list_page.py` → `TransactionListPage` (form screens share `pages/asset_transaction_form_page.py`, grids share `pages/transaction_grid_page.py`); tests in `tests/test_13_transaction_list.py` |
+| Page class | `pages/transaction_list_page.py` → `TransactionListPage` (form screens share `pages/asset_transaction_form_page.py`, grids share `pages/transaction_grid_page.py`); tests in `tests/test_13_transaction_list.py` and `tests/test_13_transaction_list_new.py` (adds per-asset checks of the saved Furniture asset's transactions) |
 | Module / menu path | Fixed Asset >> Asset Transaction >> Transaction List |
 | Entry URL | `https://erpstaging.brac.net/nodef/fixedasset#!faAssetTransaction/editList` (reach via menu click, see Notes) |
 | Role needed | ERP External User (tested with `abushoaib.asik`, branch Head Office [ BDHO ]) |
