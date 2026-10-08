@@ -42,7 +42,8 @@ Everything lands in `automation/reports/<YYYY-MM-DD>/<HH-MM-SS>/`:
 ```
 ├── Test_Report_<date>_<time>.html   <- the shareable report (send this file)
 ├── allure-results/                  (raw data; do not send)
-├── screenshots/                     (folder per test; numbered 01_..., 02_... + end_of_test_passed/FAILED)
+├── screenshots/passed/              (folder per passed test; numbered 01_..., 02_... + end_of_test_passed)
+├── screenshots/failed/              (folder per failed test; numbered 01_..., 02_... + end_of_test_FAILED)
 ├── traces/                          (failed tests only)
 └── downloads/                       (files exported by tests)
 ```

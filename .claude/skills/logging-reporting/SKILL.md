@@ -28,7 +28,8 @@ these to a flat, shared folder. See `automation/HOW_TO_RUN.md`.
 <HH-MM-SS>/
 ├── Test_Report_<date>_<time>.html   <- the shareable report
 ├── allure-results/                  (raw data the report is built from)
-├── screenshots/<test name>/NN_<description>.png
+├── screenshots/passed/<test name>/NN_<description>.png   (tests that passed)
+├── screenshots/failed/<test name>/NN_<description>.png   (tests that failed)
 ├── traces/<test name>.zip           (failed tests only)
 └── downloads/                       (files exported by tests)
 ```
@@ -53,7 +54,12 @@ these to a flat, shared folder. See `automation/HOW_TO_RUN.md`.
 
 ## Screenshots
 - Every screenshot is numbered in the order it was taken and named for what
-  the screen shows: `screenshots/<test name>/01_filter_popup_opened.png`.
+  the screen shows: `screenshots/passed/<test name>/01_filter_popup_opened.png`.
+- Screenshots are sorted by result so a reader sees the failures at once: the
+  folder of a test that passed is in `screenshots/passed/`, the folder of a test
+  that failed is in `screenshots/failed/`. This is done automatically after each
+  test by `sort_screenshots_by_result()` in `utils/run_context.py`, called from
+  `pytest_runtest_makereport` in `conftest.py`. A test never builds these paths.
 - A test takes one at each important step with the `take_screenshot` fixture:
   `take_screenshot("filter popup opened")`. Use a short description of what
   the screen shows at that moment.

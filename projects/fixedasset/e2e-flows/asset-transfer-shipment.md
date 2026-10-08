@@ -56,4 +56,4 @@ Domain background: `knowledge/erp-fixedasset.md` §5, §11, §12.
 
 **Data needed before step 1:** an approved asset in the sending project (its Asset Serial is added in step 14). The Asset Registration tests can create one (`registrations.get_approved("furniture")`).
 
-**Automation Suitable: Yes**, as one chained test with a helper per stage. Reason: every step is a fixed sequence on one login, and the shipment, challan and serial numbers are carried from step to step. The voucher steps depend on the Accounting module check that `test_18_voucher_search.py` already does for Asset Expense.
+**Automation Suitable: Yes**, as one chained test with a helper per stage. Reason: every step is a fixed sequence on one login, and the shipment, challan and serial numbers are carried from step to step. The voucher steps depend on the Accounting module check that `test_17_asset_expense_approval.py` already does for Asset Expense.

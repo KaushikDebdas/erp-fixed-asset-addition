@@ -35,7 +35,8 @@ def get_run_dir() -> Path:
     time_folder = now.strftime("%H-%M-%S")
     run_dir = AUTOMATION_ROOT / "reports" / date_folder / time_folder
 
-    (run_dir / "screenshots").mkdir(parents=True, exist_ok=True)
+    (run_dir / "screenshots" / "passed").mkdir(parents=True, exist_ok=True)
+    (run_dir / "screenshots" / "failed").mkdir(parents=True, exist_ok=True)
     (run_dir / "traces").mkdir(parents=True, exist_ok=True)
     (run_dir / "allure-results").mkdir(parents=True, exist_ok=True)
     (run_dir / "downloads").mkdir(parents=True, exist_ok=True)
@@ -81,6 +82,25 @@ def take_numbered_screenshot(page, test_item, description: str) -> str:
     # Also attach it to the Allure report, in the same numbered order
     allure.attach.file(path, name=f"{step_no:02d} {description}", attachment_type=allure.attachment_type.PNG)
     return path
+
+
+def sort_screenshots_by_result(test_item, failed: bool) -> None:
+    """
+    Move the test's screenshot folder into screenshots/passed/ or screenshots/failed/.
+
+    Called once, right after the test body and its last screenshot, when the result is
+    known. Does nothing when the test took no screenshots.
+
+        screenshots/test_x/  ->  screenshots/passed/test_x/   (or failed/)
+    """
+    test_name = getattr(test_item, "report_name", test_item.name)
+    screenshots_dir = get_run_dir() / "screenshots"
+    test_folder = screenshots_dir / test_name
+    if not test_folder.is_dir():
+        return
+    result_dir = screenshots_dir / ("failed" if failed else "passed")
+    result_dir.mkdir(parents=True, exist_ok=True)
+    shutil.move(str(test_folder), str(result_dir / test_name))
 
 
 def did_test_fail(test_item) -> bool:

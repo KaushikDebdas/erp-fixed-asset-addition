@@ -69,8 +69,8 @@ there. Full rules: the `logging-reporting` skill.
 - **Screenshots:** add the `take_screenshot` fixture to the test and call it at
   each important step with a short description of what the screen shows:
   `take_screenshot("filter popup filled")`. Files are numbered in the order
-  taken, one folder per test:
-  `reports/<date>/<time>/screenshots/<test name>/03_filter_popup_filled.png`,
+  taken, one folder per test, sorted automatically into `passed/` or `failed/`:
+  `reports/<date>/<time>/screenshots/passed/<test name>/03_filter_popup_filled.png`,
   and are attached to the HTML report. The framework adds the last screenshot
   (`NN_end_of_test_passed` / `_FAILED`) itself. Never take screenshots with raw
   `page.screenshot(...)` in a test.

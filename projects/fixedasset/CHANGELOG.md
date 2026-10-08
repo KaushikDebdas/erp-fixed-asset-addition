@@ -1,5 +1,12 @@
 # fixedasset — CHANGELOG
 
+## 2026-10-08 (screenshots sorted into passed / failed)
+- Screenshots are saved under `screenshots/passed/<test>/` or `screenshots/failed/<test>/`. `sort_screenshots_by_result()` in `utils/run_context.py` moves the folder after each test; `conftest.py` calls it. Rule written in the `logging-reporting` and `python-playwright-pom` skills, `test-reporter` agent and `HOW_TO_RUN.md`.
+
+## 2026-10-08 (voucher check moved to test_17, test_18 removed)
+- `tests/test_18_voucher_search.py` is deleted (it was wrong). `test_17_asset_expense_approval.py` now has `test_approval_creates_the_expense_voucher` (Inventory and Accounts): gets the approved expense from `expenses.get_approved_expense`, checks APPROVED in the approval list, then `verify_voucher` (Voucher Search by Expense ID and the Preview PDF). The test copied from test_03 that was pasted into test_17 (undefined names, check commented out) is removed. test_03's registration voucher check is still commented out.
+- Not run yet at the time of this entry.
+
 ## 2026-10-08 (asset pool: minimum assets, maximum reuse)
 - New `test_data/asset_slots.py` (one table: which asset each flow uses), `utils/asset_pool.py` (`assets.get(slot)`, `assets.consume(slot)`, hand-over with `reuse_from` only when the asset is UNASSIGNED and not in the Pending Process list), `utils/flow_stages.py` (`FlowStages`, `reach`/`record`, used by single challan, write-off and sale), `utils/run_registrations.py`. 13 registrations per run (11 approved + 2 registration-only) instead of about 19; a run starts with new assets, nothing is saved between runs. `saved_registrations.py` and `saved_assets.json` are removed.
 - Helpers (`transaction_helper`, `expense_helper`, `transfer_helper`, `split_helper`, `registration_helper`) take their asset from the pool. Write-off reuses the usage_a / usage_b assets after Unassign.

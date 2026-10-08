@@ -108,7 +108,7 @@ automation/reports/
     └── 09-15-30/
         ├── Test_Report_2026-09-17_09-15-30.html   <- THE REPORT: send this file
         ├── allure-results/   (raw data the report is built from)
-        ├── screenshots/      (a folder per test; numbered 01_..., 02_... in the order taken)
+        ├── screenshots/      (passed/ and failed/, each with a folder per test; numbered 01_..., 02_... in the order taken)
         ├── traces/           (failed tests only, one .zip per failed test)
         └── downloads/        (reports exported by the tests)
 ```
@@ -140,7 +140,7 @@ console messages. Open it to see exactly what happened before a failure.
 - The same .zip is also attached to the failed test in the HTML report.
 
 ## Other views of a run
-1. **Screenshots**: `automation/reports/<date>/<time>/screenshots/<test name>/`,
+1. **Screenshots**: `automation/reports/<date>/<time>/screenshots/passed/<test name>/` (or `failed/`),
    e.g. `01_filter_popup_opened.png` ... and a last `NN_end_of_test_passed.png`
    (or `_FAILED`).
 2. **Downloaded reports**: `automation/reports/<date>/<time>/downloads/`.

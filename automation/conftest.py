@@ -39,6 +39,7 @@ from utils.run_context import (
     generate_html_report,
     get_run_dir,
     did_test_fail,
+    sort_screenshots_by_result,
     take_numbered_screenshot,
     trace_path,
     write_environment_info,
@@ -273,6 +274,7 @@ def pytest_runtest_makereport(item, call):
         if page is not None:
             description = "end_of_test_FAILED" if rep.failed else "end_of_test_passed"
             take_numbered_screenshot(page, item, description)
+        sort_screenshots_by_result(item, rep.failed)
 
 
 @pytest.fixture
