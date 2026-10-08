@@ -206,6 +206,53 @@ class BasePage:
         self.click(link, f"{link_name} menu link")
         self.wait_for_page_load()
 
+    def open_single_challan_submenu(self, link_name: str) -> None:
+        """
+        Open a link from the Fixed Asset module's "Single Challan" menu (Asset
+        Single Out Challan, Asset Single Out Challan Approval List, Asset
+        Single In-Challan, Gate Pass Generation, ...). Works like
+        `open_registration_submenu`.
+        """
+        self.open_fixed_asset_module()
+        single_challan_menu = self.page.get_by_text("Single Challan", exact=True).first
+        self.click(single_challan_menu, "Single Challan menu")
+        link = self.page.get_by_role("link", name=link_name, exact=True)
+        self.wait_until_visible(link, f"{link_name} menu link")
+        self.click(link, f"{link_name} menu link")
+        self.wait_for_page_load()
+
+    def choose_from_select2(self, container_css: str, search_text: str, option_text: str) -> None:
+        """
+        Choose a value in a search drop-down box (a select2 box): click the box
+        `container_css` (for example "#s2id_fromProject"), type `search_text`
+        in its search field, then click the result whose text contains
+        `option_text`. The hidden native drop-down behind the box cannot be
+        used, so this is the one way these boxes are filled.
+        """
+        action_logger.info(f"Choose in drop-down {container_css}: {option_text}")
+        box = self.page.locator(container_css)
+        self.click(box.locator("a.select2-choice"), f"{container_css} box")
+        search_field = self.page.locator(".select2-drop-active:visible input.select2-input")
+        self.wait_until_visible(search_field, "drop-down search field")
+        self.type_text(search_field, search_text, "drop-down search field")
+        option = self.page.locator(".select2-drop-active:visible .select2-result-label", has_text=option_text).first
+        self.wait_until_visible(option, f"drop-down result {option_text}")
+        self.click(option, f"drop-down result {option_text}")
+
+    def open_asset_disposal_submenu(self, link_name: str) -> None:
+        """
+        Open a link from the Fixed Asset module's "Asset Disposal" menu (Asset
+        Write-off, Asset Write-off List, Asset Write-off Approval List, Asset
+        Sale, ...). Works like `open_registration_submenu`.
+        """
+        self.open_fixed_asset_module()
+        disposal_menu = self.page.get_by_text("Asset Disposal", exact=True).first
+        self.click(disposal_menu, "Asset Disposal menu")
+        link = self.page.get_by_role("link", name=link_name, exact=True)
+        self.wait_until_visible(link, f"{link_name} menu link")
+        self.click(link, f"{link_name} menu link")
+        self.wait_for_page_load()
+
     def wait_for_table_to_reload(self, table: Locator) -> None:
         """
         Wait until a grid has shown the result of a Search. The line under the

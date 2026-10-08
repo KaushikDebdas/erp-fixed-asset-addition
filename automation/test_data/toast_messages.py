@@ -26,6 +26,7 @@ APPROVE_SUCCESS_TOAST = "Asset registration approved successfully."
 SOURCE_OF_FUND_TOAST = "Please select a Source Of Fund."
 NOTE_TOAST = "Please add a note."
 ITEM_SPECIFICATION_TOAST = "Please select a Item Specification/IMEI/SL No."
+STATUS_UPDATED_TOAST = "Asset profile status updated successfully."
 
 # ---------------------------------------------------------------------------
 # Asset Serial Split, Split List, Split Approval List
@@ -71,3 +72,24 @@ CHALLAN_SERIAL_ADDED_TOAST = ["Asset serial added Successfuly"]
 CHALLAN_DELETED_TOAST = ["Challan deleted successfuly"]
 CHALLAN_SUBMITTED_TOAST = ["Challan submitted successfully"]
 CHALLAN_APPROVED_TOAST = "Challan approved successfully."
+
+# ---------------------------------------------------------------------------
+# Asset Write-off
+# ---------------------------------------------------------------------------
+WRITE_OFF_DRAFT_TOAST = "Asset write-off drafted successfully"
+WRITE_OFF_SUBMIT_TOAST = "Asset write-off submitted successfully"
+WRITE_OFF_APPROVE_TOAST = ["Asset write-off approved successfully.", "Journal voucher submitted successfully!"]
+
+# ---------------------------------------------------------------------------
+# Asset Sale
+# ---------------------------------------------------------------------------
+SALE_DRAFT_TOAST = "Asset sale drafted successfully"
+SALE_SUBMIT_TOAST = "Asset sale submitted successfully"
+SALE_APPROVE_TOAST = ["Asset disposal sale approved successfully.", "Journal and Credit voucher submitted successfully!"]
+
+# ---------------------------------------------------------------------------
+# Single Challan: Out Challan, Approval List (Draft and Submit show no message)
+# ---------------------------------------------------------------------------
+SINGLE_CHALLAN_SERIAL_ADDED_TOAST = "Asset serial added successfully"
+SINGLE_CHALLAN_APPROVE_TOAST = ["Challan approved successfully.", "Gate pass generated successfully"]
+

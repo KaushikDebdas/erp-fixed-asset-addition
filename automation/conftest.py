@@ -419,38 +419,38 @@ def splits(
 
 
 @pytest.fixture
-def shipment_page(assignee_logged_in_page):
-    """Asset Shipment page object (the second user's tab), ready to use."""
+def shipment_page(page):
+    """Asset Shipment page object (the logged-in user's tab), ready to use."""
     from pages.asset_shipment_page import AssetShipmentPage
-    return AssetShipmentPage(assignee_logged_in_page)
+    return AssetShipmentPage(page)
 
 
 @pytest.fixture
-def challan_page(assignee_logged_in_page):
+def challan_page(page):
     """Transfer Challan page object (the Challan tab and popups of a shipment), ready to use."""
     from pages.shipment_challan_page import ShipmentChallanPage
-    return ShipmentChallanPage(assignee_logged_in_page)
+    return ShipmentChallanPage(page)
 
 
 @pytest.fixture
-def challan_approval_page(assignee_logged_in_page):
+def challan_approval_page(page):
     """Asset Shipment Challan Approval List page object, ready to use."""
     from pages.shipment_challan_approval_page import ShipmentChallanApprovalPage
-    return ShipmentChallanApprovalPage(assignee_logged_in_page)
+    return ShipmentChallanApprovalPage(page)
 
 
 @pytest.fixture
-def in_challan_page(assignee_logged_in_page):
+def in_challan_page(page):
     """Asset Shipment In-Challan page object, ready to use."""
     from pages.shipment_in_challan_page import ShipmentInChallanPage
-    return ShipmentInChallanPage(assignee_logged_in_page)
+    return ShipmentInChallanPage(page)
 
 
 @pytest.fixture
-def gate_pass_page(assignee_logged_in_page):
+def gate_pass_page(page):
     """Gate Pass Generation page object, ready to use."""
     from pages.gate_pass_page import GatePassPage
-    return GatePassPage(assignee_logged_in_page)
+    return GatePassPage(page)
 
 
 @pytest.fixture(scope="session")
@@ -659,3 +659,102 @@ def voucher_search_page(page):
     """Accounting Voucher Search page object, ready to use."""
     from pages.voucher_search_page import VoucherSearchPage
     return VoucherSearchPage(page)
+
+
+@pytest.fixture
+def asset_write_off_page(page):
+    """Asset Write-off page object, ready to use."""
+    from pages.asset_write_off_page import AssetWriteOffPage
+    return AssetWriteOffPage(page)
+
+
+@pytest.fixture
+def asset_write_off_list_page(page):
+    """Asset Write-off List page object, ready to use."""
+    from pages.asset_write_off_list_page import AssetWriteOffListPage
+    return AssetWriteOffListPage(page)
+
+
+@pytest.fixture
+def asset_write_off_approval_list_page(page):
+    """Asset Write-off Approval List page object, ready to use."""
+    from pages.asset_write_off_approval_list_page import AssetWriteOffApprovalListPage
+    return AssetWriteOffApprovalListPage(page)
+
+
+@pytest.fixture
+def asset_sale_page(page):
+    """Asset Sale page object, ready to use."""
+    from pages.asset_sale_page import AssetSalePage
+    return AssetSalePage(page)
+
+
+@pytest.fixture
+def asset_sale_list_page(page):
+    """Asset Sale List page object, ready to use."""
+    from pages.asset_sale_list_page import AssetSaleListPage
+    return AssetSaleListPage(page)
+
+
+@pytest.fixture
+def asset_sale_approval_list_page(page):
+    """Asset Sale Approval List page object, ready to use."""
+    from pages.asset_sale_approval_list_page import AssetSaleApprovalListPage
+    return AssetSaleApprovalListPage(page)
+
+
+@pytest.fixture
+def single_out_challan_page(page):
+    """Asset Single Out Challan page object (the logged-in user's tab), ready to use."""
+    from pages.single_out_challan_page import SingleOutChallanPage
+    return SingleOutChallanPage(page)
+
+
+@pytest.fixture
+def single_out_challan_approval_list_page(page):
+    """Asset Single Out Challan Approval List page object (the logged-in user's tab), ready to use."""
+    from pages.single_out_challan_approval_list_page import SingleOutChallanApprovalListPage
+    return SingleOutChallanApprovalListPage(page)
+
+
+@pytest.fixture
+def single_in_challan_page(page):
+    """Asset Single In-Challan page object (the logged-in user's tab), ready to use."""
+    from pages.single_in_challan_page import SingleInChallanPage
+    return SingleInChallanPage(page)
+
+
+@pytest.fixture
+def single_gate_pass_page(page):
+    """Single Challan Gate Pass Generation page object (the logged-in user's tab), ready to use."""
+    from pages.single_gate_pass_page import SingleGatePassPage
+    return SingleGatePassPage(page)
+
+
+@pytest.fixture(scope="session")
+def shared_single_challan():
+    """
+    The Single Challan flows of this run (the "draft" and the "submit" challan),
+    shared by every test file so one test can reuse what an earlier test did.
+    Used by the `single_challan` fixture; tests do not read it directly.
+    """
+    return {}
+
+
+@pytest.fixture
+def single_challan(
+    registrations, single_out_challan_page, single_out_challan_approval_list_page, single_in_challan_page,
+    shared_single_challan,
+):
+    """
+    Carries a Single Challan through its stages:
+        flow = single_challan.reach("submit", "serial_added")
+    It returns what an earlier test did, or does the missing stages now when
+    the test runs on its own. See utils/single_challan_flow.py.
+    """
+    from utils.single_challan_flow import SingleChallanFlow
+
+    return SingleChallanFlow(
+        registrations, single_out_challan_page, single_out_challan_approval_list_page,
+        single_in_challan_page, shared_single_challan,
+    )

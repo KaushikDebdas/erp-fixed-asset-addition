@@ -1,0 +1,150 @@
+[ 2354707ms] [LOG] false @ https://erpstaging.brac.net/node/myDashboard/myDashboard?flag=false:2063
+[ 2461299ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[ 2552309ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[ 3024851ms] [LOG] false @ https://erpstaging.brac.net/node/myDashboard/myDashboard?flag=false:2063
+[ 3334741ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[ 4041700ms] [LOG] false @ https://erpstaging.brac.net/node/myDashboard/myDashboard?flag=false:2063
+[ 4131613ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/node/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/node/assets/js/eventsource.min.js:942:25
+[ 4222628ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/node/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/node/assets/js/eventsource.min.js:942:25
+[ 4313666ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/node/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/node/assets/js/eventsource.min.js:942:25
+[ 4404710ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/node/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/node/assets/js/eventsource.min.js:942:25
+[ 4495743ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/node/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/node/assets/js/eventsource.min.js:942:25
+[ 4586777ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/node/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/node/assets/js/eventsource.min.js:942:25
+[ 4777985ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[ 4869012ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[ 4960048ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[ 5051080ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[ 5142079ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[ 5233127ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[ 5405166ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[ 6168427ms] [LOG] false @ https://erpstaging.brac.net/node/myDashboard/myDashboard?flag=false:2063
+[ 6335192ms] [WARNING] Blocked aria-hidden on an element because its descendant retained focus. The focus must not be hidden from assistive technology users. Avoid using aria-hidden on a focused element or its ancestor. Consider using the inert attribute instead, which will also prevent focus. For more details, see the aria-hidden section of the WAI-ARIA specification at https://w3c.github.io/aria/#aria-hidden.
+Element with focus: <button.btn btn btn-sm red#btnForReject>
+Ancestor with aria-hidden: <div.modal fade#commonModal> @ https://erpstaging.brac.net/nodef/fixedasset#!faAssetWriteOff/showWriteOffScheduleList:0
+[ 6474979ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[ 6566017ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[12082358ms] [LOG] false @ https://erpstaging.brac.net/node/myDashboard/myDashboard?flag=false:3273
+[12163559ms] [LOG] 4 @ :128
+[12265090ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[12266537ms] [WARNING] Blocked aria-hidden on an element because its descendant retained focus. The focus must not be hidden from assistive technology users. Avoid using aria-hidden on a focused element or its ancestor. Consider using the inert attribute instead, which will also prevent focus. For more details, see the aria-hidden section of the WAI-ARIA specification at https://w3c.github.io/aria/#aria-hidden.
+Element with focus: <button.btn btn-sm blue saveAssetSerialsBtn#saveAssetSerial>
+Ancestor with aria-hidden: <div.modal fade#addAssetSerialModal> @ https://erpstaging.brac.net/nodef/fixedasset#!faAssetSingleChallan/show:0
+[12284232ms] [WARNING] Blocked aria-hidden on an element because its descendant retained focus. The focus must not be hidden from assistive technology users. Avoid using aria-hidden on a focused element or its ancestor. Consider using the inert attribute instead, which will also prevent focus. For more details, see the aria-hidden section of the WAI-ARIA specification at https://w3c.github.io/aria/#aria-hidden.
+Element with focus: <button.btn btn-default>
+Ancestor with aria-hidden: <div.modal fade#singleChallanDetailsModal> @ https://erpstaging.brac.net/nodef/fixedasset#!faAssetSingleChallan/show:0
+[12301204ms] [LOG] 4 @ :128
+[12330573ms] [WARNING] Blocked aria-hidden on an element because its descendant retained focus. The focus must not be hidden from assistive technology users. Avoid using aria-hidden on a focused element or its ancestor. Consider using the inert attribute instead, which will also prevent focus. For more details, see the aria-hidden section of the WAI-ARIA specification at https://w3c.github.io/aria/#aria-hidden.
+Element with focus: <button.btn btn-sm blue#submitChallan>
+Ancestor with aria-hidden: <div.modal fade#challanResponsiveSingleChallan> @ https://erpstaging.brac.net/nodef/fixedasset#!faAssetSingleChallan/show:0
+[12362079ms] [WARNING] Blocked aria-hidden on an element because its descendant retained focus. The focus must not be hidden from assistive technology users. Avoid using aria-hidden on a focused element or its ancestor. Consider using the inert attribute instead, which will also prevent focus. For more details, see the aria-hidden section of the WAI-ARIA specification at https://w3c.github.io/aria/#aria-hidden.
+Element with focus: <button.btn btn-sm green#approveChallan>
+Ancestor with aria-hidden: <div.modal fade#singleChallanDetailsModal> @ https://erpstaging.brac.net/nodef/fixedasset#!faAssetSingleChallan/showApproverList:0
+[12462048ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[12553089ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[12691230ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[12782263ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[12873304ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[12964331ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[13055358ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[13146378ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[13237398ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[13328438ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[13419474ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[13510512ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/nodef/assets/js/eventsource.min.js:942:25
+[13520748ms] [ERROR] Failed to load resource: the server responded with a status of 403 () @ https://erpstaging.brac.net/login/keepAlive:0
+[13520749ms] [LOG] error 403 @ https://erpstaging.brac.net/nodef/assets/accounting-manifest-eff90366b1061b6289c092a87236082e.js:25756
+[13523087ms] [LOG] false @ https://erpstaging.brac.net/node/myDashboard/myDashboard?flag=false:3273
+[13613027ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/node/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/node/assets/js/eventsource.min.js:942:25
+[15998814ms] [ERROR] Failed to load resource: net::ERR_QUIC_PROTOCOL_ERROR.QUIC_NETWORK_IDLE_TIMEOUT @ https://erpstaging.brac.net/.well-known/mercure?topic=http%3A%2F%2Ferp%2Fevent%2F%7Btarget%7D&topic=http%3A%2F%2Ferp%2Fdayopenevent%2F%7Btarget%7D:0
+[16000029ms] network error
+[16090088ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/node/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/node/assets/js/eventsource.min.js:942:25
+[16181122ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/node/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/node/assets/js/eventsource.min.js:942:25
+[16272145ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/node/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/node/assets/js/eventsource.min.js:942:25
+[16363190ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/node/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/node/assets/js/eventsource.min.js:942:25
+[16454268ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/node/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/node/assets/js/eventsource.min.js:942:25
+[16545337ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/node/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/node/assets/js/eventsource.min.js:942:25
+[16636412ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/node/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/node/assets/js/eventsource.min.js:942:25
+[16727448ms] Error: No activity within 45000 milliseconds. Reconnecting.
+    at onTimeout (https://erpstaging.brac.net/node/assets/js/eventsource.min.js:936:30)
+    at https://erpstaging.brac.net/node/assets/js/eventsource.min.js:942:25
+[16755065ms] [ERROR] Failed to load resource: the server responded with a status of 403 () @ https://erpstaging.brac.net/login/keepAlive:0
+[17789290ms] [LOG] false @ https://erpstaging.brac.net/myDashboard/myDashboard?flag=false:3273
+[17802542ms] [LOG] false @ https://erpstaging.brac.net/myDashboard/myDashboard?flag=false:2063

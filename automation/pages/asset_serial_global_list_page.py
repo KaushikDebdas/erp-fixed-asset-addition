@@ -11,6 +11,7 @@ Nothing here saves a change: the Update buttons are only clicked with a
 missing value, to read the validation message.
 """
 from pages.base_page import BasePage
+from test_data.toast_messages import STATUS_UPDATED_TOAST
 from utils.logger import action_logger, assertion_logger
 
 # Position of a cell in a result row (0-based; a hidden ID column comes first)
@@ -273,6 +274,23 @@ class AssetSerialGlobalListPage(BasePage):
         self.wait_for_toast_to_clear()
         self.click(self.status_update_button, "Utilization Status Update button")
         return self.get_toast_text()
+
+    def mark_asset_damaged(self, serial: str, note: str) -> None:
+        """
+        Set the Utilization Status of an asset to DAMAGE: search the serial, open
+        its popup, click Change next to Asset Utilization Status, choose DAMAGE,
+        write the note and click Update. Then confirm the success message.
+        """
+        self.navigate_here()
+        self.search_by_serial(serial)
+        self.open_asset_popup(serial)
+        self.open_status_change()
+        action_logger.info("Choose Utilization Status: DAMAGE")
+        self.new_status_select.select_option("DAMAGE")
+        self.type_text(self.status_note_field, note, "Utilization Status Note field")
+        self.wait_for_toast_to_clear()
+        self.click(self.status_update_button, "Utilization Status Update button")
+        self.verify_toast_text(self.get_toast_text(), STATUS_UPDATED_TOAST, "changing the Utilization Status to DAMAGE")
 
     def open_item_change(self) -> None:
         """Click Change next to Item and wait for its small popup."""
