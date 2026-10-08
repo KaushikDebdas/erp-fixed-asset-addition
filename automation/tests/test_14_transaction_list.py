@@ -1,25 +1,19 @@
 """
-test_13_transaction_list.py: tests for the Transaction List screen (Fixed
+test_14_transaction_list.py: tests for the Transaction List screen (Fixed
 Asset > Asset Transaction > Transaction List).
 
 Built from automation/element_catalog/transaction_list.md. The whole file logs
 in once and every test reuses that session. These tests read the list only. The
-full Draft > Edit > Submit path of each transaction type is tested in test_10,
-test_11 and test_12.
-
-The per-asset test checks the transactions of the saved Furniture asset (see
-utils/transaction_helper.py): its own APPROVED ASSIGN, TRANSFER (Internal
-Movement) and UNASSIGN transactions, made by test_10, test_11 and test_12. Run
-on its own, only a transaction that is missing is made first, and the asset's
-saved record is never changed.
+full Draft > Edit > Submit path of each transaction type, and the asset's own
+transaction in the list, are tested in test_10, test_12 and test_13 (the Assign,
+Internal Movement and Un Assign files).
 
 The tests run top to bottom:
     1. The page: columns, filters, Created By
     2. Filter by type and by status, the Details popup, the Edit link
-    3. The saved asset's own transactions
 
 To run part of the file:
-    pytest tests/test_13_transaction_list.py -k "asset"
+    pytest tests/test_14_transaction_list.py -k "filter"
 """
 import pytest
 
@@ -159,26 +153,3 @@ def test_transaction_list_only_drafts_have_edit(page, transaction_list_page, tak
 
     # Step 2: the first approved row has no Edit link
     transaction_list_page.verify_row_has_no_edit_link(0)
-
-
-# ---------------------------------------------------------------------------
-# 3. The saved asset's own transactions
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.smoke
-@pytest.mark.regression
-@pytest.mark.parametrize("transaction_type", [ASSIGN, TRANSFER, UNASSIGN])
-def test_list_shows_the_assets_transaction(page, transaction_list_page, transactions, transaction_type, take_screenshot):
-    """Transaction List: the saved Furniture asset has an APPROVED transaction of each type, with no Edit link."""
-    # Step 1: get the asset; a transaction of this type is made only when none exists
-    serial = transactions.ensure_transaction(transaction_type)
-
-    # Step 2: open the list and find the asset's APPROVED transaction of this type
-    transaction_list_page.navigate_here()
-    row_index = transaction_list_page.open_transaction_of_asset(serial, transaction_type, "APPROVED")
-    take_screenshot(f"{transaction_type} of {serial}")
-
-    # Step 3: the popup lists the asset; the approved row cannot be edited
-    transaction_list_page.close_popup()
-    transaction_list_page.verify_row_has_no_edit_link(row_index)

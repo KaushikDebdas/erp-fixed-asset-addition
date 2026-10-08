@@ -1,31 +1,32 @@
 """
-test_12_asset_unassign.py: tests for the Asset Un Assign screen (Fixed Asset
+test_13_asset_unassign.py: tests for the Asset Un Assign screen (Fixed Asset
 > Asset Transaction > Asset Un Assign).
 
-Built from automation/element_catalog/asset_unassign.md. The asset is NOT
-created here: it is the saved Furniture asset, read with
-registrations.get_approved("furniture", "spot", AAQ_ASSET_GROUP)
-(test_data/saved_assets.json). Its saved record is never changed. Un Assign only
-works on an assigned asset, so each test reads the asset's real Assign Status
+Built from automation/element_catalog/asset_unassign.md. The assets are NOT created
+here: they are the two usage assets of the asset pool (test_data/asset_slots.py),
+usage_a for the Draft + Submit path and usage_b for the Submit-only path. Un Assign
+only works on an assigned asset, so each test reads the asset's real Assign Status
 from the Asset Serial Global List and assigns it first when needed
 (`transactions.ensure_assigned()`, utils/transaction_helper.py). The whole file
-logs in once and every test reuses that session.
+logs in once and every test reuses that session. The Asset Un Assign form has the same
+Search By and Employee Pin search as Asset Internal Movement, which test_12 checks.
 
 The asset is handed over to the employee in HANDOVER_SEARCH (see
 test_data/asset_transaction_data.py), who must be a different employee from the
 current holder.
 
 The tests run top to bottom:
-    1. The form: the assigned asset, Search By, employee-PIN search, same-employee refusal
-    2. LAST: Draft, Transaction List (Details, Edit, Submit), Transaction Approval
-       List (Details, Approve), and the asset is UNASSIGNED (this one test is a
-       little longer than the others because it is the whole flow)
+    1. The form: the assigned asset, same-employee refusal
+    2. The Draft + Submit path (usage_a): Draft, Transaction List (Details, Edit, Submit),
+       Transaction Approval List (Details, Approve), and the asset is UNASSIGNED (this one
+       test is a little longer than the others because it is the whole flow)
+    3. The Submit-only path (usage_b): Submit straight from the form, Approve, UNASSIGNED
 
-The last test must stay last in the file: it leaves the asset UNASSIGNED, so the
-next run starts clean.
+Both assets end UNASSIGNED, which is the state the expense (test_16) and write-off
+(test_27) files use them in.
 
 To run part of the file:
-    pytest tests/test_12_asset_unassign.py -k "same_employee"
+    pytest tests/test_13_asset_unassign.py -k "same_employee"
 """
 import pytest
 
@@ -46,6 +47,7 @@ from test_data.toast_messages import (
 )
 from utils.run_context import trace_one_test
 from utils.transaction_flow import approve_and_verify, build_expected, submit_draft_from_list
+from utils.transaction_helper import USAGE_B
 
 NOTE = "AUTOMATION_TEST unassign note"
 
@@ -63,17 +65,13 @@ def page(logged_in_page, request):
 
 @pytest.mark.smoke
 @pytest.mark.regression
-def test_unassign_serial_search_shows_assigned_asset(page, unassign_page, transactions, take_screenshot):
-    """Asset Un Assign: selecting the assigned asset shows its details and current assignee."""
-    # Step 1: get the saved asset, assigned
+def test_unassign_to_same_employee_is_refused(page, unassign_page, transactions, take_screenshot):
+    """Asset Un Assign: the form shows the assigned asset with its current assignee, and it cannot be handed over to the employee who already holds it."""
+    # Step 1: select the assigned asset; the form shows the Furniture asset, ASSIGNED, with its current assignee
     serial = transactions.ensure_assigned()
-
-    # Step 2: open Asset Un Assign, type the serial, search, and pick the suggestion
     unassign_page.navigate_here()
     unassign_page.select_asset_by_serial(serial)
     take_screenshot(f"asset {serial} selected")
-
-    # Step 3: the form shows the Furniture asset, ASSIGNED, with its current assignee
     expected = {
         "assetName": FURNITURE_FORM_DETAILS["assetName"],
         "previousAssignStatus": ASSIGNED,
@@ -82,51 +80,15 @@ def test_unassign_serial_search_shows_assigned_asset(page, unassign_page, transa
     }
     unassign_page.verify_form_shows(serial, expected)
 
-
-@pytest.mark.regression
-def test_unassign_search_by_options(page, unassign_page, take_screenshot):
-    """Asset Un Assign: Search By offers Serial (the default) and Employee Pin."""
-    # Step 1: open the screen
-    unassign_page.navigate_here()
-    take_screenshot("search by options")
-
-    # Step 2: both choices are there and Serial is selected
-    unassign_page.verify_search_by_options()
-
-
-@pytest.mark.regression
-def test_unassign_search_by_employee_pin_loads_assets(page, unassign_page, transactions, take_screenshot):
-    """Asset Un Assign: searching by Employee Pin loads that employee's assigned assets."""
-    # Step 1: get the saved asset, assigned to the test employee
-    serial = transactions.ensure_assigned()
-
-    # Step 2: switch Search By to Employee Pin and search the employee
-    unassign_page.navigate_here()
-    unassign_page.choose_search_by_employee_pin()
-    unassign_page.load_assets_of_employee(ASSIGNEE_PIN)
-    take_screenshot("assets of the employee loaded")
-
-    # Step 3: the Asset List holds the employee's assets, including the saved asset
-    unassign_page.verify_asset_in_list(serial)
-
-
-@pytest.mark.regression
-def test_unassign_to_same_employee_is_refused(page, unassign_page, transactions, take_screenshot):
-    """Asset Un Assign: the asset cannot be handed over to the employee who already holds it."""
-    # Step 1: add the assigned asset
-    serial = transactions.ensure_assigned()
-    unassign_page.navigate_here()
-    unassign_page.select_asset_by_serial(serial)
+    # Step 2: add the asset, pick the current holder as the hand-over employee and click Draft
     unassign_page.add_to_grid()
-
-    # Step 2: pick the current holder as the hand-over employee and click Draft
     unassign_page.select_employee(ASSIGNEE_PIN)
     unassign_page.draft_and_verify_toast(UNASSIGN_SAME_EMPLOYEE_TOAST)
     take_screenshot("same employee refused")
 
 
 # ---------------------------------------------------------------------------
-# 2. LAST: the full flow (leaves the asset UNASSIGNED)
+# 2. The Draft + Submit path (usage_a): leaves the asset UNASSIGNED
 # ---------------------------------------------------------------------------
 
 
@@ -157,6 +119,27 @@ def test_unassign_full_flow_draft_submit_approve(
     approve_and_verify(transaction_approval_page, UNASSIGN, serial, expected, take_screenshot)
 
     # Step 4: the Global List shows the asset UNASSIGNED
+    asset_serial_global_list_page.navigate_here()
+    asset_serial_global_list_page.search_by_serial(serial)
+    take_screenshot("asset is unassigned")
+    asset_serial_global_list_page.verify_assign_status(serial, UNASSIGNED)
+
+
+# ---------------------------------------------------------------------------
+# 3. The Submit-only path (usage_b): leaves the asset UNASSIGNED
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.regression
+def test_unassign_submit_only_flow(page, transactions, asset_serial_global_list_page, take_screenshot):
+    """Asset Un Assign: an unassign submitted straight from the form (no Draft) and approved makes the asset UNASSIGNED."""
+    # Step 1: get the second usage asset, assigned
+    serial = transactions.ensure_assigned(USAGE_B)
+
+    # Step 2: Submit straight from the Asset Un Assign form and Approve (the messages of both are checked)
+    transactions.unassign(serial)
+
+    # Step 3: the Global List shows the asset UNASSIGNED
     asset_serial_global_list_page.navigate_here()
     asset_serial_global_list_page.search_by_serial(serial)
     take_screenshot("asset is unassigned")

@@ -32,7 +32,10 @@ from test_data.toast_messages import (
     SHIPMENT_APPROVED_TOAST,
     SHIPMENT_CREATED_TOAST,
 )
-from test_data.asset_shipment_data import TRANSFER_ASSET_GROUP, build_challan_data, build_shipment_data
+from test_data.asset_shipment_data import build_challan_data, build_shipment_data
+
+# The pool slot (test_data/asset_slots.py) of the asset that is transferred
+TRANSFER_SLOT = "transfer_a"
 
 # The stages in the order they happen
 STAGES = [
@@ -49,14 +52,14 @@ STAGES = [
 class TransferHelper:
     """Does and remembers the stages of one Asset Shipment for the tests."""
 
-    def __init__(self, registrations, shipment_page, challan_page,
+    def __init__(self, assets, shipment_page, challan_page,
                  challan_approval_page, in_challan_page, remembered: dict):
         """
-        `registrations` gives the approved asset whose serial is transferred.
-        The page objects all work on the second user's browser tab.
+        `assets` is the asset pool: it gives the approved asset whose serial is transferred.
+        The page objects all work on the browser tab of the logged-in user.
         `remembered` is the dictionary shared by the whole test run.
         """
-        self.registrations = registrations
+        self.assets = assets
         self.shipment_page = shipment_page
         self.challan_page = challan_page
         self.challan_approval_page = challan_approval_page
@@ -74,9 +77,15 @@ class TransferHelper:
         return stage in self.flow()["done"]
 
     def mark_done(self, stage: str) -> None:
-        """Record that a stage has been done."""
+        """Record that a stage has been done. The asset is used up once its serial is in a challan, so it is given back to the pool."""
         if stage not in self.flow()["done"]:
             self.flow()["done"].append(stage)
+            if stage == "serial_added":
+                self.assets.consume(TRANSFER_SLOT)
+
+    def get_asset(self) -> dict:
+        """Return the approved asset to transfer (registered and approved now when the pool has none)."""
+        return self.assets.get(TRANSFER_SLOT)
 
     def record(self, stage: str, shipment_data: dict = None, shipment_no: str = "",
                challan_no: str = "", serial: str = "") -> None:
@@ -185,7 +194,7 @@ class TransferHelper:
 
     def add_serial(self) -> None:
         """Add the serial of a freshly approved asset to the challan, and remember the serial."""
-        asset = self.registrations.get_approved("furniture", owner="transfer")
+        asset = self.get_asset()
         self.open_challan_tab()
         self.challan_page.open_challan_details(self.flow()["challan_no"])
         self.challan_page.click_add_serial_link()
@@ -237,36 +246,3 @@ class TransferHelper:
         self.in_challan_page.close_popup_if_open()
         self.in_challan_page.filter_by_out_challan_no(challan_no)
         self.in_challan_page.verify_row_status(challan_no, "ACKNOWLEDGED")
-
-
-class SavedTransferHelper(TransferHelper):
-    """
-    The same shipment stages, with the transferred asset saved in
-    test_data/saved_assets.json: an individual run reuses an approved asset that
-    is not in a challan yet, and a new one is created only when none is saved.
-    Once its serial is added to a challan the asset is used up and its record is removed.
-    The shipment stages themselves stay in memory, because every run needs a new shipment.
-    """
-
-    def get_asset(self) -> dict:
-        """Return the approved asset to transfer (a new one is created when none is saved)."""
-        return self.registrations.get_approved("furniture", "spot", TRANSFER_ASSET_GROUP)
-
-    def add_serial(self) -> None:
-        """Add the serial of the saved transfer asset to the challan, and remember the serial."""
-        asset = self.get_asset()
-        self.open_challan_tab()
-        self.challan_page.open_challan_details(self.flow()["challan_no"])
-        self.challan_page.click_add_serial_link()
-        self.challan_page.choose_serial(asset["serial"])
-        self.challan_page.add_serial_to_popup_grid()
-        toast = self.challan_page.save_serial_and_get_toast()
-        self.challan_page.verify_toast(toast, CHALLAN_SERIAL_ADDED_TOAST)
-        self.flow()["serial"] = asset["serial"]
-
-    def mark_done(self, stage: str) -> None:
-        """Record a finished stage; the asset is used up once its serial is in a challan, so its saved record is removed."""
-        super().mark_done(stage)
-        if stage == "serial_added":
-            key = self.registrations.make_key("furniture", "APPROVED", "spot", TRANSFER_ASSET_GROUP)
-            self.registrations.remembered.pop(key, None)

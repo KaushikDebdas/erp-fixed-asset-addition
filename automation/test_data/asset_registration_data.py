@@ -137,50 +137,6 @@ def build_land_asset_data() -> dict:
 
 
 # ---------------------------------------------------------------------------
-# The 10 AAQ assets (5 Spot Purchase, 5 Gift Item) and what happens to each
-# ---------------------------------------------------------------------------
-
-# Name the 10 assets are remembered under, so later tests can ask for one:
-#     registrations.get_pending("land", "gift", AAQ_ASSET_GROUP)
-AAQ_ASSET_GROUP = "aaq_ten_assets"
-
-# One more submitted asset that is never approved, so tests can check what is
-# not there before approval (for example: no voucher). It is saved like the 10.
-AAQ_PENDING_GROUP = "aaq_stays_pending"
-
-# (item, sub type, plan) for every asset. The plan is one of:
-#     submit             created and submitted, so it ends PENDING
-#     draft              saved as a Draft and left as a Draft
-#     draft_then_submit  saved as a Draft, then opened from the Registration
-#                        List and submitted, so it ends PENDING
-# Change a row to change what the tests do.
-TEN_AAQ_ASSET_ROWS = [
-    ("furniture", "spot", "submit"),
-    ("land", "spot", "submit"),
-    ("building", "spot", "draft_then_submit"),
-    ("laptop", "spot", "draft_then_submit"),
-    ("desktop", "spot", "draft"),
-    ("furniture", "gift", "submit"),
-    ("land", "gift", "submit"),
-    ("building", "gift", "draft_then_submit"),
-    ("laptop", "gift", "draft_then_submit"),
-    ("desktop", "gift", "draft"),
-]
-
-# The rows whose plan is draft_then_submit, taken from the list above
-DRAFT_THEN_SUBMIT_ROWS = []
-for row in TEN_AAQ_ASSET_ROWS:
-    if row[2] == "draft_then_submit":
-        DRAFT_THEN_SUBMIT_ROWS.append(row)
-
-# Put above a test to run it once for each of the 10 assets
-TEN_AAQ_ASSETS = pytest.mark.parametrize("item, sub_type, plan", TEN_AAQ_ASSET_ROWS)
-
-# Put above a test to run it only for the Drafts that are opened from the list and submitted
-DRAFTS_SUBMITTED_FROM_LIST = pytest.mark.parametrize("item, sub_type, plan", DRAFT_THEN_SUBMIT_ROWS)
-
-
-# ---------------------------------------------------------------------------
 # The voucher an approved registration creates (Accounting > Voucher Search)
 # ---------------------------------------------------------------------------
 
@@ -235,15 +191,6 @@ def build_registration_voucher(data: dict, approval_date: str) -> dict:
 # What the Asset Profile screens show for an approved asset
 # (Asset Serial Global List, Generate Barcode, Asset In Pending Process List)
 # ---------------------------------------------------------------------------
-
-# The assets that were submitted, and so are approved by the Approval List tests
-APPROVED_ASSET_ROWS = []
-for row in TEN_AAQ_ASSET_ROWS:
-    if row[2] != "draft":
-        APPROVED_ASSET_ROWS.append((row[0], row[1]))
-
-# Put above a test to run it once for each approved asset
-APPROVED_AAQ_ASSETS = pytest.mark.parametrize("item, sub_type", APPROVED_ASSET_ROWS)
 
 # Per item: (Asset Item Name, Sub Category, Category Name, Group Name) as the screens show them
 PROFILE_NAMES_BY_ITEM = {

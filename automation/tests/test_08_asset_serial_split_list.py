@@ -21,8 +21,6 @@ To run part of the file:
 import pytest
 
 from test_data.asset_split_data import (
-    CREATED_BY_NAME,
-    CREATED_BY_SEARCH_TEXT,
     LAND_ACC_DEPRECIATION_TEXT,
     LAND_ITEM_NAME,
     LAND_MEASUREMENT_TEXT,
@@ -76,7 +74,7 @@ def test_split_list_unknown_serial_shows_no_data(page, asset_split_list_page, ta
 
 @pytest.mark.smoke
 @pytest.mark.regression
-def test_split_list_shows_the_pending_split(page, asset_split_list_page, splits, take_screenshot):
+def test_split_list_shows_the_pending_split(page, asset_split_list_page, splits, current_user, take_screenshot):
     """Asset Serial Split List: searching the split Land asset's serial lists its PENDING split."""
     # Step 1: get the split that is waiting for approval
     split = splits.get_pending_split()
@@ -93,7 +91,7 @@ def test_split_list_shows_the_pending_split(page, asset_split_list_page, splits,
         "Asset Serial No.": split["serial"],
         "Split Into": SPLIT_INTO,
         "Remarks": SPLIT_REMARKS,
-        "Created By": CREATED_BY_NAME,
+        "Created By": current_user["name"],
         "Status": "PENDING",
         "Approved By": "",
         "Approval Date": "",
@@ -133,28 +131,28 @@ def test_split_number_opens_the_split_view_popup(page, asset_split_list_page, sp
 
 
 @pytest.mark.regression
-def test_split_list_created_by_filter(page, asset_split_list_page, splits, take_screenshot):
+def test_split_list_created_by_filter(page, asset_split_list_page, splits, current_user, take_screenshot):
     """Asset Serial Split List: the Created By filter lists only the splits made by that person."""
     # Step 1: make sure at least one split exists, then open the list
     splits.get_pending_split()
     asset_split_list_page.navigate_here()
 
     # Step 2: type the first letters of the name and pick the employee from the suggestions
-    asset_split_list_page.pick_created_by(CREATED_BY_SEARCH_TEXT, CREATED_BY_NAME)
+    asset_split_list_page.pick_created_by(current_user["search_text"], current_user["name"])
     take_screenshot("created by picked")
 
     # Step 3: search; every row was created by that person
-    asset_split_list_page.search_and_wait_for(CREATED_BY_NAME)
+    asset_split_list_page.search_and_wait_for(current_user["name"])
     take_screenshot("filtered by created by")
-    asset_split_list_page.verify_all_rows_have("Created By", CREATED_BY_NAME)
+    asset_split_list_page.verify_all_rows_have("Created By", current_user["name"])
 
 
 @pytest.mark.regression
-def test_split_list_reset_clears_the_filters(page, asset_split_list_page, take_screenshot):
+def test_split_list_reset_clears_the_filters(page, asset_split_list_page, current_user, take_screenshot):
     """Asset Serial Split List: Reset empties the Asset Serial and Created By filters."""
     # Step 1: open the list, fill both filters
     asset_split_list_page.navigate_here()
-    asset_split_list_page.pick_created_by(CREATED_BY_SEARCH_TEXT, CREATED_BY_NAME)
+    asset_split_list_page.pick_created_by(current_user["search_text"], current_user["name"])
     asset_split_list_page.search_by_serial("NOSUCHSERIAL000")
     take_screenshot("filters filled")
 

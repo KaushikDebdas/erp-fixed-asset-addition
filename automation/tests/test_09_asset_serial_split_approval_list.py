@@ -26,7 +26,6 @@ To run part of the file:
 import pytest
 
 from test_data.asset_split_data import (
-    CREATED_BY_NAME,
     LAND_ACC_DEPRECIATION_TEXT,
     LAND_ITEM_NAME,
     LAND_MEASUREMENT_TEXT,
@@ -69,7 +68,7 @@ def test_split_approval_list_grid_columns(page, asset_split_approval_list_page, 
 @pytest.mark.smoke
 @pytest.mark.regression
 def test_split_approval_list_shows_the_pending_split(
-    page, asset_split_approval_list_page, splits, take_screenshot
+    page, asset_split_approval_list_page, splits, current_user, take_screenshot
 ):
     """Asset Serial Split Approval List: the pending split of the Land asset is listed, waiting for approval."""
     # Step 1: get the split that is waiting for approval
@@ -85,7 +84,7 @@ def test_split_approval_list_shows_the_pending_split(
         "Asset Split No.": split["split_no"],
         "Asset Group": LAND_ITEM_NAME,
         "Split Into": SPLIT_INTO,
-        "Created By": CREATED_BY_NAME,
+        "Created By": current_user["name"],
         "Status": "PENDING",
         "Approved By": "",
         "Approval Date": "",
@@ -144,7 +143,7 @@ def test_split_approval_list_nothing_ticked(button_name, page, asset_split_appro
 @pytest.mark.regression
 def test_approve_split_makes_new_serials(
     page, asset_split_approval_list_page, asset_serial_global_list_page, asset_serial_split_page,
-    splits, take_screenshot
+    splits, current_user, take_screenshot
 ):
     """Asset Serial Split Approval List: approving the split makes the new serials and removes the original."""
     # Step 1: get the pending split, open the list and search its serial
@@ -161,7 +160,7 @@ def test_approve_split_makes_new_serials(
     # Step 3: the row shows APPROVED, the approver and the approval date
     asset_split_approval_list_page.wait_for_status(split["serial"], "APPROVED")
     take_screenshot("split approved")
-    asset_split_approval_list_page.verify_row_is_approved(split["serial"], CREATED_BY_NAME)
+    asset_split_approval_list_page.verify_row_is_approved(split["serial"], current_user["name"])
 
     # Step 4: read the new serials and save them in the split record
     approved = splits.remember_approved_split(split)

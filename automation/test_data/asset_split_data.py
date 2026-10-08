@@ -22,9 +22,6 @@ LAND_MEASUREMENT = 12.5
 LAND_VALUE = 25000.0
 
 # The user who creates and approves the splits (shown in the Created By / Approved By columns)
-CREATED_BY_SEARCH_TEXT = "abushoaib"
-CREATED_BY_NAME = "Abu Shoaib Asik"
-
 # Column headings of the Split List and Split Approval List grids
 SPLIT_GRID_COLUMNS = [
     "SL", "Asset Split No.", "Asset Group", "Project Name", "Department Name",

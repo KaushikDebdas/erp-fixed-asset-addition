@@ -15,20 +15,11 @@ from test_data.toast_messages import (
 from utils.logger import action_logger
 
 
-def create_approved_asset(aaq_page, registration_list_page, approval_list_page, data: dict) -> dict:
+def approve_registration(approval_list_page, registration_number: str) -> str:
     """
-    Register, submit and approve one asset. Returns
-    {"registration_number": ..., "serial": ...}.
+    Approve a PENDING registration from the Approval List popup and return the Asset
+    Serial Number the approval creates.
     """
-    # Register and submit on the AAQ form
-    aaq_page.navigate_here()
-    aaq_page.create_and_submit(data)
-
-    # Find the new registration (the newest PENDING one)
-    registration_list_page.navigate_here()
-    registration_list_page.filter_by_status("PENDING")
-    registration_number = registration_list_page.get_newest_registration_number()
-
     # Open it from the Approval List and approve it from the popup
     approval_list_page.navigate_here()
     approval_list_page.filter_by_registration_number(registration_number)
@@ -41,7 +32,24 @@ def create_approved_asset(aaq_page, registration_list_page, approval_list_page, 
     approval_list_page.open_registration_popup(registration_number)
     approval_list_page.open_asset_serials_tab()
     serial = approval_list_page.get_generated_asset_serial()
-    action_logger.info(f"Created asset {serial} from registration {registration_number}")
+    action_logger.info(f"Approved registration {registration_number}: asset {serial}")
+    return serial
+
+
+def create_approved_asset(aaq_page, registration_list_page, approval_list_page, data: dict) -> dict:
+    """
+    Register, submit and approve one asset. Returns
+    {"registration_number": ..., "serial": ...}.
+    """
+    # Register and submit on the AAQ form
+    aaq_page.navigate_here()
+    aaq_page.create_and_submit(data)
+
+    # Find the new registration (the newest PENDING one) and approve it
+    registration_list_page.navigate_here()
+    registration_list_page.filter_by_status("PENDING")
+    registration_number = registration_list_page.get_newest_registration_number()
+    serial = approve_registration(approval_list_page, registration_number)
     return {"registration_number": registration_number, "serial": serial}
 
 

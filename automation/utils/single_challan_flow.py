@@ -2,10 +2,10 @@
 single_challan_flow.py: carries one Asset Single Challan through its stages, so
 every Single Challan test can run alone or after another.
 
-Two challans (two paths) move through the files in order, each with its own new
-approved asset (a challan uses its asset up):
-    "draft"  : Create + Draft, then Edit and Submit from the list
-    "submit" : Create + Submit directly
+Two challans (two paths) move through the files in order, each with its own approved
+asset from the pool (a challan uses its asset up):
+    "draft"  : Create + Draft, then Edit and Submit from the list   (slot challan_a)
+    "submit" : Create + Submit directly                             (slot challan_b)
 
 Stages of a path, in order:
     drafted (draft path only), submitted, serial_added, approved, acknowledged
@@ -14,71 +14,38 @@ Example:
     flow = single_challan.reach("submit", "serial_added")
     challan_no = flow["challan_no"]
 
-`reach` does every stage that is not done yet, up to the one asked for, and
-remembers it. A test that does a stage itself calls `record` so the stage is
-not done twice.
+The stage handling (`reach`, `record`) comes from `utils/flow_stages.py`.
 """
 from test_data.asset_shipment_data import build_challan_data
-from utils.logger import action_logger
+from utils.flow_stages import FlowStages
 
-# Stages of each path, in order
-STAGES = {
-    "draft": ["drafted", "submitted", "serial_added", "approved", "acknowledged"],
-    "submit": ["submitted", "serial_added", "approved", "acknowledged"],
-}
-
-# Status the challan list must show once a stage is done
-STAGE_STATUS = {
-    "drafted": "DRAFT",
-    "submitted": "PENDING",
-    "approved": "APPROVED",
-    "acknowledged": "ACKNOWLEDGED",
-}
+# The pool slot (test_data/asset_slots.py) each path takes its asset from
+SLOT_BY_PATH = {"draft": "challan_a", "submit": "challan_b"}
 
 
-class SingleChallanFlow:
+class SingleChallanFlow(FlowStages):
     """Does the missing stages of a Single Challan and remembers what it made."""
 
-    def __init__(self, registrations, out_challan_page, approval_page, in_challan_page, shared: dict):
+    STAGES = {
+        "draft": ["drafted", "submitted", "serial_added", "approved", "acknowledged"],
+        "submit": ["submitted", "serial_added", "approved", "acknowledged"],
+    }
+
+    def __init__(self, assets, out_challan_page, approval_page, in_challan_page, shared: dict):
         """
-        `registrations` gives each challan its new approved asset. The three pages
-        work in the browser tab of the logged-in user (the same user does everything). `shared` is the dictionary shared
-        by the whole test run (fixture `shared_single_challan`).
+        `assets` is the asset pool: it gives each challan its approved asset. The three pages
+        work in the browser tab of the logged-in user (the same user does everything). `shared`
+        is the dictionary shared by the whole test run (fixture `shared_single_challan`).
         """
-        self.registrations = registrations
+        super().__init__(shared)
+        self.assets = assets
         self.out_challan_page = out_challan_page
         self.approval_page = approval_page
         self.in_challan_page = in_challan_page
-        self.shared = shared
-
-    def flow(self, path: str) -> dict:
-        """Return the remembered flow of this path ("draft" or "submit"), made empty on first use."""
-        return self.shared.setdefault(path, {"done": []})
-
-    def is_done(self, path: str, stage: str) -> bool:
-        """Return True when this stage of this path was already done."""
-        return stage in self.flow(path)["done"]
-
-    def record(self, path: str, stage: str) -> None:
-        """Remember that a test did this stage itself (nothing happens when it is already remembered)."""
-        if not self.is_done(path, stage):
-            self.flow(path)["done"].append(stage)
 
     def get_serial(self, path: str) -> str:
-        """Return the Asset Serial of the new approved asset this path uses (it is registered and approved now when it does not exist yet)."""
-        owner = f"single_challan_{path}"
-        return self.registrations.get_approved("furniture", "spot", owner)["serial"]
-
-    def reach(self, path: str, stage: str) -> dict:
-        """Do every stage of `path` up to and including `stage` that is not done yet. Returns the flow dictionary."""
-        for name in STAGES[path]:
-            if not self.is_done(path, name):
-                action_logger.info(f"Single challan ({path}): doing stage {name}")
-                getattr(self, "do_" + name)(path)
-                self.record(path, name)
-            if name == stage:
-                break
-        return self.flow(path)
+        """Return the Asset Serial of the asset this path uses (registered and approved now when the pool has none yet)."""
+        return self.assets.get(SLOT_BY_PATH[path])["serial"]
 
     # ------------------------------------------------------------------
     # The stages
@@ -128,6 +95,7 @@ class SingleChallanFlow:
         page.open_popup(challan_no)
         page.add_serial(serial)
         self.flow(path)["serial"] = serial
+        self.assets.consume(SLOT_BY_PATH[path])
 
     def do_approved(self, path: str) -> None:
         """Approve the challan from the Approval List with a comment."""

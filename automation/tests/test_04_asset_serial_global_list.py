@@ -1,19 +1,20 @@
 """
 test_04_asset_serial_global_list.py: tests for the Asset Serial Global
 List screen (Fixed Asset > Asset Profile > Asset Serial Global List) and its
-Asset Profile Details popup, using the 8 approved AAQ assets.
+Asset Profile Details popup, using approved assets of the asset slots
+(test_data/asset_slots.py).
 
 Built from automation/element_catalog/asset_serial_global_list.md and
 asset_profile_reference_values.md. The assets are the ones approved by
 test_03_asset_registration_approval_list.py; they are remembered, with
-their Asset Serial, under AAQ_ASSET_GROUP (test_data/asset_registration_data.py).
-When a test here runs on its own, the `registrations` fixture creates and
-approves the asset it needs, so every test can run alone.
+their Asset Serial, under their slot name. When a test here runs on its own,
+the `registrations` fixture creates and approves the asset it needs, so every
+test can run alone.
 
-Every approved asset is checked against its own data: the grid row and the
-popup must show its Asset Serial, registration number, item, categories,
-project, status and values. The rest of the screen (filters, tabs, the Change
-popups) is checked once, on one shared asset.
+Three approved assets of different items (Furniture, Land, Building) are checked against
+their own data: the grid row and the popup must show the Asset Serial, registration number,
+item, categories, project, status and values. The rest of the screen (filters, tabs, the
+Change popups) is checked once, on one shared asset.
 
 The whole file logs in once and every test reuses that session.
 Nothing is saved: the Update buttons are only clicked with a missing value to
@@ -26,15 +27,11 @@ The tests run top to bottom:
     4. The Change popups: Source Of Fund, Utilization Status, Item, Measurement
 
 To run part of the file:
-    pytest tests/test_04_asset_serial_global_list.py -k "land"
+    pytest tests/test_04_asset_serial_global_list.py -k "split_land"
 """
 import pytest
 
-from test_data.asset_registration_data import (
-    AAQ_ASSET_GROUP,
-    APPROVED_AAQ_ASSETS,
-    build_asset_profile,
-)
+from test_data.asset_registration_data import build_asset_profile
 from test_data.toast_messages import (
     ITEM_SPECIFICATION_TOAST,
     NOTE_TOAST,
@@ -44,9 +41,11 @@ from utils.run_context import trace_one_test
 
 # Messages (toasts) the screen shows
 
-# The asset the tests share when they only need "an approved asset"
-SHARED_ITEM = "land"
-SHARED_SUB_TYPE = "spot"
+# The asset the tests share when they only need "an approved asset" (the Land slot)
+SHARED_SLOT = "split_land"
+
+# The assets whose own data is checked: one slot each of Furniture, Land and Building
+CHECKED_SLOTS = pytest.mark.parametrize("slot", ["usage_a", "split_land", "sale_profit_b"])
 
 # Column headings of the grid, in order
 GRID_COLUMNS = [
@@ -85,20 +84,19 @@ def page(logged_in_page, request):
 
 @pytest.mark.smoke
 @pytest.mark.regression
-@APPROVED_AAQ_ASSETS
+@CHECKED_SLOTS
 def test_global_list_row_shows_the_asset_data(
-    item, sub_type, page, registrations, transactions, asset_serial_global_list_page, take_screenshot
+    slot, page, registrations, asset_serial_global_list_page, take_screenshot
 ):
     """Asset Serial Global List: searching an Asset Serial lists that asset with its own item, categories, project and statuses."""
     # Step 1: get the approved asset (approved by an earlier test, or created and approved now)
-    record = registrations.get_approved(item, sub_type, AAQ_ASSET_GROUP)
-    transactions.ensure_unassigned_if_saved_asset(item, sub_type)
+    record = registrations.get_approved_of(slot)
     expected = build_asset_profile(record["data"], record["registration_number"], record["serial"])
 
     # Step 2: open the Asset Serial Global List and search its Asset Serial
     asset_serial_global_list_page.navigate_here()
     asset_serial_global_list_page.search_by_serial(record["serial"])
-    take_screenshot(f"{sub_type} {item} asset {record['serial']} found")
+    take_screenshot(f"{slot} asset {record['serial']} found")
 
     # Step 3: exactly this asset is listed, and its row shows its own data
     assert asset_serial_global_list_page.is_serial_listed(record["serial"]), (
@@ -108,21 +106,20 @@ def test_global_list_row_shows_the_asset_data(
 
 
 @pytest.mark.regression
-@APPROVED_AAQ_ASSETS
+@CHECKED_SLOTS
 def test_global_list_popup_shows_the_asset_data(
-    item, sub_type, page, registrations, transactions, asset_serial_global_list_page, take_screenshot
+    slot, page, registrations, asset_serial_global_list_page, take_screenshot
 ):
     """Asset Serial Global List: the popup shows the asset's registration number, categories, project, measurement and value."""
     # Step 1: get the approved asset
-    record = registrations.get_approved(item, sub_type, AAQ_ASSET_GROUP)
-    transactions.ensure_unassigned_if_saved_asset(item, sub_type)
+    record = registrations.get_approved_of(slot)
     expected = build_asset_profile(record["data"], record["registration_number"], record["serial"])
 
     # Step 2: find the asset and open its popup
     asset_serial_global_list_page.navigate_here()
     asset_serial_global_list_page.search_by_serial(record["serial"])
     asset_serial_global_list_page.open_asset_popup(record["serial"])
-    take_screenshot(f"{sub_type} {item} popup of {record['serial']}")
+    take_screenshot(f"{slot} popup of {record['serial']}")
 
     # Step 3: the popup shows what was registered and what approval created
     asset_serial_global_list_page.verify_popup_shows(expected)
@@ -134,8 +131,8 @@ def test_global_list_popup_shows_the_asset_data(
 
 
 @pytest.mark.regression
-def test_global_list_grid_columns(page, asset_serial_global_list_page, take_screenshot):
-    """Asset Serial Global List: the results grid shows the documented columns."""
+def test_global_list_columns_and_unknown_serial(page, asset_serial_global_list_page, take_screenshot):
+    """Asset Serial Global List: the results grid shows the documented columns, and an Asset Serial that does not exist lists no asset."""
     # Step 1: open the Asset Serial Global List
     asset_serial_global_list_page.navigate_here()
     take_screenshot("asset serial global list opened")
@@ -144,16 +141,9 @@ def test_global_list_grid_columns(page, asset_serial_global_list_page, take_scre
     found_headers = asset_serial_global_list_page.get_grid_headers()
     assert found_headers == GRID_COLUMNS, f"Expected grid columns {GRID_COLUMNS} but found {found_headers}."
 
-
-@pytest.mark.regression
-def test_global_list_unknown_serial_lists_nothing(page, asset_serial_global_list_page, take_screenshot):
-    """Asset Serial Global List: an Asset Serial that does not exist lists no asset."""
-    # Step 1: open the list and search a well-formed serial that does not exist
-    asset_serial_global_list_page.navigate_here()
+    # Step 3: a well-formed serial that does not exist is not listed
     asset_serial_global_list_page.search_by_serial("BBDASR99999999")
     take_screenshot("unknown serial searched")
-
-    # Step 2: it is not listed
     assert not asset_serial_global_list_page.is_serial_listed("BBDASR99999999"), (
         "Expected Asset Serial 'BBDASR99999999' not to be listed but it was."
     )
@@ -164,7 +154,7 @@ def test_global_list_filter_by_utilization_status(
     page, registrations, asset_serial_global_list_page, take_screenshot
 ):
     """Asset Serial Global List: the Utilization Status filter keeps only matching assets."""
-    serial = registrations.get_approved(SHARED_ITEM, SHARED_SUB_TYPE, AAQ_ASSET_GROUP)["serial"]
+    serial = registrations.get_approved_of(SHARED_SLOT)["serial"]
 
     # Step 1: filter by the status the asset really has (IN_USE); it is listed
     asset_serial_global_list_page.navigate_here()
@@ -189,7 +179,7 @@ def test_global_list_filter_by_assign_status(
     page, registrations, asset_serial_global_list_page, take_screenshot
 ):
     """Asset Serial Global List: the Assign Status filter keeps only matching assets."""
-    serial = registrations.get_approved(SHARED_ITEM, SHARED_SUB_TYPE, AAQ_ASSET_GROUP)["serial"]
+    serial = registrations.get_approved_of(SHARED_SLOT)["serial"]
 
     # Step 1: the asset is UNASSIGNED, so it shows under UNASSIGNED
     asset_serial_global_list_page.navigate_here()
@@ -217,7 +207,7 @@ def test_global_list_filter_by_assign_status(
 @pytest.mark.regression
 def test_global_list_popup_tabs(page, registrations, asset_serial_global_list_page, take_screenshot):
     """Asset Serial Global List: the popup has seven tabs and a new asset has no history yet."""
-    serial = registrations.get_approved(SHARED_ITEM, SHARED_SUB_TYPE, AAQ_ASSET_GROUP)["serial"]
+    serial = registrations.get_approved_of(SHARED_SLOT)["serial"]
 
     # Step 1: open the asset popup
     asset_serial_global_list_page.navigate_here()
@@ -247,7 +237,7 @@ def test_global_list_popup_tabs(page, registrations, asset_serial_global_list_pa
 @pytest.mark.regression
 def test_global_list_source_of_fund_values(page, registrations, asset_serial_global_list_page, take_screenshot):
     """Asset Serial Global List: the Source Of Fund Change popup offers the list of funds."""
-    serial = registrations.get_approved(SHARED_ITEM, SHARED_SUB_TYPE, AAQ_ASSET_GROUP)["serial"]
+    serial = registrations.get_approved_of(SHARED_SLOT)["serial"]
 
     # Step 1: open the asset popup and click Change next to Source Of Fund
     asset_serial_global_list_page.navigate_here()
@@ -274,7 +264,7 @@ def test_global_list_source_of_fund_requires_selection(
     page, registrations, asset_serial_global_list_page, take_screenshot
 ):
     """Asset Serial Global List: Update in the Source Of Fund popup is refused until a fund is selected."""
-    serial = registrations.get_approved(SHARED_ITEM, SHARED_SUB_TYPE, AAQ_ASSET_GROUP)["serial"]
+    serial = registrations.get_approved_of(SHARED_SLOT)["serial"]
 
     # Step 1: open the Source Of Fund popup
     asset_serial_global_list_page.navigate_here()
@@ -296,7 +286,7 @@ def test_global_list_utilization_status_values(
     page, registrations, asset_serial_global_list_page, take_screenshot
 ):
     """Asset Serial Global List: the Utilization Status Change popup offers the eight statuses."""
-    serial = registrations.get_approved(SHARED_ITEM, SHARED_SUB_TYPE, AAQ_ASSET_GROUP)["serial"]
+    serial = registrations.get_approved_of(SHARED_SLOT)["serial"]
 
     # Step 1: open the asset popup and click Change next to Asset Utilization Status
     asset_serial_global_list_page.navigate_here()
@@ -322,7 +312,7 @@ def test_global_list_status_change_requires_note(
     page, registrations, asset_serial_global_list_page, take_screenshot
 ):
     """Asset Serial Global List: a Utilization Status change is refused without a Note."""
-    serial = registrations.get_approved(SHARED_ITEM, SHARED_SUB_TYPE, AAQ_ASSET_GROUP)["serial"]
+    serial = registrations.get_approved_of(SHARED_SLOT)["serial"]
 
     # Step 1: open the Utilization Status popup
     asset_serial_global_list_page.navigate_here()
@@ -344,7 +334,7 @@ def test_global_list_item_change_requires_specification(
     page, registrations, asset_serial_global_list_page, take_screenshot
 ):
     """Asset Serial Global List: an Item change is refused without a new Specification/IMEI/SL No."""
-    serial = registrations.get_approved(SHARED_ITEM, SHARED_SUB_TYPE, AAQ_ASSET_GROUP)["serial"]
+    serial = registrations.get_approved_of(SHARED_SLOT)["serial"]
 
     # Step 1: open the Item popup
     asset_serial_global_list_page.navigate_here()
@@ -366,7 +356,7 @@ def test_global_list_measurement_change_unlocks_field(
     page, registrations, asset_serial_global_list_page, take_screenshot
 ):
     """Asset Serial Global List: Change next to Measurement makes the box editable and keeps its value."""
-    record = registrations.get_approved(SHARED_ITEM, SHARED_SUB_TYPE, AAQ_ASSET_GROUP)
+    record = registrations.get_approved_of(SHARED_SLOT)
     expected = build_asset_profile(record["data"], record["registration_number"], record["serial"])
 
     # Step 1: open the asset popup; Measurement is read-only at first

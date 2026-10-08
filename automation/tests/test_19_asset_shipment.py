@@ -23,10 +23,10 @@ order, each stage is done once and reused. Do not run a later test before an
 earlier one that checks the older state (for example 'Pending') in the same run.
     pytest tests/test_19_asset_shipment.py
 
-The approved asset that is transferred is saved in test_data/saved_assets.json
-(`transfer.get_asset()`, utils/transfer_helper.py): a separate run reuses it, a
-new one is created only when none is saved, and it is removed once the shipment
-is in a challan. The shipment itself is new in every run.
+The approved asset that is transferred is the slot transfer_a of the asset pool
+(`transfer.get_asset()`, utils/transfer_helper.py): it is registered and approved
+when the pool has none, and it is used up once its serial is in a challan. The
+shipment itself is new in every run.
     pytest "tests/test_19_asset_shipment.py::test_challan_submit"
 """
 import pytest
@@ -45,12 +45,6 @@ from test_data.toast_messages import (
     SHIPMENT_NO_CHALLAN_TOAST,
 )
 from utils.run_context import trace_one_test
-
-
-@pytest.fixture
-def transfer(saved_transfer):
-    """The shipment stages, with the transferred asset saved in the JSON file."""
-    return saved_transfer
 
 
 @pytest.fixture

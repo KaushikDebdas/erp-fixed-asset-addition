@@ -1,25 +1,20 @@
 """
-test_14_transaction_approval_list.py: tests for the Transaction Approval
+test_15_transaction_approval_list.py: tests for the Transaction Approval
 List screen (Fixed Asset > Asset Transaction > Transaction Approval List).
 
 Built from automation/element_catalog/transaction_approval_list.md. The whole
 file logs in once and every test reuses that session. These tests read the list
 only: Approve, Reject and Sendback are never clicked here. The full Details >
-Approve path of each transaction type is tested in test_10, test_11 and test_12.
-
-The per-asset test checks the transactions of the saved Furniture asset (see
-utils/transaction_helper.py): its own APPROVED ASSIGN, TRANSFER (Internal
-Movement) and UNASSIGN transactions, made by test_10, test_11 and test_12. Run
-on its own, only a transaction that is missing is made first, and the asset's
-saved record is never changed.
+Approve path of each transaction type, and the asset's own transaction in the
+list, are tested in test_10, test_12 and test_13 (the Assign, Internal Movement
+and Un Assign files).
 
 The tests run top to bottom:
     1. The page: columns and filters
     2. Filter by type and by status, the Details popup
-    3. The saved asset's own transactions
 
 To run part of the file:
-    pytest tests/test_14_transaction_approval_list.py -k "asset"
+    pytest tests/test_15_transaction_approval_list.py -k "filter"
 """
 import pytest
 
@@ -52,8 +47,8 @@ def page(logged_in_page, request):
 
 @pytest.mark.smoke
 @pytest.mark.regression
-def test_approval_list_grid_columns(page, transaction_approval_page, take_screenshot):
-    """Transaction Approval List: the grid shows the documented columns."""
+def test_approval_list_columns_and_filter_values(page, transaction_approval_page, take_screenshot):
+    """Transaction Approval List: the grid shows the documented columns, the Type filter offers the three types and the Status filter has no DRAFT."""
     # Step 1: open the Transaction Approval List
     transaction_approval_page.navigate_here()
     take_screenshot("transaction approval list opened")
@@ -61,15 +56,7 @@ def test_approval_list_grid_columns(page, transaction_approval_page, take_screen
     # Step 2: the column headings (no Edit column here)
     transaction_approval_page.verify_grid_headers(GRID_COLUMNS)
 
-
-@pytest.mark.regression
-def test_approval_list_filter_values(page, transaction_approval_page, take_screenshot):
-    """Transaction Approval List: the Type filter offers the three types and the Status filter has no DRAFT."""
-    # Step 1: open the Transaction Approval List
-    transaction_approval_page.navigate_here()
-    take_screenshot("filters shown")
-
-    # Step 2: the Transaction Type and Transaction Status values
+    # Step 3: the Transaction Type and Transaction Status values
     transaction_approval_page.verify_filter_options(TYPE_OPTIONS, STATUS_OPTIONS)
 
 
@@ -126,30 +113,5 @@ def test_approval_list_details_popup(page, transaction_approval_page, take_scree
     transaction_approval_page.verify_popup_value("oldTransactionStatus", "APPROVED")
 
     # Step 4: an approved transaction offers no decision, then the popup is closed
-    transaction_approval_page.verify_no_decision_buttons()
-    transaction_approval_page.close_popup()
-
-
-# ---------------------------------------------------------------------------
-# 3. The saved asset's own transactions
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.smoke
-@pytest.mark.regression
-@pytest.mark.parametrize("transaction_type", [ASSIGN, TRANSFER, UNASSIGN])
-def test_approval_list_shows_the_assets_transaction(
-    page, transaction_approval_page, transactions, transaction_type, take_screenshot
-):
-    """Transaction Approval List: the saved Furniture asset has an APPROVED transaction of each type, with no decision buttons."""
-    # Step 1: get the asset; a transaction of this type is made only when none exists
-    serial = transactions.ensure_transaction(transaction_type)
-
-    # Step 2: open the list and find the asset's APPROVED transaction of this type
-    transaction_approval_page.navigate_here()
-    transaction_approval_page.open_transaction_of_asset(serial, transaction_type, "APPROVED")
-    take_screenshot(f"{transaction_type} of {serial}")
-
-    # Step 3: the popup offers no decision on an approved transaction
     transaction_approval_page.verify_no_decision_buttons()
     transaction_approval_page.close_popup()

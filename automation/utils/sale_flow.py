@@ -1,50 +1,102 @@
 """
-sale_flow.py: one reusable step used by the Asset Sale tests.
+sale_flow.py: carries an Asset Sale through its stages, so every Sale test can run
+alone or after another.
 
-The asset sold is one of the approved assets that test_01 creates (the "ten AAQ
-assets", saved in test_data/saved_assets.json and read with
-`registrations.get_approved`). It is UNASSIGNED and IN_USE, which is what the
-Asset Sale screen needs; its status is not changed.
+An asset can be sold while it is IN_USE, as long as it is UNASSIGNED and not in a
+pending process; its status is not changed. Each of the four paths sells its own
+asset of the pool (test_data/asset_slots.py) for a Sale Value above or below its
+Written Down Value, and a sold asset cannot be sold again:
 
-A sold asset cannot be sold again, so `create_sale` removes it from the saved
-assets once the sale is saved (a later run then registers a new one).
+    path       slot           Sale Value      saved with
+    profit_a   sale_profit_a  WDV + 5000      Draft   (then Edit from the list, Submit)
+    profit_b   sale_profit_b  WDV + 5000      Submit
+    loss_a     sale_loss_a    WDV - 5000      Draft   (then Edit from the list, Submit)
+    loss_b     sale_loss_b    WDV - 5000      Submit
+
+Stages of a path, in order:
+    saved (the Draft or the Submit), submitted (a Draft path only: Edit from the list and Submit)
+
+Example:
+    flow = sale.reach("profit_a", "saved")
+    sale_id = flow["sale_id"]
+
+The stage handling (`reach`, `record`) comes from `utils/flow_stages.py`.
 """
-from pages.asset_sale_page import AssetSalePage
-from test_data.asset_registration_data import AAQ_ASSET_GROUP
-from utils.registration_helper import RegistrationHelper
+from utils.flow_stages import FlowStages
 
 SALE_NOTE = "sale"
 
+# Per path: the pool slot, how much the Sale Value is above (+) or below (-) the Written Down Value, how it is saved
+PATHS = {
+    "profit_a": {"slot": "sale_profit_a", "change": 5000, "save_as": "draft"},
+    "profit_b": {"slot": "sale_profit_b", "change": 5000, "save_as": "submit"},
+    "loss_a": {"slot": "sale_loss_a", "change": -5000, "save_as": "draft"},
+    "loss_b": {"slot": "sale_loss_b", "change": -5000, "save_as": "submit"},
+}
 
-def create_sale(
-    registrations: RegistrationHelper, sale_page: AssetSalePage, item: str, sub_type: str, sale_change: int, save_as: str
-) -> dict:
-    """
-    Sell the approved AAQ asset of this item and sub type ("furniture", "gift").
-    `sale_change` is added to the Written Down Value to get the Sale Value (+5000
-    sells above it, -5000 below it); `save_as` is "draft" or "submit".
-    Returns {"serial", "sale_value", "profit_loss"}.
-    """
-    # The approved asset made by test_01 (registered now when none is saved)
-    record = registrations.get_approved(item, sub_type, AAQ_ASSET_GROUP)
-    serial = record["serial"]
 
-    # Open the sale form, choose the project and the asset
-    sale_page.navigate_here()
-    sale_page.select_project(record["data"]["project"])
-    sale_page.select_asset(serial, serial)
+class SaleFlow(FlowStages):
+    """Does the missing stages of an Asset Sale and remembers what it made."""
 
-    # Enter the Sale Value and Add to Grid
-    sale_value = sale_page.get_written_down_value() + sale_change
-    sale_page.enter_sale_value(sale_value)
-    sale_page.enter_note(SALE_NOTE)
-    sale_page.add_to_grid()
-    sale_page.verify_sale_grid_row(serial, sale_value, sale_change)
+    STAGES = {
+        "profit_a": ["saved", "submitted"],
+        "profit_b": ["saved"],
+        "loss_a": ["saved", "submitted"],
+        "loss_b": ["saved"],
+    }
 
-    # Save it, then forget the asset: it is used up
-    if save_as == "draft":
-        sale_page.draft_and_verify()
-    else:
-        sale_page.submit_and_verify()
-    registrations.forget(record, "APPROVED", AAQ_ASSET_GROUP)
-    return {"serial": serial, "sale_value": sale_value, "profit_loss": sale_change}
+    def __init__(self, assets, sale_page, list_page, shared: dict):
+        """
+        `assets` is the asset pool. The two pages are the Asset Sale form and the Asset Sale List,
+        in the browser tab of the logged-in user. `shared` is the dictionary shared by the whole
+        test run (fixture `shared_sale`).
+        """
+        super().__init__(shared)
+        self.assets = assets
+        self.sale_page = sale_page
+        self.list_page = list_page
+
+    def use_up(self, path: str) -> None:
+        """Give the asset of this path back to the pool: it is sold and cannot be sold again."""
+        self.assets.consume(PATHS[path]["slot"])
+
+    def do_saved(self, path: str) -> None:
+        """Sell the asset of this path: fill the sale form, Add to Grid, and save it with Draft or Submit."""
+        details = PATHS[path]
+        asset = self.assets.get(details["slot"])
+        serial = asset["serial"]
+        self.sale_page.navigate_here()
+        self.sale_page.select_project(asset["data"]["project"])
+        self.sale_page.select_asset(serial, serial)
+        sale_value = self.sale_page.get_written_down_value() + details["change"]
+        self.sale_page.enter_sale_value(sale_value)
+        self.sale_page.enter_note(SALE_NOTE)
+        self.sale_page.add_to_grid()
+        self.sale_page.verify_sale_grid_row(serial, sale_value, details["change"])
+        status = "DRAFT"
+        if details["save_as"] == "draft":
+            self.sale_page.draft_and_verify()
+        else:
+            self.sale_page.submit_and_verify()
+            status = "PENDING"
+        self.sale_page.verify_grid_is_empty()
+        self.list_page.navigate_here()
+        self.list_page.filter_by_status(status)
+        flow = self.flow(path)
+        flow["serial"] = serial
+        flow["sale_value"] = sale_value
+        flow["sale_id"] = self.list_page.get_newest_write_off_id()
+        flow["status"] = status
+
+    def do_submitted(self, path: str) -> None:
+        """Open the Draft sale with Edit from the Asset Sale List and Submit it, so it is PENDING."""
+        flow = self.flow(path)
+        self.list_page.navigate_here()
+        self.list_page.filter_by_status("DRAFT")
+        self.list_page.open_write_off_for_edit(flow["sale_id"])
+        self.sale_page.submit_and_verify()
+        self.sale_page.verify_grid_is_empty()
+        self.list_page.navigate_here()
+        self.list_page.filter_by_status("PENDING")
+        self.list_page.verify_status(flow["sale_id"], "PENDING")
+        flow["status"] = "PENDING"

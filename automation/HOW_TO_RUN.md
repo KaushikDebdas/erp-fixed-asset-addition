@@ -56,15 +56,36 @@ file has a play button. After pulling the project: press Ctrl+Shift+P, run
 "Developer: Reload Window", then open the Testing panel. A test started from
 the play button runs with the browser visible and the same logs.
 
-## The 10 AAQ assets are saved between runs
-The Asset Registration tests share 10 assets (see
-`test_data/asset_registration_data.py`). Their registration numbers are saved in
-`automation/test_data/saved_assets.json` (not committed to git), so you can run
-`test_01_...`, `test_02_...` and `test_03_...` in separate commands
-without creating the assets again. A saved asset is checked once per run: its
-Registration Number is searched in the list and its real Status must be the one
-saved. If it is not (for example someone approved it), a new asset is created.
-Delete the file to start again from nothing.
+## Where the assets come from (the asset map)
+Every test that needs an asset takes it from the asset pool by slot name
+(`assets.get("sale_profit_a")`, `utils/asset_pool.py`). The table of slots is in
+`test_data/asset_slots.py`; this is who uses which asset:
+
+| Slot | Item | Used by, in order |
+|---|---|---|
+| usage_a (Draft + Submit path) | furniture spot | Assign, Acknowledge, Internal Movement, Un Assign, Expense, then Write-off (test_10 to 13, 16, 27 to 29) |
+| usage_b (Submit-only path) | furniture gift | Assign, Internal Movement, Un Assign, Expense, then Write-off (test_10, 12, 13, 16, 27) |
+| split_land | land spot | Asset Serial Split (test_07 to 09) |
+| transfer_a | furniture spot | Asset Shipment (test_19 to 22) |
+| challan_a / challan_b | furniture spot / gift | Asset Single Challan, Draft path / Submit-only path (test_23 to 26) |
+| sale_profit_a / sale_profit_b | building spot / gift | Asset Sale above the Written Down Value, Draft / Submit (test_30, 31) |
+| sale_loss_a / sale_loss_b | laptop spot / gift | Asset Sale below the Written Down Value, Draft / Submit (test_30, 31) |
+| reg_draft / reg_pending | desktop spot / furniture spot | stay a Draft / stay PENDING (registration tests) |
+
+- **A full run** (`pytest`): tests 01 to 03 register and approve the slot assets once, the later
+  tests find them in the pool and reuse them, so an asset is never created twice. An asset a flow uses
+  up (sold, split, in a challan, written off) is taken out of the pool.
+- **One test alone** (for example `pytest tests/test_30_asset_sale.py -k loss_submit`): the pool is
+  empty, so the test registers and approves exactly the asset it needs, then uses it. No test depends on
+  another having run.
+- The assets exist only for the run (nothing is saved between runs), so every run starts with new assets.
+  The log shows `Asset pool: slot ... has asset ...` for each asset it registers.
+- Files that move through stages (shipment 19 to 22, single challan 23 to 26, write-off 27 to 29, sale 30
+  and 31) share their progress through `utils/flow_stages.py`: a test asks for the stage it needs
+  (`flow.reach("submitted")`) and any earlier stage that is not done yet is done first.
+- Only one login can be open for an account at a time (ERP shows "Concurrent Login Problem" for a second
+  one), so nothing else may be logged in as the test user while tests run, and the browser of the Claude
+  Code Playwright server must be closed.
 
 ## Watching a run in the terminal
 `pytest.ini` turns on `-s`, so every run prints, live and with or without a

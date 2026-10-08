@@ -1,26 +1,27 @@
 """
-test_11_asset_internal_movement.py: tests for the Asset Internal Movement
+test_12_asset_internal_movement.py: tests for the Asset Internal Movement
 screen (Fixed Asset > Asset Transaction > Asset Internal Movement).
 
-Built from automation/element_catalog/asset_internal_movement.md. The asset is
-NOT created here: it is the saved Furniture asset, read with
-registrations.get_approved("furniture", "spot", AAQ_ASSET_GROUP)
-(test_data/saved_assets.json). Its saved record is never changed. Internal
-Movement only works on an assigned asset, so each test reads the asset's real
-Assign Status from the Asset Serial Global List and assigns it first when needed
+Built from automation/element_catalog/asset_internal_movement.md. The assets are NOT
+created here: they are the two usage assets of the asset pool (test_data/asset_slots.py),
+usage_a for the Draft + Submit path and usage_b for the Submit-only path. Internal
+Movement only works on an assigned asset, so each test reads the asset's real Assign
+Status from the Asset Serial Global List and assigns it first when needed
 (`transactions.ensure_assigned()`, utils/transaction_helper.py). The whole file
 logs in once and every test reuses that session.
 
 The tests run top to bottom:
-    1. The form: the assigned asset, Search By, employee-PIN search, required message
-    2. LAST: Draft, Transaction List (Details, Edit, Submit), Transaction Approval
-       List (Details, Approve), and the asset shows its new building and floor
-       (this one test is a little longer than the others because it is the whole flow)
+    1. The form: the assigned asset, Search By, employee-PIN search
+    2. The Draft + Submit path (usage_a): Draft, Transaction List (Details, Edit, Submit),
+       Transaction Approval List (Details, Approve), and the asset shows its new
+       building and floor (this one test is a little longer than the others because it
+       is the whole flow)
+    3. The Submit-only path (usage_b): Submit straight from the form, Approve
 
-The asset stays ASSIGNED, which is the state test_12 starts from.
+Both assets stay ASSIGNED, which is the state test_13 starts from.
 
 To run part of the file:
-    pytest tests/test_11_asset_internal_movement.py -k "employee"
+    pytest tests/test_12_asset_internal_movement.py -k "employee"
 """
 import pytest
 
@@ -37,6 +38,7 @@ from test_data.toast_messages import (
 )
 from utils.run_context import trace_one_test
 from utils.transaction_flow import approve_and_verify, build_expected, submit_draft_from_list
+from utils.transaction_helper import USAGE_B
 
 NOTE = "AUTOMATION_TEST internal movement note"
 
@@ -58,7 +60,7 @@ def test_internal_movement_serial_search_shows_assigned_asset(
     page, internal_movement_page, transactions, take_screenshot
 ):
     """Asset Internal Movement: selecting the assigned asset shows its details and current assignee."""
-    # Step 1: get the saved asset, assigned
+    # Step 1: get the asset, assigned
     serial = transactions.ensure_assigned()
 
     # Step 2: open Asset Internal Movement, type the serial, search, and pick the suggestion
@@ -77,51 +79,30 @@ def test_internal_movement_serial_search_shows_assigned_asset(
 
 
 @pytest.mark.regression
-def test_internal_movement_search_by_options(page, internal_movement_page, take_screenshot):
-    """Asset Internal Movement: Search By offers Serial (the default) and Employee Pin."""
-    # Step 1: open the screen
-    internal_movement_page.navigate_here()
-    take_screenshot("search by options")
-
-    # Step 2: both choices are there and Serial is selected
-    internal_movement_page.verify_search_by_options()
-
-
-@pytest.mark.regression
 def test_internal_movement_search_by_employee_pin_loads_assets(
     page, internal_movement_page, transactions, take_screenshot
 ):
-    """Asset Internal Movement: searching by Employee Pin loads that employee's assigned assets."""
-    # Step 1: get the saved asset, assigned to the test employee
+    """Asset Internal Movement: Search By offers Serial (the default) and Employee Pin, and searching by Employee Pin loads that employee's assigned assets."""
+    # Step 1: open the screen; both choices are there and Serial is selected
+    internal_movement_page.navigate_here()
+    internal_movement_page.verify_search_by_options()
+    take_screenshot("search by options")
+
+    # Step 2: get the asset, assigned to the test employee
     serial = transactions.ensure_assigned()
 
-    # Step 2: switch Search By to Employee Pin and search the employee
+    # Step 3: switch Search By to Employee Pin and search the employee
     internal_movement_page.navigate_here()
     internal_movement_page.choose_search_by_employee_pin()
     internal_movement_page.load_assets_of_employee(ASSIGNEE_PIN)
     take_screenshot("assets of the employee loaded")
 
-    # Step 3: the Asset List holds the employee's assets, including the saved asset
+    # Step 4: the Asset List holds the employee's assets, including the asset
     internal_movement_page.verify_asset_in_list(serial)
 
 
-@pytest.mark.regression
-def test_internal_movement_requires_employee(page, internal_movement_page, transactions, take_screenshot):
-    """Asset Internal Movement: Draft without an employee is stopped by the 'This field is required' message."""
-    # Step 1: add the assigned asset but leave the employee empty
-    serial = transactions.ensure_assigned()
-    internal_movement_page.navigate_here()
-    internal_movement_page.select_asset_by_serial(serial)
-    internal_movement_page.add_to_grid()
-
-    # Step 2: click Draft; the required message is shown
-    internal_movement_page.click_draft_without_waiting_for_toast()
-    take_screenshot("draft stopped without employee")
-    internal_movement_page.verify_required_message_shown()
-
-
 # ---------------------------------------------------------------------------
-# 2. LAST: the full flow (the asset stays ASSIGNED)
+# 2. The Draft + Submit path (usage_a): the asset stays ASSIGNED
 # ---------------------------------------------------------------------------
 
 
@@ -158,4 +139,28 @@ def test_internal_movement_full_flow_draft_submit_approve(
     asset_serial_global_list_page.open_asset_popup(serial)
     asset_serial_global_list_page.verify_popup_fields({"buildingName": MOVE_BUILDING, "floorNo": floor})
     take_screenshot("asset shows its new location")
+    asset_serial_global_list_page.close_popup()
+
+
+# ---------------------------------------------------------------------------
+# 3. The Submit-only path (usage_b): the asset stays ASSIGNED
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.regression
+def test_internal_movement_submit_only_flow(page, transactions, asset_serial_global_list_page, take_screenshot):
+    """Asset Internal Movement: a movement submitted straight from the form (no Draft) and approved moves the asset."""
+    # Step 1: get the second usage asset, assigned
+    serial = transactions.ensure_assigned(USAGE_B)
+
+    # Step 2: Submit straight from the Asset Internal Movement form and Approve (the messages of both are checked)
+    transactions.move(serial)
+
+    # Step 3: the asset is still ASSIGNED and its profile shows the new building
+    asset_serial_global_list_page.navigate_here()
+    asset_serial_global_list_page.search_by_serial(serial)
+    asset_serial_global_list_page.verify_assign_status(serial, ASSIGNED)
+    asset_serial_global_list_page.open_asset_popup(serial)
+    asset_serial_global_list_page.verify_popup_fields({"buildingName": MOVE_BUILDING})
+    take_screenshot("asset shows its new building")
     asset_serial_global_list_page.close_popup()

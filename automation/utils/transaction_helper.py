@@ -1,19 +1,20 @@
 """
-transaction_helper.py: brings the saved Furniture asset into the state an Asset
-Transaction test needs (UNASSIGNED, ASSIGNED, a transaction of a given type, or
-an acknowledgement waiting), so every test file can run alone or after another.
+transaction_helper.py: brings an asset of the pool into the state an Asset
+Transaction test needs (UNASSIGNED, ASSIGNED, or an acknowledgement waiting),
+so every test file can run alone or after another.
 
 How it works:
-    Only the saved Furniture asset (item "furniture", sub type "spot", owner
-    AAQ_ASSET_GROUP, test_data/saved_assets.json) is used for Assign, Internal
-    Movement, Un Assign and Acknowledgement. Its saved record is never changed:
-    it stays under the APPROVED key. Instead, every method here reads the
-    asset's REAL Assign Status from the Asset Serial Global List and does only
-    the steps that are missing:
+    The assets are the two usage assets of the asset pool (utils/asset_pool.py,
+    test_data/asset_slots.py): usage_a (the Draft + Submit path) and usage_b (the
+    Submit-only path). Every method here reads the asset's REAL Assign Status from
+    the Asset Serial Global List and does only the steps that are missing:
 
-        serial = transactions.ensure_unassigned()    # unassigns it when it is assigned
-        serial = transactions.ensure_assigned()      # assigns it when it is unassigned
+        serial = transactions.ensure_unassigned()            # usage_a, unassigns it when it is assigned
+        serial = transactions.ensure_assigned("usage_b")     # assigns usage_b when it is unassigned
 
+    In a full run the files run in the order assign, acknowledge, movement,
+    unassign, so each one finds the state it needs and nothing is made behind a
+    test's back. Run alone, a test makes the missing steps first.
     When the asset cannot reach the needed state, the method fails with a
     message that says what was expected and what was found.
 
@@ -21,9 +22,7 @@ Example:
     serial = transactions.ensure_assigned()
     internal_movement_page.navigate_here()
 """
-from test_data.asset_registration_data import AAQ_ASSET_GROUP
 from test_data.asset_transaction_data import (
-    ASSIGN,
     ASSIGNED,
     ASSIGNEE_PIN,
     HANDOVER_SEARCH,
@@ -31,29 +30,27 @@ from test_data.asset_transaction_data import (
     SETUP_ASSIGN_NOTE,
     SETUP_MOVE_NOTE,
     SETUP_UNASSIGN_NOTE,
-    TRANSFER,
-    UNASSIGN,
     UNASSIGNED,
 )
 from utils.asset_flow import assign_and_approve, move_and_approve, unassign_and_approve
 
-# The saved asset every Asset Transaction test uses
-ASSET_ITEM = "furniture"
-ASSET_SUB_TYPE = "spot"
+# The slots (test_data/asset_slots.py) of the two assets the transaction tests use
+USAGE_A = "usage_a"
+USAGE_B = "usage_b"
 
 
 class TransactionHelper:
-    """Reads the real state of the saved Furniture asset and sets up the state a test needs."""
+    """Reads the real state of a usage asset and sets up the state a test needs."""
 
     def __init__(
-        self, registrations, assign_page, unassign_page, movement_page, approval_page, global_list_page
+        self, assets, assign_page, unassign_page, movement_page, approval_page, global_list_page
     ):
         """
-        `registrations` gives the saved Furniture asset. The other five are the
-        page objects used to read its status and to make the missing
+        `assets` is the asset pool that gives the asset of a slot. The other five are
+        the page objects used to read its status and to make the missing
         transactions. They all work in the main user's browser tab.
         """
-        self.registrations = registrations
+        self.assets = assets
         self.assign_page = assign_page
         self.unassign_page = unassign_page
         self.movement_page = movement_page
@@ -64,10 +61,9 @@ class TransactionHelper:
     # Reading the asset
     # ------------------------------------------------------------------
 
-    def get_serial(self) -> str:
-        """Return the Asset Serial of the saved Furniture asset (a new one is created when none is left)."""
-        record = self.registrations.get_approved(ASSET_ITEM, ASSET_SUB_TYPE, AAQ_ASSET_GROUP)
-        return record["serial"]
+    def get_serial(self, slot: str = USAGE_A) -> str:
+        """Return the Asset Serial of the asset of this slot (a new one is created when the pool has none)."""
+        return self.assets.get(slot)["serial"]
 
     def read_assign_status(self, serial: str) -> str:
         """Return the asset's real Assign Status (ASSIGNED or UNASSIGNED) from the Global List."""
@@ -78,15 +74,6 @@ class TransactionHelper:
         self.global_list_page.navigate_here()
         self.global_list_page.search_by_serial(serial)
         return self.global_list_page.get_row_values(serial)
-
-    def ensure_unassigned_if_saved_asset(self, item: str, sub_type: str) -> None:
-        """
-        Make the saved Furniture asset UNASSIGNED when `item` and `sub_type` name
-        it. Only that asset is assigned by the transaction tests; every other
-        asset is always UNASSIGNED, so nothing is done for them.
-        """
-        if item == ASSET_ITEM and sub_type == ASSET_SUB_TYPE:
-            self.ensure_unassigned()
 
     def require_status(self, serial: str, found: str, wanted: str) -> None:
         """Fail with a clear message when the asset's Assign Status is not the one a test needs."""
@@ -99,9 +86,9 @@ class TransactionHelper:
     # The states
     # ------------------------------------------------------------------
 
-    def ensure_unassigned(self) -> str:
+    def ensure_unassigned(self, slot: str = USAGE_A) -> str:
         """Make sure the asset is UNASSIGNED (unassign it when it is assigned) and return its serial."""
-        serial = self.get_serial()
+        serial = self.get_serial(slot)
         status = self.read_assign_status(serial)
         if status == ASSIGNED:
             self.unassign(serial)
@@ -109,9 +96,9 @@ class TransactionHelper:
         self.require_status(serial, status, UNASSIGNED)
         return serial
 
-    def ensure_assigned(self) -> str:
+    def ensure_assigned(self, slot: str = USAGE_A) -> str:
         """Make sure the asset is ASSIGNED to the test employee (assign it when it is unassigned) and return its serial."""
-        serial = self.get_serial()
+        serial = self.get_serial(slot)
         status = self.read_assign_status(serial)
         if status == UNASSIGNED:
             self.assign(serial)
@@ -119,14 +106,14 @@ class TransactionHelper:
         self.require_status(serial, status, ASSIGNED)
         return serial
 
-    def ensure_acknowledgement_pending(self, acknowledgement_page) -> str:
+    def ensure_acknowledgement_pending(self, acknowledgement_page, slot: str = USAGE_A) -> str:
         """
         Make sure an assignment of the asset waits for acknowledgement in the
         assigned employee's Pending list, and return the serial.
         `acknowledgement_page` works in the assigned employee's tab. An asset
         that is assigned with nothing waiting is unassigned and assigned again.
         """
-        serial = self.get_serial()
+        serial = self.get_serial(slot)
         status = self.read_assign_status(serial)
         if status == ASSIGNED:
             acknowledgement_page.navigate_here()
@@ -140,33 +127,8 @@ class TransactionHelper:
         )
         return serial
 
-    def ensure_transaction(self, transaction_type: str) -> str:
-        """
-        Make sure an APPROVED transaction of this type (ASSIGN, TRANSFER or
-        UNASSIGN) that lists the asset is on the Transaction Approval List, and
-        return the serial. Only a missing transaction is made.
-        """
-        serial = self.get_serial()
-        self.approval_page.navigate_here()
-        row_index = self.approval_page.find_row_with_serial(serial, transaction_type, "APPROVED")
-        if row_index >= 0:
-            self.approval_page.close_popup()
-            return serial
-        if transaction_type == ASSIGN:
-            self.ensure_unassigned()
-            self.assign(serial)
-        elif transaction_type == TRANSFER:
-            self.ensure_assigned()
-            self.move(serial)
-        elif transaction_type == UNASSIGN:
-            self.ensure_assigned()
-            self.unassign(serial)
-        else:
-            raise AssertionError(f"Unknown transaction type '{transaction_type}'.")
-        return serial
-
     # ------------------------------------------------------------------
-    # The transactions that change the state
+    # The transactions that change the state (each one submits straight from the form and approves)
     # ------------------------------------------------------------------
 
     def assign(self, serial: str) -> None:

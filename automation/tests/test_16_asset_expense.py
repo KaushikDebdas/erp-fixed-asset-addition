@@ -3,20 +3,18 @@ test_16_asset_expense.py: tests for the Asset Expense screen (Fixed Asset >
 Asset Expenditure > Asset Expense), for both expense sources.
 
 Built from automation/element_catalog/asset_expense.md,
-asset_expense_approval.md and voucher_search.md. The tests use a freshly
-approved asset: the saved Furniture asset from test_data/saved_assets.json
-(the `expenses` fixture, utils/expense_helper.py; a new one is created only
-when none is saved). The whole file logs in once and every test reuses that
-session.
+asset_expense_approval.md and voucher_search.md. The tests use the two usage assets
+of the asset pool (the `expenses` fixture, utils/expense_helper.py; test_data/asset_slots.py):
+usage_a for the Draft + Submit path and usage_b for the Submit-only path. An expense does
+not change the asset. The whole file logs in once and every test reuses that session.
 
-The four full-flow tests at the end take an expense all the way, for Inventory
-and for Accounts, each saved two ways (Draft then Submit, and Submit straight
-away):
+The two full-flow tests at the end take an expense all the way: Inventory saved as a
+Draft then Submitted (usage_a) and Accounts Submitted straight away (usage_b):
     create the expense, store its Expense ID, Submit, Approve with the same
     user, then find the voucher in Accounting > Voucher Search by the Expense ID
     and check the voucher PDF.
-They each create one approved expense of 5000 and one voucher. The approved expense
-is saved in the same JSON file, so test_17 and test_18 can use it.
+They each create one approved expense of 5000 and one voucher. The approved expenses
+are remembered for the run, so test_17 can use them.
 """
 import pytest
 
@@ -86,21 +84,17 @@ def test_expense_list_columns_and_status_values(page, expense_page, take_screens
 
 
 @pytest.mark.regression
-def test_expense_asset_search_fills_asset_details(
-    page, expense_page, expenses, take_screenshot
-):
-    """Asset Expense: typing the Asset Serial and picking the suggestion fills the asset details."""
+def test_expense_asset_search_and_add_fill_the_form(page, expense_page, expenses, take_screenshot):
+    """Asset Expense: picking the Asset Serial fills the asset details, and the expense amount and Add put the asset in the grid and fill the total."""
     serial = expenses.get_serial()
 
-    # Step 1: open the Create form
+    # Step 1: open the Create form, type the serial and pick the suggestion
     expense_page.navigate_here()
     expense_page.open_create_form()
-
-    # Step 2: type the serial and pick the suggestion
     expense_page.select_asset_by_serial(serial)
     take_screenshot(f"asset {serial} selected")
 
-    # Step 3: the box holds the serial that was entered, and the details are the asset's own
+    # Step 2: the box holds the serial that was entered, and the details are the asset's own
     found = expense_page.get_value("assetSerialId")
     assert found.startswith(serial), f"Expected the Asset Serial box to start with '{serial}' but found '{found}'."
     found = expense_page.get_value("assetName")
@@ -116,39 +110,23 @@ def test_expense_asset_search_fills_asset_details(
     found = expense_page.get_value("currentProjectName")
     assert "Microfinance (Dabi)" in found, f"Expected Current Project to contain 'Microfinance (Dabi)' but found '{found}'."
 
-    # Step 4: close without saving
-    expense_page.close_popup()
-
-
-@pytest.mark.regression
-def test_expense_add_asset_fills_the_total(
-    page, expense_page, expenses, take_screenshot
-):
-    """Asset Expense: the expense amount and Add put the asset in the grid and fill the total."""
-    serial = expenses.get_serial()
-
-    # Step 1: select the asset, enter the amount and click Add
-    expense_page.navigate_here()
-    expense_page.open_create_form()
-    expense_page.select_asset_by_serial(serial)
+    # Step 3: enter the amount and click Add; the grid holds the asset and the total is the amount entered
     expense_page.enter_amount_and_add_asset(EXPENSE_AMOUNT)
     take_screenshot("asset added to the expense grid")
-
-    # Step 2: the grid holds the asset and the Total Expense Amount is the amount entered
     grid_serials = expense_page.get_asset_grid_serials()
     assert serial in grid_serials, f"Expected Asset Serial '{serial}' in the asset grid but found {grid_serials}."
     found_total = expense_page.get_total_expense_amount()
     assert found_total == EXPENSE_AMOUNT, f"Expected Total Expense Amount '{EXPENSE_AMOUNT}' but found '{found_total}'."
 
-    # Step 3: close without saving
+    # Step 4: close without saving
     expense_page.close_popup()
 
 
 @pytest.mark.regression
-def test_expense_source_inventory_needs_item_and_fills_credit(
+def test_expense_source_changes_the_category_chain_and_credit_account(
     page, expense_page, expenses, take_screenshot
 ):
-    """Asset Expense: with Inventory the Category chain is open and Credit A/C is Other Inventory."""
+    """Asset Expense: Inventory opens the Category chain (Credit A/C Other Inventory), Accounts disables it (Credit A/C Supplier Payable)."""
     # Step 1: add the asset, then choose the Inventory source
     serial = expenses.get_serial()
     expense_page.navigate_here()
@@ -167,25 +145,9 @@ def test_expense_source_inventory_needs_item_and_fills_credit(
         f"Expected Credit A/C '{CREDIT_ACCOUNT[INVENTORY]}' but found '{found_account}'."
     )
 
-    # Step 3: close without saving
-    expense_page.close_popup()
-
-
-@pytest.mark.regression
-def test_expense_source_accounts_disables_item_and_fills_credit(
-    page, expense_page, expenses, take_screenshot
-):
-    """Asset Expense: with Accounts the Category chain is disabled and Credit A/C is Supplier Payable-Opex."""
-    # Step 1: add the asset, then choose the Accounts source
-    serial = expenses.get_serial()
-    expense_page.navigate_here()
-    expense_page.open_create_form()
-    expense_page.select_asset_by_serial(serial)
-    expense_page.enter_amount_and_add_asset(EXPENSE_AMOUNT)
+    # Step 3: choose the Accounts source; the chain is disabled, and Credit A/C changed
     expense_page.choose_expense_source(ACCOUNTS)
     take_screenshot("accounts source chosen")
-
-    # Step 2: Category, Sub Category and Item Name are disabled, and Credit A/C was filled in
     assert not expense_page.is_category_chain_enabled(), (
         "Expected Category, Sub Category and Item Name to be disabled for the Accounts source but they were enabled."
     )
@@ -194,7 +156,7 @@ def test_expense_source_accounts_disables_item_and_fills_credit(
         f"Expected Credit A/C '{CREDIT_ACCOUNT[ACCOUNTS]}' but found '{found_account}'."
     )
 
-    # Step 3: close without saving
+    # Step 4: close without saving
     expense_page.close_popup()
 
 
@@ -227,17 +189,20 @@ def test_expense_requires_vendor_for_both_sources(
 
 
 @pytest.mark.regression
-@pytest.mark.parametrize("save_as", ["draft", "submit"])
-@pytest.mark.parametrize("source", [INVENTORY, ACCOUNTS])
+@pytest.mark.parametrize(
+    "source, save_as, slot",
+    [(INVENTORY, "draft", "usage_a"), (ACCOUNTS, "submit", "usage_b")],
+    ids=["inventory_draft_usage_a", "accounts_submit_usage_b"],
+)
 def test_expense_full_flow_with_voucher(
     page, expense_page, expense_approval_page, voucher_search_page,
-    expenses, source, save_as, take_screenshot
+    expenses, source, save_as, slot, take_screenshot
 ):
     """
     Asset Expense: create (Draft or direct Submit), store the Expense ID, Submit,
     Approve with the same user, then check the voucher in Voucher Search.
     """
-    serial = expenses.get_serial()
+    serial = expenses.get_serial(slot)
     expense_ref = new_expense_ref()
 
     # Step 1: create the expense and store its generated Expense ID
@@ -257,5 +222,5 @@ def test_expense_full_flow_with_voucher(
     # Step 4: the journal: find the voucher by the Expense ID and check its PDF
     verify_voucher(voucher_search_page, expense_id, expected, take_screenshot)
 
-    # Step 5: save the approved expense, so test_17 and test_18 reuse it
+    # Step 5: remember the approved expense, so test_17 reuses it
     expenses.remember_approved_expense(source, created)

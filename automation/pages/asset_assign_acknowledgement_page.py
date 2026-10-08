@@ -222,6 +222,11 @@ class AssetAssignAcknowledgementPage(BasePage):
         assert pending_after == pending_before - 1, (
             f"Expected {pending_before - 1} pending acknowledgements after acknowledging but found {pending_after}."
         )
+        # The My Assigned Asset grid fills after the acknowledgement is saved
+        try:
+            expect(self.my_assets_table.locator("tbody tr", has_text=serial).first).to_be_visible(timeout=15000)
+        except AssertionError:
+            action_logger.info(f"{serial} did not appear in My Assigned Asset within 15 seconds")
         my_serials = self.get_my_assigned_serials()
         assert serial in my_serials, f"Expected {serial} in My Assigned Asset but it lists {my_serials}."
         row_text = self.get_my_assigned_row_text(serial)

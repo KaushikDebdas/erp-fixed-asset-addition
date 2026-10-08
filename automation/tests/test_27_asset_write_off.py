@@ -1,18 +1,20 @@
 """
 test_27_asset_write_off.py: tests for the Asset Write-off screen (Fixed Asset >
-Asset Disposal > Asset Write-off): Create as Submit and Create as Draft.
+Asset Disposal > Asset Write-off): Create as Draft and Create as Submit.
 
 Built from automation/element_catalog/asset_write_off.md. A write-off only
-accepts an asset whose Utilization Status is not IN_USE, so each test registers
-and approves its own new Furniture asset (like test_01), sets it to DAMAGE and
-writes it off (see utils/write_off_flow.py). A written-off asset cannot be used
-again, so every test has its own asset.
+accepts an asset whose Utilization Status is not IN_USE, so each path sets its asset
+to DAMAGE and writes it off (see utils/write_off_flow.py). The assets come from the
+asset pool (test_data/asset_slots.py): the usage assets that the Assign, Movement,
+Unassign and Expense files used, when they are free, otherwise new ones. A written-off
+asset cannot be used again, so each path has its own asset.
 
 The whole file logs in once and every test reuses that session.
 
 The tests run top to bottom:
-    1. Create a write-off and Submit it
-    2. Create a write-off and save it as Draft
+    1. The Draft path (write_off_a): Draft; it is DRAFT in the Write-off List
+       (test_28 submits it and test_29 approves it)
+    2. The Submit-only path (write_off_b): Submit; it is PENDING in the Write-off List
 
 To run part of the file:
     pytest tests/test_27_asset_write_off.py -k "draft"
@@ -20,7 +22,6 @@ To run part of the file:
 import pytest
 
 from utils.run_context import trace_one_test
-from utils.write_off_flow import create_write_off
 
 
 @pytest.fixture
@@ -29,32 +30,32 @@ def page(logged_in_page, request):
     yield from trace_one_test(logged_in_page, request)
 
 
+@pytest.mark.regression
+def test_write_off_create_and_draft(
+    page, write_off, asset_write_off_page, asset_write_off_list_page, take_screenshot
+):
+    """Asset Write-off: write off a DAMAGED asset and save it as Draft; it is listed as DRAFT with an Edit link."""
+    # Step 1: write off the asset of the Draft path and save it as Draft
+    flow = write_off.reach("draft", "drafted")
+    take_screenshot(f"asset {flow['serial']} written off (draft)")
+
+    # Step 2: the Write-off List shows the write-off as DRAFT with an Edit link
+    asset_write_off_list_page.navigate_here()
+    asset_write_off_list_page.filter_by_status("DRAFT")
+    asset_write_off_list_page.verify_status(flow["write_off_id"], "DRAFT")
+
+
 @pytest.mark.smoke
 @pytest.mark.regression
 def test_write_off_create_and_submit(
-    page, registrations, asset_serial_global_list_page, asset_write_off_page, take_screenshot
+    page, write_off, asset_write_off_page, asset_write_off_list_page, take_screenshot
 ):
-    """Asset Write-off: create a write-off for a DAMAGED asset and Submit it."""
-    # Step 1: write off a new DAMAGED asset and Submit it
-    asset = create_write_off(
-        registrations, asset_serial_global_list_page, asset_write_off_page, "write_off_submit", "submit"
-    )
-    take_screenshot(f"asset {asset['serial']} written off (submitted)")
+    """Asset Write-off: write off a DAMAGED asset and Submit it straight from the form; it is listed as PENDING."""
+    # Step 1: write off the asset of the Submit-only path and Submit it
+    flow = write_off.reach("submit", "submitted")
+    take_screenshot(f"asset {flow['serial']} written off (submitted)")
 
-    # Step 2: the grid is empty again after the save
-    asset_write_off_page.verify_grid_is_empty()
-
-
-@pytest.mark.regression
-def test_write_off_create_and_draft(
-    page, registrations, asset_serial_global_list_page, asset_write_off_page, take_screenshot
-):
-    """Asset Write-off: create a write-off for a DAMAGED asset and save it as Draft."""
-    # Step 1: write off a new DAMAGED asset and save it as Draft
-    asset = create_write_off(
-        registrations, asset_serial_global_list_page, asset_write_off_page, "write_off_draft", "draft"
-    )
-    take_screenshot(f"asset {asset['serial']} written off (draft)")
-
-    # Step 2: the grid is empty again after the save
-    asset_write_off_page.verify_grid_is_empty()
+    # Step 2: the Write-off List shows the write-off as PENDING
+    asset_write_off_list_page.navigate_here()
+    asset_write_off_list_page.filter_by_status("PENDING")
+    asset_write_off_list_page.verify_status(flow["write_off_id"], "PENDING")

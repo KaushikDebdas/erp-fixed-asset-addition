@@ -1,13 +1,13 @@
 """
-split_helper.py: gives a test the saved Land asset's split in a chosen state
+split_helper.py: gives a test the split of the Land asset (slot split_land) in a chosen state
 (PENDING or APPROVED), so every split test can run alone or after another.
 
 How it works:
-    Only the saved Land asset (item "land", sub type "spot", owner
-    AAQ_ASSET_GROUP) is ever split. Once it is split it is used up, so its
-    record moves from the APPROVED registration key to a SPLIT key:
+    Only the Land asset of the slot split_land (item "land", sub type "spot") is
+    ever split. Once it is split it is used up, so its record moves from the
+    APPROVED registration key to a SPLIT key:
 
-        ("land", "spot", "SPLIT", AAQ_ASSET_GROUP)
+        ("land", "spot", "SPLIT", "split_land")
 
     The SPLIT record holds the Land's old fields plus:
         "split_no":     the Asset Split No., e.g. "67"
@@ -23,26 +23,25 @@ Example:
     record = splits.get_pending_split()
     serial = record["serial"]
 
-The SPLIT record is saved in test_data/saved_assets.json with the other AAQ
-assets (see utils/saved_registrations.py).
+The SPLIT record stays in memory for the run, like the other asset records.
 """
-from test_data.asset_registration_data import AAQ_ASSET_GROUP
 from test_data.asset_split_data import (
     FIRST_LINE_PERCENTAGE,
     SPLIT_INTO,
     SPLIT_REMARKS,
 )
 
-# The registration key of the Land asset that may be split
+# The slot (test_data/asset_slots.py) of the Land asset that may be split
+LAND_SLOT = "split_land"
 LAND_ITEM = "land"
 LAND_SUB_TYPE = "spot"
 
 # The key the Land asset is remembered under after it was split
-SPLIT_KEY = (LAND_ITEM, LAND_SUB_TYPE, "SPLIT", AAQ_ASSET_GROUP)
+SPLIT_KEY = (LAND_ITEM, LAND_SUB_TYPE, "SPLIT", LAND_SLOT)
 
 
 class SplitHelper:
-    """Finds, performs and remembers the split of the saved Land asset."""
+    """Finds, performs and remembers the split of the Land asset."""
 
     def __init__(self, registrations, split_page, split_list_page, split_approval_page, remembered: dict):
         """
@@ -62,11 +61,11 @@ class SplitHelper:
         already has a split on the Split List (waiting for approval or approved)
         is used up: it is forgotten and a new Land asset is created.
         """
-        land = self.registrations.get_approved(LAND_ITEM, LAND_SUB_TYPE, AAQ_ASSET_GROUP)
+        land = self.registrations.get_approved(LAND_ITEM, LAND_SUB_TYPE, LAND_SLOT)
         if ("split_list_checked", land["serial"]) not in self.remembered.trusted:
             if self.is_on_split_list(land["serial"]):
-                self.registrations.forget(land, "APPROVED", AAQ_ASSET_GROUP)
-                land = self.registrations.get_approved(LAND_ITEM, LAND_SUB_TYPE, AAQ_ASSET_GROUP)
+                self.registrations.forget(land, "APPROVED", LAND_SLOT)
+                land = self.registrations.get_approved(LAND_ITEM, LAND_SUB_TYPE, LAND_SLOT)
             self.remembered.trusted.add(("split_list_checked", land["serial"]))
         return land
 
@@ -123,7 +122,7 @@ class SplitHelper:
         self.split_list_page.search_by_serial(serial)
         self.split_list_page.verify_row_status(serial, "PENDING")
         split_no = self.split_list_page.get_split_number(serial)
-        self.registrations.forget(land, "APPROVED", AAQ_ASSET_GROUP)
+        self.registrations.forget(land, "APPROVED", LAND_SLOT)
         self.remembered[SPLIT_KEY] = {**land, "split_no": split_no, "split_status": "PENDING"}
         return self.remembered[SPLIT_KEY]
 

@@ -282,13 +282,6 @@ def login_page(page):
     return LoginPage(page)
 
 
-@pytest.fixture
-def dashboard_page(page):
-    """Dashboard page object (the page shown after login), ready to use."""
-    from pages.dashboard_page import DashboardPage
-    return DashboardPage(page)
-
-
 @pytest.fixture(scope="module")
 def logged_in_page(browser, request):
     """
@@ -320,20 +313,6 @@ def logged_in_page(browser, request):
 
     context.tracing.stop()
     context.close()
-
-
-@pytest.fixture
-def finance_dashboard_page(page):
-    """Finance (addons) dashboard page object, ready to use."""
-    from pages.finance_dashboard_page import FinanceDashboardPage
-    return FinanceDashboardPage(page)
-
-
-@pytest.fixture
-def income_statement_page(page):
-    """Income Statement report page object, ready to use."""
-    from pages.income_statement_page import IncomeStatementPage
-    return IncomeStatementPage(page)
 
 
 @pytest.fixture
@@ -464,24 +443,8 @@ def shared_transfer():
 
 
 @pytest.fixture
-def saved_transfer(
-    registrations, shipment_page, challan_page, challan_approval_page, in_challan_page, shared_transfer
-):
-    """
-    Like `transfer`, but the transferred asset is saved in test_data/saved_assets.json
-    so a separate run reuses it. See SavedTransferHelper in utils/transfer_helper.py.
-    """
-    from utils.transfer_helper import SavedTransferHelper
-
-    return SavedTransferHelper(
-        registrations, shipment_page, challan_page,
-        challan_approval_page, in_challan_page, shared_transfer,
-    )
-
-
-@pytest.fixture
 def transfer(
-    registrations, shipment_page, challan_page, challan_approval_page, in_challan_page, shared_transfer
+    assets, shipment_page, challan_page, challan_approval_page, in_challan_page, shared_transfer
 ):
     """
     Carries one Asset Shipment through its stages:
@@ -492,7 +455,7 @@ def transfer(
     from utils.transfer_helper import TransferHelper
 
     return TransferHelper(
-        registrations, shipment_page, challan_page,
+        assets, shipment_page, challan_page,
         challan_approval_page, in_challan_page, shared_transfer,
     )
 
@@ -520,19 +483,20 @@ def internal_movement_page(page):
 
 @pytest.fixture
 def transactions(
-    registrations, assign_page, unassign_page, internal_movement_page,
+    assets, assign_page, unassign_page, internal_movement_page,
     transaction_approval_page, asset_serial_global_list_page,
 ):
     """
-    Gives a test the saved Furniture asset in the state it needs:
+    Gives a test a usage asset (usage_a by default, or usage_b) in the state it needs:
         serial = transactions.ensure_assigned()
+        serial = transactions.ensure_assigned("usage_b")
     It reads the asset's real Assign Status and does only the missing steps.
     See utils/transaction_helper.py.
     """
     from utils.transaction_helper import TransactionHelper
 
     return TransactionHelper(
-        registrations, assign_page, unassign_page, internal_movement_page,
+        assets, assign_page, unassign_page, internal_movement_page,
         transaction_approval_page, asset_serial_global_list_page,
     )
 
@@ -555,13 +519,13 @@ def transaction_approval_page(page):
 def shared_registrations():
     """
     The registrations created during this run, shared by every test file, so
-    one test can reuse what another created. Used by the `registrations`
-    fixture below; tests do not read it directly. The 10 AAQ assets are also
-    saved in a file, so a later run reuses them (see utils/saved_registrations.py).
+    one test can reuse what another created (see utils/run_registrations.py).
+    Used by the `registrations` fixture below; tests do not read it directly.
+    Nothing is saved between runs.
     """
-    from utils.saved_registrations import SavedRegistrations
+    from utils.run_registrations import RunRegistrations
 
-    return SavedRegistrations()
+    return RunRegistrations()
 
 
 @pytest.fixture
@@ -579,51 +543,11 @@ def registrations(aaq_page, registration_list_page, approval_list_page, shared_r
     )
 
 
-@pytest.fixture(scope="module")
-def assignee_logged_in_page(browser):
-    """
-    A second browser tab, logged in as the ASSIGNED employee (the second user
-    in .env), shared by every test in one file. The assigned employee is the
-    person who acknowledges an assignment, so this tab is separate from the
-    main user's tab.
-    """
-    from config.settings import ASSIGN_USER_PASSWORD, ASSIGN_USER_USERNAME
-    from pages.login_page import LoginPage
-
-    # Open the page at the full size of the maximized browser window.
-    context = browser.new_context(no_viewport=True)
-    tab = context.new_page()
-    maximize_window(context, tab)
-    tab.goto(BASE_URL)
-
-    login_page = LoginPage(tab)
-    login_page.wait_for_login_page()
-    login_page.login(ASSIGN_USER_USERNAME, ASSIGN_USER_PASSWORD)
-    login_page.close_popup_if_present()
-
-    yield tab
-
-    context.close()
-
-
 @pytest.fixture
-def assignee_screenshot(assignee_logged_in_page, request):
-    """
-    Numbered screenshots of the assigned employee's tab, like `take_screenshot`
-    but for the second user:
-
-        assignee_screenshot("pending list opened")
-    """
-    def _take(description: str) -> str:
-        return take_numbered_screenshot(assignee_logged_in_page, request.node, description)
-    return _take
-
-
-@pytest.fixture
-def acknowledgement_page(assignee_logged_in_page):
-    """Asset Assign Acknowledgement page object, working in the assigned employee's tab."""
+def acknowledgement_page(page):
+    """Asset Assign Acknowledgement page object. The assigned employee is the logged-in user, so it works in the main tab."""
     from pages.asset_assign_acknowledgement_page import AssetAssignAcknowledgementPage
-    return AssetAssignAcknowledgementPage(assignee_logged_in_page)
+    return AssetAssignAcknowledgementPage(page)
 
 
 @pytest.fixture
@@ -641,17 +565,17 @@ def expense_approval_page(page):
 
 
 @pytest.fixture
-def expenses(registrations, expense_page, expense_approval_page, shared_registrations):
+def expenses(assets, expense_page, expense_approval_page, shared_registrations):
     """
-    Gives an Asset Expense test the saved Furniture asset and an approved expense:
+    Gives an Asset Expense test a usage asset and an approved expense:
         serial = expenses.get_serial()
         record = expenses.get_approved_expense("Inventory")
-    It returns what an earlier test saved, or makes it when the test runs on
-    its own. See utils/expense_helper.py.
+    It returns what an earlier test made, or makes it when the test runs on its
+    own. See utils/expense_helper.py.
     """
     from utils.expense_helper import ExpenseHelper
 
-    return ExpenseHelper(registrations, expense_page, expense_approval_page, shared_registrations)
+    return ExpenseHelper(assets, expense_page, expense_approval_page, shared_registrations)
 
 
 @pytest.fixture
@@ -743,7 +667,7 @@ def shared_single_challan():
 
 @pytest.fixture
 def single_challan(
-    registrations, single_out_challan_page, single_out_challan_approval_list_page, single_in_challan_page,
+    assets, single_out_challan_page, single_out_challan_approval_list_page, single_in_challan_page,
     shared_single_challan,
 ):
     """
@@ -755,6 +679,100 @@ def single_challan(
     from utils.single_challan_flow import SingleChallanFlow
 
     return SingleChallanFlow(
-        registrations, single_out_challan_page, single_out_challan_approval_list_page,
+        assets, single_out_challan_page, single_out_challan_approval_list_page,
         single_in_challan_page, shared_single_challan,
     )
+
+
+@pytest.fixture(scope="session")
+def shared_asset_pool():
+    """
+    The assets of this run by slot (test_data/asset_slots.py), shared by every test file so a
+    flow can reuse the asset an earlier flow left. Used by the `assets` fixture; tests do not read it directly.
+    """
+    return {}
+
+
+@pytest.fixture
+def assets(registrations, asset_serial_global_list_page, pending_process_list_page, shared_asset_pool):
+    """
+    The asset pool: hands out the approved asset of a slot, registering and approving one
+    when it does not exist yet:
+        serial = assets.get("sale_profit_a")["serial"]
+        assets.consume("sale_profit_a")      # after a flow used the asset up
+    See utils/asset_pool.py and test_data/asset_slots.py.
+    """
+    from utils.asset_pool import AssetPool
+
+    return AssetPool(registrations, asset_serial_global_list_page, pending_process_list_page, shared_asset_pool)
+
+
+@pytest.fixture(scope="session")
+def shared_write_off():
+    """The Write-off flows of this run (the "draft" and the "submit" path), shared by every test file. Used by the `write_off` fixture."""
+    return {}
+
+
+@pytest.fixture
+def write_off(
+    assets, asset_serial_global_list_page, asset_write_off_page, asset_write_off_list_page,
+    asset_write_off_approval_list_page, shared_write_off,
+):
+    """
+    Carries an Asset Write-off through its stages:
+        flow = write_off.reach("draft", "submitted")
+    It returns what an earlier test did, or does the missing stages now when the test runs
+    on its own. See utils/write_off_flow.py.
+    """
+    from utils.write_off_flow import WriteOffFlow
+
+    return WriteOffFlow(
+        assets, asset_serial_global_list_page, asset_write_off_page, asset_write_off_list_page,
+        asset_write_off_approval_list_page, shared_write_off,
+    )
+
+
+@pytest.fixture(scope="session")
+def shared_sale():
+    """The Asset Sale flows of this run (profit_a, profit_b, loss_a, loss_b), shared by every test file. Used by the `sale` fixture."""
+    return {}
+
+
+@pytest.fixture
+def sale(assets, asset_sale_page, asset_sale_list_page, shared_sale):
+    """
+    Carries an Asset Sale through its stages:
+        flow = sale.reach("profit_a", "saved")
+    It returns what an earlier test did, or does the missing stages now when the test runs
+    on its own. See utils/sale_flow.py.
+    """
+    from utils.sale_flow import SaleFlow
+
+    return SaleFlow(assets, asset_sale_page, asset_sale_list_page, shared_sale)
+
+
+@pytest.fixture(scope="session")
+def shared_user():
+    """The logged-in test user's search text and full name, read once per run. Used by the `current_user` fixture."""
+    return {}
+
+
+@pytest.fixture
+def current_user(registration_list_page, shared_user):
+    """
+    The logged-in test user: {"search_text": the username, "name": the full name as the grids show it}.
+    The name is read once from the Created By box of the Asset Registration List, which starts filled
+    with "<username>-<Full Name>".
+    """
+    from playwright.sync_api import expect
+
+    from config.settings import TEST_USERNAME
+
+    if not shared_user:
+        registration_list_page.navigate_here()
+        expect(registration_list_page.created_by_filter).not_to_have_value("")
+        box_text = registration_list_page.read_created_by()
+        shared_user["search_text"] = TEST_USERNAME
+        shared_user["name"] = box_text.split("-", 1)[1].strip()
+    return shared_user
+

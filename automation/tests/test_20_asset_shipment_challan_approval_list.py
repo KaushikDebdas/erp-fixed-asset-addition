@@ -18,12 +18,6 @@ from utils.run_context import trace_one_test
 
 
 @pytest.fixture
-def transfer(saved_transfer):
-    """The shipment stages, with the transferred asset saved in the JSON file."""
-    return saved_transfer
-
-
-@pytest.fixture
 def page(logged_in_page, request):
     """The one tab of the logged-in user, used for the whole test: it registers the asset and does every step."""
     yield from trace_one_test(logged_in_page, request)

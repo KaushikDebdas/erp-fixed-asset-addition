@@ -1,5 +1,14 @@
 # fixedasset — CHANGELOG
 
+## 2026-10-08 (asset pool: minimum assets, maximum reuse)
+- New `test_data/asset_slots.py` (one table: which asset each flow uses), `utils/asset_pool.py` (`assets.get(slot)`, `assets.consume(slot)`, hand-over with `reuse_from` only when the asset is UNASSIGNED and not in the Pending Process list), `utils/flow_stages.py` (`FlowStages`, `reach`/`record`, used by single challan, write-off and sale), `utils/run_registrations.py`. 13 registrations per run (11 approved + 2 registration-only) instead of about 19; a run starts with new assets, nothing is saved between runs. `saved_registrations.py` and `saved_assets.json` are removed.
+- Helpers (`transaction_helper`, `expense_helper`, `transfer_helper`, `split_helper`, `registration_helper`) take their asset from the pool. Write-off reuses the usage_a / usage_b assets after Unassign.
+- Test files renumbered: 10 assign, 11 acknowledgement, 12 internal movement, 13 unassign, 14 transaction list, 15 transaction approval list. Duplicate tests were removed; the suite collects 233 tests (was about 330). `smokesuite_e2e.py` is removed (it duplicated other files and needed a second login).
+- One user: acknowledgement now runs in the main tab (the assigned employee is the logged-in user). The `assignee_*` fixtures and the broken `dashboard_page`, `finance_dashboard_page`, `income_statement_page` fixtures are removed, and the unused P&L markers are removed from `pytest.ini`.
+- Write-off and sale flows check the empty grid right after each save. `BasePage.open_fixed_asset_module` signs in again when the sign-in form appears and reopens the module after an HTTP 5xx. The acknowledgement check waits for the serial to appear in My Assigned Asset.
+- Run (tests 10, 11, 18, 27, 30): 16 passed first run; the one failure (My Assigned Asset not yet filled) is fixed and test_11 re-run **4 passed**. Voucher-related tests are known to fail and are left for the team to fix. No full-suite run was made after these changes.
+
+
 ## 2026-10-08 (Reject and Sendback removed)
 - Not needed for now: `tests/test_32_asset_write_off_reject_sendback.py` is deleted, with the code only it used (Reject and Sendback methods of `AssetWriteOffApprovalListPage`, `AssetWriteOffListPage.verify_edit_link`, the toasts `WRITE_OFF_REJECT_TOAST`, `WRITE_OFF_SENDBACK_TOAST`, `COMMENT_REQUIRED_TOAST`). It had not been run. Sale Reject and Sendback were never built. What was seen live stays in the notes below: a Write-off Reject or Sendback needs a comment (`Please leave a comment`); `Asset write-off rejected successfully.` / `Asset write-off sendback successfully.`; Reject leaves no Edit link, Sendback leaves an Edit link. Staging: write-offs 24495 (REJECTED) and 24494 (SENDBACK), and two PENDING sales from the exploration.
 - Test files now end at test_31 (write-off 27 to 29, sale 30 and 31).

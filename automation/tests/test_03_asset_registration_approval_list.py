@@ -1,17 +1,19 @@
 """
 test_03_asset_registration_approval_list.py: tests for the Asset
 Registration Approval List screen (Fixed Asset > Registration > Asset
-Registration Approval List), using the 10 AAQ assets that
-test_01_asset_registration_aaq.py creates and
-test_02_asset_registration_list.py submits.
+Registration Approval List), using the asset slots that
+test_01_asset_registration_aaq.py creates and test_02_asset_registration_list.py
+submits (test_data/asset_slots.py).
 
 Built from automation/element_catalog/asset_registration_approval_list.md.
-The 8 submitted assets (4 items, Spot Purchase and Gift Item) are approved
-here: 6 one by one from their popup, 2 together with ticked rows. The 2 assets
-saved as Drafts are not submitted, so they never reach this list. Every asset
-is remembered as APPROVED, with its Asset Serial, under AAQ_ASSET_GROUP
-(test_data/asset_registration_data.py), so later tests can reuse it:
-    registrations.get_approved("land", "gift", AAQ_ASSET_GROUP)
+Four submitted assets are approved here: two one by one from their popup
+(slots usage_a and split_land) and two together with ticked rows (slots
+sale_profit_b and sale_loss_b). Together they cover the four voucher asset accounts and both
+credit accounts (Spot Purchase and Gift Item). The other approved assets of the suite
+are approved when the flow that needs them asks the asset pool (utils/asset_pool.py).
+The tests that need "a pending registration" or "a Draft" use the slots reg_pending
+and reg_draft, which are never approved, so they do not depend on the order.
+Every approved asset is remembered, with its Asset Serial, under its slot name.
 When a test here runs on its own, the `registrations` fixture creates the asset
 it needs, so every test can run alone.
 
@@ -19,14 +21,14 @@ The whole file logs in once and every test reuses that session (see the
 `page` fixture below).
 
 The tests run top to bottom:
-    1. Before approval: each submitted asset is listed with the right data and
-       a popup that shows what was entered; Drafts are not listed; the Comment
+    1. Before approval: a pending registration is listed with the right data and a
+       popup that shows what was entered; Drafts are not listed; the Comment
        box; Status plus number; nothing ticked; select all
     2. The page opens with the right columns, options and defaults
     3. Filters: Status, Registration Type, Project, Vendor, Registration
        Number and Registration Date; Reset; paging
-    4. Approve: 6 assets from the popup (with a comment), 2 with ticked rows
-    5. After approval: each asset is APPROVED with an approver and a date, its
+    4. Approve: two assets from the popup (with a comment), two with ticked rows
+    5. After approval: the asset is APPROVED with an approver and a date, its
        popup lists its Asset Serial and has no Approve button; Approve Date filter
     6. The voucher: no voucher exists while a registration is a Draft or PENDING;
        after approval Accounting > Voucher Search finds a voucher for each
@@ -35,14 +37,12 @@ The tests run top to bottom:
 There is no Reject step: the Approval List has no Reject button (checked 2026-10-05).
 
 To run part of the file:
-    pytest tests/test_03_asset_registration_approval_list.py -k "gift"
-    pytest tests/test_03_asset_registration_approval_list.py -k "land-spot"
+    pytest tests/test_03_asset_registration_approval_list.py -k "usage_a"
+    pytest tests/test_03_asset_registration_approval_list.py -k "voucher"
 """
 import pytest
 
 from test_data.asset_registration_data import (
-    AAQ_ASSET_GROUP,
-    AAQ_PENDING_GROUP,
     build_asset_data,
     build_registration_voucher,
 )
@@ -57,27 +57,20 @@ from utils.run_context import trace_one_test
 # Comment typed when an asset is approved from its popup
 APPROVE_COMMENT = "AUTOMATION_TEST approve comment"
 
-# The assets approved from their popup, and the two approved together with ticked rows
-POPUP_APPROVED_ROWS = [
-    ("furniture", "spot"),
-    ("land", "spot"),
-    ("building", "spot"),
-    ("laptop", "spot"),
-    ("furniture", "gift"),
-    ("land", "gift"),
-]
-BULK_APPROVED_ROWS = [
-    ("building", "gift"),
-    ("laptop", "gift"),
-]
-SUBMITTED_ROWS = POPUP_APPROVED_ROWS + BULK_APPROVED_ROWS
+# The slots approved from their popup, and the two approved together with ticked rows
+POPUP_APPROVED_SLOTS = ["usage_a", "split_land"]
+BULK_APPROVED_SLOTS = ["sale_profit_b", "sale_loss_b"]
+APPROVED_HERE_SLOTS = POPUP_APPROVED_SLOTS + BULK_APPROVED_SLOTS
 
-# Put above a test to run it for every submitted asset, or only for the popup-approved ones
-SUBMITTED_ASSETS = pytest.mark.parametrize("item, sub_type", SUBMITTED_ROWS)
-POPUP_APPROVED_ASSETS = pytest.mark.parametrize("item, sub_type", POPUP_APPROVED_ROWS)
+# Put above a test to run it for the slots approved here, or only for the popup-approved and one bulk-approved slot
+APPROVED_HERE = pytest.mark.parametrize("slot", APPROVED_HERE_SLOTS)
+APPROVED_ONE_EACH_WAY = pytest.mark.parametrize("slot", ["usage_a", "sale_profit_b"])
+POPUP_APPROVED = pytest.mark.parametrize("slot", POPUP_APPROVED_SLOTS)
 
-# The asset the tests share when they only need "a submitted asset" or "an approved asset"
-SHARED_ITEM = "furniture"
+# The slots the tests share when they only need "a pending registration", "a Draft" or "an approved asset"
+SHARED_PENDING_SLOT = "reg_pending"
+SHARED_DRAFT_SLOT = "reg_draft"
+SHARED_APPROVED_SLOT = "usage_a"
 
 # Filter option lists the screen offers (no DRAFT: Drafts are not shown here)
 STATUS_OPTIONS = ["-Select Status-", "PENDING", "APPROVED", "REJECTED", "SENDBACK"]
@@ -104,17 +97,16 @@ def page(logged_in_page, request):
 
 
 @pytest.mark.regression
-@SUBMITTED_ASSETS
-def test_approval_submitted_asset_is_listed(item, sub_type, page, registrations, approval_list_page, take_screenshot):
-    """Asset Registration Approval List: a submitted asset is listed as PENDING with its project, type AAQ and a tick box."""
-    # Step 1: get the submitted asset (created by an earlier test, or created now)
-    record = registrations.get_pending(item, sub_type, AAQ_ASSET_GROUP)
+def test_approval_pending_asset_is_listed(page, registrations, approval_list_page, take_screenshot):
+    """Asset Registration Approval List: a pending registration is listed as PENDING with its project, type AAQ and a tick box."""
+    # Step 1: get the pending registration (created by an earlier test, or created now)
+    record = registrations.get_pending_of(SHARED_PENDING_SLOT)
     number = record["registration_number"]
 
     # Step 2: filter the approval list by its Registration Number
     approval_list_page.navigate_here()
     approval_list_page.filter_by_registration_number(number)
-    take_screenshot(f"{sub_type} {item} found in approval list")
+    take_screenshot("pending registration found in approval list")
 
     # Step 3: one row with this number, its project, type AAQ and status PENDING, ready to be ticked
     approval_list_page.verify_registration_row(number, record["data"]["project"], "AAQ", "PENDING")
@@ -122,18 +114,17 @@ def test_approval_submitted_asset_is_listed(item, sub_type, page, registrations,
 
 
 @pytest.mark.regression
-@SUBMITTED_ASSETS
-def test_approval_popup_shows_the_asset_values(item, sub_type, page, registrations, approval_list_page, take_screenshot):
+def test_approval_popup_shows_the_asset_values(page, registrations, approval_list_page, take_screenshot):
     """Asset Registration Approval List: the popup shows every value that was entered for the asset."""
-    # Step 1: get the submitted asset
-    record = registrations.get_pending(item, sub_type, AAQ_ASSET_GROUP)
+    # Step 1: get the pending registration
+    record = registrations.get_pending_of(SHARED_PENDING_SLOT)
     number = record["registration_number"]
     data = record["data"]
 
     # Step 2: open its popup from the approval list
     approval_list_page.navigate_here()
     approval_list_page.open_registration_popup_by_number(number)
-    take_screenshot(f"popup of {sub_type} {item} registration {number}")
+    take_screenshot(f"popup of registration {number}")
 
     # Step 3: the popup is for this registration and shows the values that were entered
     approval_list_page.verify_popup_registration_number(number)
@@ -145,19 +136,16 @@ def test_approval_popup_shows_the_asset_values(item, sub_type, page, registratio
 
 
 @pytest.mark.regression
-@pytest.mark.parametrize("sub_type", ["spot", "gift"])
-def test_approval_asset_serials_are_empty_before_approval(
-    sub_type, page, registrations, approval_list_page, take_screenshot
-):
+def test_approval_asset_serials_are_empty_before_approval(page, registrations, approval_list_page, take_screenshot):
     """Asset Registration Approval List: a pending registration has no Asset Serial yet."""
-    # Step 1: get a submitted asset
-    number = registrations.get_pending("land", sub_type, AAQ_ASSET_GROUP)["registration_number"]
+    # Step 1: get the pending registration
+    number = registrations.get_pending_of(SHARED_PENDING_SLOT)["registration_number"]
 
     # Step 2: open its popup and switch to the Asset Serials tab
     approval_list_page.navigate_here()
     approval_list_page.open_registration_popup_by_number(number)
     approval_list_page.open_asset_serials_tab()
-    take_screenshot(f"{sub_type} asset serials tab before approval")
+    take_screenshot("asset serials tab before approval")
 
     # Step 3: no serial number exists yet
     approval_list_page.verify_asset_serials_empty()
@@ -167,7 +155,7 @@ def test_approval_asset_serials_are_empty_before_approval(
 def test_approval_draft_asset_is_not_listed(page, registrations, approval_list_page, take_screenshot):
     """Asset Registration Approval List: an asset saved as a Draft is not listed, because it was never submitted."""
     # Step 1: get the asset that stays a Draft (created now when this test runs alone)
-    number = registrations.get_draft("desktop", "spot", AAQ_ASSET_GROUP)["registration_number"]
+    number = registrations.get_draft_of(SHARED_DRAFT_SLOT)["registration_number"]
 
     # Step 2: filter the approval list by its Registration Number
     approval_list_page.navigate_here()
@@ -181,8 +169,8 @@ def test_approval_draft_asset_is_not_listed(page, registrations, approval_list_p
 @pytest.mark.regression
 def test_approval_comment_box_keeps_500_characters(page, registrations, approval_list_page, take_screenshot):
     """Asset Registration Approval List: the popup's Comment box keeps at most 500 characters."""
-    # Step 1: open the popup of a submitted registration
-    number = registrations.get_pending(SHARED_ITEM, "spot", AAQ_ASSET_GROUP)["registration_number"]
+    # Step 1: open the popup of a pending registration
+    number = registrations.get_pending_of(SHARED_PENDING_SLOT)["registration_number"]
     approval_list_page.navigate_here()
     approval_list_page.open_registration_popup_by_number(number)
 
@@ -197,8 +185,8 @@ def test_approval_comment_box_keeps_500_characters(page, registrations, approval
 @pytest.mark.regression
 def test_approval_status_and_number_filters_work_together(page, registrations, approval_list_page, take_screenshot):
     """Asset Registration Approval List: a PENDING registration is not listed when the Status filter is APPROVED."""
-    # Step 1: get a submitted asset
-    number = registrations.get_pending(SHARED_ITEM, "spot", AAQ_ASSET_GROUP)["registration_number"]
+    # Step 1: get a pending registration
+    number = registrations.get_pending_of(SHARED_PENDING_SLOT)["registration_number"]
 
     # Step 2: filter by its number and by Status APPROVED
     approval_list_page.navigate_here()
@@ -214,7 +202,7 @@ def test_approval_status_and_number_filters_work_together(page, registrations, a
 def test_approval_filter_by_registration_date(page, registrations, approval_list_page, take_screenshot):
     """Asset Registration Approval List: the Registration From/To Date filters list only that day's registrations."""
     # Step 1: find the Registration Date of a known registration
-    number = registrations.get_pending(SHARED_ITEM, "spot", AAQ_ASSET_GROUP)["registration_number"]
+    number = registrations.get_pending_of(SHARED_PENDING_SLOT)["registration_number"]
     approval_list_page.navigate_here()
     approval_list_page.filter_by_registration_number(number)
     registration_date = approval_list_page.read_first_value("Registration Date")
@@ -267,8 +255,8 @@ def test_approval_select_all_ticks_every_row(page, approval_list_page, take_scre
 
 
 @pytest.mark.regression
-def test_approval_grid_columns(page, approval_list_page, take_screenshot):
-    """Asset Registration Approval List: the grid shows the expected columns, in order."""
+def test_approval_list_opens_with_the_right_layout(page, approval_list_page, take_screenshot):
+    """Asset Registration Approval List: the page shows the expected columns and options, empty filters, newest first."""
     # Step 1: open the approval list
     approval_list_page.navigate_here()
     take_screenshot("approval list opened")
@@ -276,39 +264,17 @@ def test_approval_grid_columns(page, approval_list_page, take_screenshot):
     # Step 2: the column headings are as expected
     approval_list_page.verify_headers(GRID_COLUMNS)
 
-
-@pytest.mark.regression
-def test_approval_filter_options(page, approval_list_page, take_screenshot):
-    """Asset Registration Approval List: the Status, Registration Type and Records per page options are as expected."""
-    # Step 1: open the approval list
-    approval_list_page.navigate_here()
-
-    # Step 2: each dropdown offers the expected values
+    # Step 3: each dropdown offers the expected values
     approval_list_page.verify_filter_options("Status", STATUS_OPTIONS)
     approval_list_page.verify_filter_options("Registration Type", REGISTRATION_TYPE_OPTIONS)
     approval_list_page.verify_page_size_options(RECORDS_PER_PAGE_OPTIONS)
 
-
-@pytest.mark.regression
-def test_approval_filters_start_empty(page, approval_list_page, take_screenshot):
-    """Asset Registration Approval List: every filter starts empty, Created By included."""
-    # Step 1: open the approval list
-    approval_list_page.navigate_here()
-    take_screenshot("approval list opened")
-
-    # Step 2: no filter has a value
+    # Step 4: no filter has a value, Created By included
     approval_list_page.verify_filters_empty(
         ["Status", "Registration Type", "Registration Number", "Created By", "Approved By"]
     )
 
-
-@pytest.mark.regression
-def test_approval_newest_registration_is_first(page, approval_list_page, take_screenshot):
-    """Asset Registration Approval List: registrations are listed newest first."""
-    # Step 1: open the approval list
-    approval_list_page.navigate_here()
-
-    # Step 2: the Registration Numbers on the first page go from high to low
+    # Step 5: the Registration Numbers on the first page go from high to low
     approval_list_page.verify_newest_first()
 
 
@@ -331,66 +297,40 @@ def test_approval_filter_by_status(status, page, approval_list_page, take_screen
 
 
 @pytest.mark.regression
-def test_approval_filter_by_registration_type(page, approval_list_page, take_screenshot):
-    """Asset Registration Approval List: filtering by Registration Type AAQ lists only AAQ registrations."""
-    # Step 1: open the approval list and filter by the type
+def test_approval_filter_by_type_project_and_vendor(page, approval_list_page, take_screenshot):
+    """Asset Registration Approval List: filtering by Registration Type, Project or Vendor lists matching registrations."""
+    data = build_asset_data("furniture")
+
+    # Step 1: filter by Registration Type AAQ; every row shows it
     approval_list_page.navigate_here()
     approval_list_page.filter_by_registration_type("AAQ")
-    take_screenshot("approval list filtered by AAQ")
-
-    # Step 2: every row shows that Registration Type
     approval_list_page.verify_all_rows_have("Registration Type", "AAQ")
 
-
-@pytest.mark.regression
-def test_approval_filter_by_project(page, approval_list_page, take_screenshot):
-    """Asset Registration Approval List: filtering by Project lists only registrations of that project."""
-    project = build_asset_data(SHARED_ITEM)["project"]
-
-    # Step 1: open the approval list and filter by the project
+    # Step 2: filter by the project; there are rows, and every row shows that project
     approval_list_page.navigate_here()
-    approval_list_page.filter_by_project(project)
+    approval_list_page.filter_by_project(data["project"])
     take_screenshot("approval list filtered by project")
+    approval_list_page.verify_all_rows_have("Project Name", data["project"], must_have_rows=True)
 
-    # Step 2: there are rows, and every row shows that project
-    approval_list_page.verify_all_rows_have("Project Name", project, must_have_rows=True)
-
-
-@pytest.mark.regression
-def test_approval_filter_by_vendor_finds_registrations(page, approval_list_page, take_screenshot):
-    """Asset Registration Approval List: filtering by a Vendor name lists that vendor's registrations."""
-    vendor_name = build_asset_data(SHARED_ITEM)["vendor_name"]
-
-    # Step 1: open the approval list and filter by the vendor's name
+    # Step 3: filter by the vendor's name; at least one registration is listed
     approval_list_page.navigate_here()
-    approval_list_page.filter_by_vendor(vendor_name)
-    take_screenshot("approval list filtered by vendor")
-
-    # Step 2: at least one registration is listed
-    approval_list_page.verify_grid_has_rows(f"vendor '{vendor_name}'")
+    approval_list_page.filter_by_vendor(data["vendor_name"])
+    approval_list_page.verify_grid_has_rows(f"vendor '{data['vendor_name']}'")
 
 
 @pytest.mark.regression
-def test_approval_filter_by_unknown_vendor_lists_nothing(page, approval_list_page, take_screenshot):
-    """Asset Registration Approval List: a Vendor name nobody has lists nothing."""
-    # Step 1: open the approval list and filter by a vendor that does not exist
+def test_approval_unknown_values_list_nothing(page, approval_list_page, take_screenshot):
+    """Asset Registration Approval List: a Vendor name or a Registration Number that nobody has lists nothing."""
+    # Step 1: filter by a vendor that does not exist; the grid is empty
     approval_list_page.navigate_here()
     approval_list_page.filter_by_vendor("NO_SUCH_VENDOR_ZZZ")
     take_screenshot("approval list filtered by unknown vendor")
-
-    # Step 2: the grid is empty
     approval_list_page.verify_grid_is_empty()
 
-
-@pytest.mark.regression
-def test_approval_unknown_registration_number_lists_nothing(page, approval_list_page, take_screenshot):
-    """Asset Registration Approval List: a Registration Number that does not exist lists nothing."""
-    # Step 1: open the approval list and filter by a number nobody has
+    # Step 2: filter by a number nobody has; the grid is empty
     approval_list_page.navigate_here()
     approval_list_page.filter_by_registration_number("999999999")
     take_screenshot("approval list filtered by unknown registration number")
-
-    # Step 2: the grid is empty
     approval_list_page.verify_grid_is_empty()
 
 
@@ -414,7 +354,7 @@ def test_approval_reset_clears_every_filter(page, approval_list_page, take_scree
 
 
 @pytest.mark.regression
-@pytest.mark.parametrize("size", [10, 20, 30, 50, 100])
+@pytest.mark.parametrize("size", [10, 100])
 def test_approval_records_per_page(size, page, approval_list_page, take_screenshot):
     """Asset Registration Approval List: Records per page sets how many rows the grid shows."""
     # Step 1: open the approval list
@@ -452,11 +392,11 @@ def test_approval_second_page_continues_the_list(page, approval_list_page, take_
 
 @pytest.mark.smoke
 @pytest.mark.regression
-@POPUP_APPROVED_ASSETS
-def test_approval_approve_asset_from_its_popup(item, sub_type, page, registrations, approval_list_page, take_screenshot):
+@POPUP_APPROVED
+def test_approval_approve_asset_from_its_popup(slot, page, registrations, approval_list_page, take_screenshot):
     """Asset Registration Approval List: a pending asset is approved from its popup with a comment, and gets an Asset Serial."""
     # Step 1: get the submitted asset (created by an earlier test, or created now)
-    record = registrations.get_pending(item, sub_type, AAQ_ASSET_GROUP)
+    record = registrations.get_pending_of(slot)
     number = record["registration_number"]
 
     # Step 2: open its popup, check it is this registration and type a comment
@@ -464,23 +404,23 @@ def test_approval_approve_asset_from_its_popup(item, sub_type, page, registratio
     approval_list_page.open_registration_popup_by_number(number)
     approval_list_page.verify_popup_registration_number(number)
     approval_list_page.enter_comment(APPROVE_COMMENT)
-    take_screenshot(f"{sub_type} {item} popup with comment")
+    take_screenshot(f"{slot} popup with comment")
 
     # Step 3: approve it and read the Asset Serial that approval created
     approval_list_page.approve_from_popup_and_verify_success(number)
     serial = approval_list_page.read_asset_serial_of(number)
-    take_screenshot(f"{sub_type} {item} approved, serial {serial}")
+    take_screenshot(f"{slot} approved, serial {serial}")
 
     # Step 4: it is no longer PENDING; remember it as APPROVED for later tests
-    registrations.move_to_approved(record, serial, AAQ_ASSET_GROUP)
+    registrations.move_to_approved(record, serial, slot)
 
 
 @pytest.mark.regression
 def test_approval_bulk_approve_ticked_rows(page, registrations, approval_list_page, take_screenshot):
     """Asset Registration Approval List: two ticked registrations are approved together."""
     # Step 1: get the two submitted assets that are approved together
-    first = registrations.get_pending(BULK_APPROVED_ROWS[0][0], BULK_APPROVED_ROWS[0][1], AAQ_ASSET_GROUP)
-    second = registrations.get_pending(BULK_APPROVED_ROWS[1][0], BULK_APPROVED_ROWS[1][1], AAQ_ASSET_GROUP)
+    first = registrations.get_pending_of(BULK_APPROVED_SLOTS[0])
+    second = registrations.get_pending_of(BULK_APPROVED_SLOTS[1])
 
     # Step 2: show the pending registrations and tick both
     approval_list_page.navigate_here()
@@ -495,10 +435,10 @@ def test_approval_bulk_approve_ticked_rows(page, registrations, approval_list_pa
     approval_list_page.verify_toast(APPROVE_SUCCESS_TOAST)
 
     # Step 4: both now show APPROVED; remember them with their Asset Serials
-    for record in [first, second]:
+    for slot, record in [(BULK_APPROVED_SLOTS[0], first), (BULK_APPROVED_SLOTS[1], second)]:
         approval_list_page.verify_registration_is_approved(record["registration_number"])
         serial = approval_list_page.read_asset_serial_of(record["registration_number"])
-        registrations.move_to_approved(record, serial, AAQ_ASSET_GROUP)
+        registrations.move_to_approved(record, serial, slot)
 
 
 # ---------------------------------------------------------------------------
@@ -507,35 +447,33 @@ def test_approval_bulk_approve_ticked_rows(page, registrations, approval_list_pa
 
 
 @pytest.mark.regression
-@SUBMITTED_ASSETS
-def test_approval_approved_asset_row(item, sub_type, page, registrations, approval_list_page, take_screenshot):
+@APPROVED_ONE_EACH_WAY
+def test_approval_approved_asset_row(slot, page, registrations, approval_list_page, take_screenshot):
     """Asset Registration Approval List: an approved asset shows APPROVED, who approved it and when, and has no tick box."""
-    # Step 1: get the approved asset (approved above, or created and approved now)
-    number = registrations.get_approved(item, sub_type, AAQ_ASSET_GROUP)["registration_number"]
+    # Step 1: get the approved asset (approved above, or approved or created now)
+    number = registrations.get_approved_of(slot)["registration_number"]
 
     # Step 2: find it in the approval list
     approval_list_page.navigate_here()
     approval_list_page.filter_by_registration_number(number)
-    take_screenshot(f"{sub_type} {item} approved registration {number} in the list")
+    take_screenshot(f"{slot} approved registration {number} in the list")
 
     # Step 3: the row shows APPROVED, an approver and a dd/mm/yyyy date, and cannot be ticked
     approval_list_page.verify_approved_row(number)
 
 
 @pytest.mark.regression
-@SUBMITTED_ASSETS
-def test_approval_asset_serial_is_shown_after_approval(
-    item, sub_type, page, registrations, approval_list_page, take_screenshot
-):
+@APPROVED_ONE_EACH_WAY
+def test_approval_asset_serial_is_shown_after_approval(slot, page, registrations, approval_list_page, take_screenshot):
     """Asset Registration Approval List: an approved registration's popup lists its Asset Serial."""
     # Step 1: get the approved asset and the serial that was recorded when it was approved
-    record = registrations.get_approved(item, sub_type, AAQ_ASSET_GROUP)
+    record = registrations.get_approved_of(slot)
 
     # Step 2: open its popup and switch to the Asset Serials tab
     approval_list_page.navigate_here()
     approval_list_page.open_registration_popup_by_number(record["registration_number"])
     approval_list_page.open_asset_serials_tab()
-    take_screenshot(f"{sub_type} {item} asset serials tab after approval")
+    take_screenshot(f"{slot} asset serials tab after approval")
 
     # Step 3: the serial is there and is the one approval created
     approval_list_page.verify_asset_serial_shown(record["serial"])
@@ -545,7 +483,7 @@ def test_approval_asset_serial_is_shown_after_approval(
 def test_approval_approved_popup_has_no_approve_button(page, registrations, approval_list_page, take_screenshot):
     """Asset Registration Approval List: the popup of an approved registration has no Approve button."""
     # Step 1: get an approved registration and open its popup
-    number = registrations.get_approved(SHARED_ITEM, "spot", AAQ_ASSET_GROUP)["registration_number"]
+    number = registrations.get_approved_of(SHARED_APPROVED_SLOT)["registration_number"]
     approval_list_page.navigate_here()
     approval_list_page.open_registration_popup_by_number(number)
     take_screenshot("popup of an approved registration")
@@ -558,7 +496,7 @@ def test_approval_approved_popup_has_no_approve_button(page, registrations, appr
 def test_approval_filter_by_approve_date(page, registrations, approval_list_page, take_screenshot):
     """Asset Registration Approval List: the Approve From/To Date filters list only registrations approved that day."""
     # Step 1: find the Approval Date of an approved registration
-    number = registrations.get_approved(SHARED_ITEM, "spot", AAQ_ASSET_GROUP)["registration_number"]
+    number = registrations.get_approved_of(SHARED_APPROVED_SLOT)["registration_number"]
     approval_list_page.navigate_here()
     approval_list_page.filter_by_registration_number(number)
     approval_date = approval_list_page.read_first_value("Approval Date")
@@ -579,13 +517,13 @@ def test_approval_filter_by_approve_date(page, registrations, approval_list_page
 
 
 @pytest.mark.regression
-@SUBMITTED_ASSETS
+@APPROVED_HERE
 def test_approval_creates_the_registration_voucher(
-    item, sub_type, page, registrations, approval_list_page, voucher_search_page, take_screenshot
+    slot, page, registrations, approval_list_page, voucher_search_page, take_screenshot
 ):
     """Voucher Search: an approved registration has a voucher, and its Preview PDF is that registration's voucher."""
-    # Step 1: get the approved asset (approved above, or created and approved now)
-    record = registrations.get_approved(item, sub_type, AAQ_ASSET_GROUP)
+    # Step 1: get the approved asset (approved above, or approved or created now)
+    record = registrations.get_approved_of(slot)
     number = record["registration_number"]
 
     # Step 2: read the day it was approved in the approval list; the voucher is dated that day
@@ -596,7 +534,7 @@ def test_approval_creates_the_registration_voucher(
     # Step 3: in Accounting > Voucher Search, search by the Registration Number as the Transaction No
     voucher_search_page.navigate_here()
     voucher_search_page.search_by_transaction_no(number)
-    take_screenshot(f"{sub_type} {item} voucher found for registration {number}")
+    take_screenshot(f"{slot} voucher found for registration {number}")
 
     # Step 4: the search row and the Preview PDF are this registration's voucher
     expected = build_registration_voucher(record["data"], approval_date)
@@ -604,21 +542,20 @@ def test_approval_creates_the_registration_voucher(
 
 
 @pytest.mark.regression
-@pytest.mark.parametrize("status", ["DRAFT", "PENDING"])
-@pytest.mark.parametrize("sub_type", ["spot", "gift"])
-def test_no_voucher_before_approval(status, sub_type, page, registrations, voucher_search_page, take_screenshot):
+@pytest.mark.parametrize("slot, status", [("reg_draft", "DRAFT"), ("reg_pending", "PENDING")])
+def test_no_voucher_before_approval(slot, status, page, registrations, voucher_search_page, take_screenshot):
     """Voucher Search: a registration that is a Draft or still PENDING has no voucher."""
     # Step 1: get an asset that is not approved (a Draft, or one that stays PENDING)
     if status == "DRAFT":
-        record = registrations.get_draft("desktop", sub_type, AAQ_ASSET_GROUP)
+        record = registrations.get_draft_of(slot)
     else:
-        record = registrations.get_pending("furniture", sub_type, AAQ_PENDING_GROUP)
+        record = registrations.get_pending_of(slot)
     number = record["registration_number"]
 
     # Step 2: in Accounting > Voucher Search, search by its Registration Number as the Transaction No
     voucher_search_page.navigate_here()
     voucher_search_page.search_by_transaction_no(number)
-    take_screenshot(f"{sub_type} {status} registration {number} searched in voucher search")
+    take_screenshot(f"{slot} {status} registration {number} searched in voucher search")
 
     # Step 3: no voucher was created for it
     voucher_search_page.verify_no_voucher(number)

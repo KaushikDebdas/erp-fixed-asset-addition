@@ -10,19 +10,20 @@ How it works:
     full run does not create the same thing twice.
 
 Example:
-    record = registrations.get_pending("land")
+    record = registrations.get_pending_of("split_land")
     number = record["registration_number"]
 
-The 10 AAQ assets are also saved in a file (utils/saved_registrations.py), so a
-later run reuses them. A saved record is checked once against the Registration
-List before it is used, and replaced when its status has changed.
+The registrations are remembered for the run only (utils/run_registrations.py). The owner
+of a record is the asset slot name (test_data/asset_slots.py), and the `*_of(slot)`
+methods look an asset up by that name: get_pending_of("sale_profit_a").
 
 A record is a dictionary:
     {"data": <the values entered>, "registration_number": "757877"}
 An approved record also has "serial", the Asset Serial Number.
 """
 from test_data.asset_registration_data import build_asset_data
-from utils.asset_flow import create_approved_asset
+from test_data.asset_slots import ASSET_SLOTS
+from utils.asset_flow import approve_registration, create_approved_asset
 
 
 class RegistrationHelper:
@@ -88,19 +89,41 @@ class RegistrationHelper:
         return self.remembered[key]
 
     def get_approved(self, item: str, sub_type: str = "spot", owner: str = "") -> dict:
-        """Return an APPROVED registration (with its Asset Serial), creating one if none is remembered."""
+        """
+        Return an APPROVED registration (with its Asset Serial). When none is remembered, a
+        PENDING registration of the same owner is approved now; when there is none either,
+        a new asset is registered, submitted and approved.
+        """
         key = self.make_key(item, "APPROVED", sub_type, owner)
         if not self.is_still_valid(key, "APPROVED"):
-            data = build_asset_data(item, sub_type=sub_type)
-            created = create_approved_asset(
-                self.aaq_page, self.registration_list_page, self.approval_list_page, data
-            )
-            self.remembered[key] = {
-                "data": data,
-                "registration_number": created["registration_number"],
-                "serial": created["serial"],
-            }
+            pending_key = self.make_key(item, "PENDING", sub_type, owner)
+            if self.is_still_valid(pending_key, "PENDING"):
+                record = self.remembered[pending_key]
+                serial = approve_registration(self.approval_list_page, record["registration_number"])
+                self.move_to_approved(record, serial, owner)
+            else:
+                data = build_asset_data(item, sub_type=sub_type)
+                created = create_approved_asset(
+                    self.aaq_page, self.registration_list_page, self.approval_list_page, data
+                )
+                self.remembered[key] = {
+                    "data": data,
+                    "registration_number": created["registration_number"],
+                    "serial": created["serial"],
+                }
         return self.remembered[key]
+
+    def get_draft_of(self, slot: str) -> dict:
+        """Return the DRAFT registration of an asset slot (test_data/asset_slots.py), creating it if none is remembered."""
+        return self.get_draft(ASSET_SLOTS[slot]["item"], ASSET_SLOTS[slot]["sub_type"], slot)
+
+    def get_pending_of(self, slot: str) -> dict:
+        """Return the PENDING registration of an asset slot, creating it if none is remembered."""
+        return self.get_pending(ASSET_SLOTS[slot]["item"], ASSET_SLOTS[slot]["sub_type"], slot)
+
+    def get_approved_of(self, slot: str) -> dict:
+        """Return the APPROVED registration of an asset slot, approving or creating it if none is remembered."""
+        return self.get_approved(ASSET_SLOTS[slot]["item"], ASSET_SLOTS[slot]["sub_type"], slot)
 
     def remember_draft(self, data: dict, owner: str = "") -> dict:
         """Record the Draft that was just saved. Its number is the newest DRAFT in the list."""

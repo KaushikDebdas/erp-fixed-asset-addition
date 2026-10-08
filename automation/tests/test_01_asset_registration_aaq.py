@@ -1,7 +1,7 @@
 """
 test_01_asset_registration_aaq.py: tests for the Asset Registration by AAQ
 screen (Fixed Asset > Registration > Asset Registration by AAQ), built around
-a planned set of 10 assets instead of repeating every check for every item.
+the planned asset slots (test_data/asset_slots.py) instead of repeating every check for every item.
 
 Built from automation/element_catalog/asset_registration_aaq.md and the
 business rules in knowledge/erp-fixedasset.md (§2 Asset Registration).
@@ -11,31 +11,30 @@ The whole file logs in once and every test reuses that session (see the
 The tests run top to bottom:
     1. Validations, checked once: mandatory fields before Draft or Submit,
        and the amount rules (minimum unit price, Measurement)
-    2. The 10 AAQ assets (5 Spot Purchase and 5 Gift Item), each created
-       as planned in the TEN_AAQ_ASSETS table in test_data/asset_registration_data.py
-    3. Each asset shows the planned status in the Asset Registration List
+    2. The asset slots (Spot Purchase and Gift Item of several items), each created
+       as planned in test_data/asset_slots.py and shown with its planned status in
+       the Asset Registration List
 
 Opening a Draft from the list and submitting it is tested in
 test_02_asset_registration_list.py.
 
-The 10 assets are remembered under the group "aaq_ten_assets" (AAQ_ASSET_GROUP), so later
-tests can reuse them: registrations.get_pending("land", "gift", AAQ_ASSET_GROUP).
+Each asset is remembered under its slot name, so later tests and flows can reuse it:
+registrations.get_pending_of("sale_profit_a") here, assets.get("sale_profit_a") later.
 There is no Reject step: the Asset Registration Approval List has no Reject
 button (checked 2026-10-05).
 
 Every test also runs on its own. To run part of the file:
     pytest tests/test_01_asset_registration_aaq.py -k "gift"
-    pytest tests/test_01_asset_registration_aaq.py -k "land-spot-submit"
+    pytest tests/test_01_asset_registration_aaq.py -k "split_land"
 """
 import pytest
 
 from test_data.asset_registration_data import (
-    AAQ_ASSET_GROUP,
     MEASURED_ITEMS,
-    TEN_AAQ_ASSETS,
     build_asset_data,
     build_registration_data,
 )
+from test_data.asset_slots import ALL_SLOTS
 from test_data.toast_messages import (
     MEASUREMENT_TOAST,
     MINIMUM_PRICE_TOAST,
@@ -168,50 +167,31 @@ def test_aaq_measurement_is_required_for_land_and_building(item, page, aaq_page,
 
 
 # ---------------------------------------------------------------------------
-# 2. The 10 AAQ assets: each is created as planned in the TEN_AAQ_ASSETS table in test_data/asset_registration_data.py
+# 2. The asset slots: each is created as planned and listed with its planned status
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.regression
-@TEN_AAQ_ASSETS
-def test_aaq_ten_assets_create_asset_as_planned(item, sub_type, plan, page, registrations, take_screenshot):
-    """Asset Registration by AAQ: each of the 10 AAQ assets is saved as a Draft or submitted, as planned."""
+@ALL_SLOTS
+def test_aaq_slot_asset_created_and_listed(
+    slot, item, sub_type, plan, page, registrations, registration_list_page, take_screenshot
+):
+    """Asset Registration by AAQ: each asset slot is saved as a Draft or submitted as planned, and the list shows that status."""
     # Step 1: create the asset (a Draft, or submitted when the plan says submit)
     if plan == "submit":
-        record = registrations.get_pending(item, sub_type, AAQ_ASSET_GROUP)
-    else:
-        record = registrations.get_draft(item, sub_type, AAQ_ASSET_GROUP)
-    take_screenshot(f"{sub_type} {item} created as planned ({plan})")
-
-    # Step 2: the registration number was read from the list, so later tests can find the asset
-    assert record["registration_number"], f"No registration number was recorded for {sub_type} {item}."
-
-
-# ---------------------------------------------------------------------------
-# 3. Each of the 10 assets shows the planned status in the Asset Registration List
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.regression
-@TEN_AAQ_ASSETS
-def test_aaq_ten_assets_asset_is_listed_with_planned_status(
-    item, sub_type, plan, page, registrations, registration_list_page, take_screenshot
-):
-    """Asset Registration by AAQ: one of the 10 assets is listed as PENDING when submitted and as DRAFT otherwise."""
-    # Step 1: get the asset (it was created above, or is created now when this test runs alone)
-    if plan == "submit":
-        record = registrations.get_pending(item, sub_type, AAQ_ASSET_GROUP)
+        record = registrations.get_pending_of(slot)
         status = "PENDING"
     else:
-        record = registrations.get_draft(item, sub_type, AAQ_ASSET_GROUP)
+        record = registrations.get_draft_of(slot)
         status = "DRAFT"
+    take_screenshot(f"{slot} created ({plan})")
 
-    # Step 2: find it in the Registration List
+    # Step 2: the registration number was read from the list, so later tests can find the asset
+    assert record["registration_number"], f"No registration number was recorded for slot {slot}."
+
+    # Step 3: find it in the Registration List; its status is the planned one, and the row is this asset's
     registration_list_page.navigate_here()
     registration_list_page.filter_by_registration_number(record["registration_number"])
-    take_screenshot(f"{sub_type} {item} found in list")
-
-    # Step 3: its status is the planned one, and the row is this asset's (project and type)
     registration_list_page.verify_status(record["registration_number"], status)
     registration_list_page.verify_column_equals("Project Name", [record["data"]["project"]])
     registration_list_page.verify_column_equals("Registration Type", ["AAQ"])

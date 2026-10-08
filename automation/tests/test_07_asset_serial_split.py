@@ -3,11 +3,11 @@ test_07_asset_serial_split.py: tests for the Asset Serial Split screen (Fixed
 Asset > Asset Profile > Asset Serial Split) and its Asset Split form.
 
 Built from automation/element_catalog/asset_serial_split.md. The asset that is
-split is NOT created here: it is the saved Land asset, read with
-registrations.get_approved("land", "spot", AAQ_ASSET_GROUP) (test_data/saved_assets.json;
-a new one is created when none is left). Only that Land asset is ever split. The
-saved Furniture asset has no measurement, so it is used only to read the refusal
-message. The whole file logs in once and every test reuses that session.
+split is NOT created here: it is the Land asset of the slot split_land, read with
+registrations.get_approved_of("split_land") (a new one is created when none exists).
+Only that Land asset is ever split. The Furniture asset of the slot usage_a has no
+measurement, so it is used only to read the refusal message. The whole file logs in
+once and every test reuses that session.
 
 The tests run top to bottom:
     1. The Split screen: search, refusal of an asset with no measurement
@@ -24,7 +24,6 @@ To run part of the file:
 """
 import pytest
 
-from test_data.asset_registration_data import AAQ_ASSET_GROUP
 from test_data.asset_split_data import (
     FIRST_LINE_PERCENTAGE,
     LAND_ACC_DEPRECIATION_TEXT,
@@ -37,6 +36,10 @@ from test_data.asset_split_data import (
     SPLIT_REMARKS,
 )
 from utils.run_context import trace_one_test
+
+# The Land slot that is split, and the Furniture slot (no measurement) used for the refusal message
+LAND_SLOT = "split_land"
+NO_MEASUREMENT_SLOT = "usage_a"
 
 # Message shown when Split Into is not a whole number from 2 to 100
 RANGE_MESSAGE = "Please enter a valid integer number between 2 and 100"
@@ -64,9 +67,9 @@ def page(logged_in_page, request):
 @pytest.mark.smoke
 @pytest.mark.regression
 def test_split_search_shows_split_button(page, asset_serial_split_page, registrations, take_screenshot):
-    """Asset Serial Split: searching the saved Land asset's serial lists it with a SPLIT button."""
-    # Step 1: get the saved Land asset
-    serial = registrations.get_approved("land", "spot", AAQ_ASSET_GROUP)["serial"]
+    """Asset Serial Split: searching the Land asset's serial lists it with a SPLIT button."""
+    # Step 1: get the Land asset
+    serial = registrations.get_approved_of(LAND_SLOT)["serial"]
 
     # Step 2: open Asset Serial Split and search its serial
     asset_serial_split_page.navigate_here()
@@ -79,11 +82,11 @@ def test_split_search_shows_split_button(page, asset_serial_split_page, registra
 
 @pytest.mark.regression
 def test_split_refused_for_asset_without_measurement(
-    page, asset_serial_split_page, transactions, take_screenshot
+    page, asset_serial_split_page, registrations, take_screenshot
 ):
     """Asset Serial Split: an asset with no measurement cannot be split, a message says why."""
-    # Step 1: get the saved Furniture asset, not assigned (it has no measurement), and search its serial
-    serial = transactions.ensure_unassigned()
+    # Step 1: get the Furniture asset (it has no measurement) and search its serial
+    serial = registrations.get_approved_of(NO_MEASUREMENT_SLOT)["serial"]
     asset_serial_split_page.navigate_here()
     asset_serial_split_page.search_by_serial(serial)
     take_screenshot(f"furniture asset {serial} found")
@@ -102,7 +105,7 @@ def test_split_refused_for_asset_without_measurement(
 def test_split_form_shows_land_details(page, asset_serial_split_page, registrations, take_screenshot):
     """Asset Serial Split: the form opens with the Land asset's details and an empty Split Into box."""
     # Step 1: open the form of the saved Land asset
-    serial = registrations.get_approved("land", "spot", AAQ_ASSET_GROUP)["serial"]
+    serial = registrations.get_approved_of(LAND_SLOT)["serial"]
     asset_serial_split_page.open_split_form_for_serial(serial)
     take_screenshot("asset split form opened")
 
@@ -128,7 +131,7 @@ def test_split_into_value_is_validated(
 ):
     """Asset Serial Split: Split Into must be a whole number from 2 to 100."""
     # Step 1: open the form of the saved Land asset
-    serial = registrations.get_approved("land", "spot", AAQ_ASSET_GROUP)["serial"]
+    serial = registrations.get_approved_of(LAND_SLOT)["serial"]
     asset_serial_split_page.open_split_form_for_serial(serial)
 
     # Step 2: type the value, click Split; the message is shown and no lines are built
@@ -141,7 +144,7 @@ def test_split_into_value_is_validated(
 def test_split_into_two_builds_two_lines(page, asset_serial_split_page, registrations, take_screenshot):
     """Asset Serial Split: Split Into 2 builds two split lines."""
     # Step 1: open the form of the saved Land asset
-    serial = registrations.get_approved("land", "spot", AAQ_ASSET_GROUP)["serial"]
+    serial = registrations.get_approved_of(LAND_SLOT)["serial"]
     asset_serial_split_page.open_split_form_for_serial(serial)
 
     # Step 2: type 2 and click Split
@@ -156,7 +159,7 @@ def test_split_into_two_builds_two_lines(page, asset_serial_split_page, registra
 def test_percentage_in_line_one_fills_line_two(page, asset_serial_split_page, registrations, take_screenshot):
     """Asset Serial Split: 50 percent in line 1 gives line 2 the other 50 percent, half the measurement and value each."""
     # Step 1: open the form and build two lines
-    serial = registrations.get_approved("land", "spot", AAQ_ASSET_GROUP)["serial"]
+    serial = registrations.get_approved_of(LAND_SLOT)["serial"]
     asset_serial_split_page.open_split_form_for_serial(serial)
     asset_serial_split_page.build_split_lines(SPLIT_INTO)
 
@@ -178,7 +181,7 @@ def test_percentage_in_line_one_fills_line_two(page, asset_serial_split_page, re
 def test_last_split_line_is_read_only(page, asset_serial_split_page, registrations, take_screenshot):
     """Asset Serial Split: the first line can be edited, the last line only takes the balance."""
     # Step 1: open the form and build two lines
-    serial = registrations.get_approved("land", "spot", AAQ_ASSET_GROUP)["serial"]
+    serial = registrations.get_approved_of(LAND_SLOT)["serial"]
     asset_serial_split_page.open_split_form_for_serial(serial)
     asset_serial_split_page.build_split_lines(SPLIT_INTO)
     take_screenshot("two split lines built")
@@ -197,7 +200,7 @@ def test_last_split_line_is_read_only(page, asset_serial_split_page, registratio
 def test_reset_clears_the_typed_split_values(page, asset_serial_split_page, registrations, take_screenshot):
     """Asset Serial Split: Reset sets the typed percentages and the totals back to zero and keeps the split lines."""
     # Step 1: open the form, build two lines and type 50 percent in line 1
-    serial = registrations.get_approved("land", "spot", AAQ_ASSET_GROUP)["serial"]
+    serial = registrations.get_approved_of(LAND_SLOT)["serial"]
     asset_serial_split_page.open_split_form_for_serial(serial)
     asset_serial_split_page.build_split_lines(SPLIT_INTO)
     asset_serial_split_page.type_line_percentage(0, FIRST_LINE_PERCENTAGE)
@@ -213,7 +216,7 @@ def test_reset_clears_the_typed_split_values(page, asset_serial_split_page, regi
 def test_back_leaves_the_form_without_splitting(page, asset_serial_split_page, registrations, take_screenshot):
     """Asset Serial Split: Back closes the form and the Land asset can still be split."""
     # Step 1: open the form and build two lines
-    serial = registrations.get_approved("land", "spot", AAQ_ASSET_GROUP)["serial"]
+    serial = registrations.get_approved_of(LAND_SLOT)["serial"]
     asset_serial_split_page.open_split_form_for_serial(serial)
     asset_serial_split_page.build_split_lines(SPLIT_INTO)
 

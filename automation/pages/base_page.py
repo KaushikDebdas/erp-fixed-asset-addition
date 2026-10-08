@@ -116,10 +116,36 @@ class BasePage:
         its address is built from the current site address.
         """
         parts = urlsplit(self.page.url)
-        self.open(f"{parts.scheme}://{parts.netloc}{FIXED_ASSET_PATH}")
+        module_url = f"{parts.scheme}://{parts.netloc}{FIXED_ASSET_PATH}"
+        for attempt in range(OPEN_LIST_ATTEMPTS):
+            action_logger.info(f"Open URL: {module_url}")
+            response = self.page.goto(module_url)
+            self.wait_for_page_load()
+            if response is not None and response.status >= 500:
+                action_logger.info(f"The server answered {response.status}; opening the module again")
+                continue
+            if self.sign_in_form_is_shown():
+                self.sign_in_again()
+                continue
+            break
         self.wait_until_visible(
             self.page.get_by_text("Registration", exact=True).first, "Registration menu"
         )
+
+    def sign_in_form_is_shown(self) -> bool:
+        """Return True when the ERP sign-in form is on screen, which means the session has ended."""
+        username_field = self.page.get_by_role("textbox", name="Username")
+        return username_field.is_visible()
+
+    def sign_in_again(self) -> None:
+        """Sign in again with the test user, after the ERP ended the session."""
+        from config.settings import TEST_PASSWORD, TEST_USERNAME
+        from pages.login_page import LoginPage
+
+        action_logger.info("The session ended; signing in again")
+        login_page = LoginPage(self.page)
+        login_page.login(TEST_USERNAME, TEST_PASSWORD)
+        login_page.close_popup_if_present()
 
     def open_registration_submenu(self, link_name: str) -> None:
         """
