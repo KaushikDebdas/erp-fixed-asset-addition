@@ -10,6 +10,9 @@
 
 **Tags:** `[CONFIRMED]` stated directly in at least one text/document source (MD doc or PDF manual), or corroborated by two sources · `[INFERRED]` read from the flowchart diagram only (diagram/image-derived per the knowledge-extraction skill) and not independently stated in the MD doc or PDF text, or a reasonable inference not stated outright · `[NEEDS_CLARIFICATION]` unknown or ambiguous across all three sources; ask a business owner before relying on it.
 
+> **Scenario guide:** `knowledge/erp-fixedasset-scenarios.md` turns the verified behaviour into business-language test scenarios (start there when writing test cases from a CR).
+> §15 below is older than the scenario guide; where they differ, the scenario guide (built from the current tests and catalogs) is newer.
+
 > Live UI exploration and automation now cover **Asset Registration** (§2) and **Asset Profile** (§3). Every other section still comes from static documentation only (see §15).
 
 ---

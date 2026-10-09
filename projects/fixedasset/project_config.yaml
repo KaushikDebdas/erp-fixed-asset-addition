@@ -4,13 +4,21 @@ sub_domain: Fixed Asset
 application_url: https://erpstaging.brac.net/
 environment: QA
 knowledge_file: knowledge/erp-fixedasset.md
+# knowledge_file above is read FIRST when writing test cases from a new CR: its
+# section 16 has one screen sheet per screen (79 sheets).
+# Scenario guide: fully worked scenarios for the automated screens only
+# (Registration, Profile/Split, Transaction, Expense, Transfer/Challan,
+# Write-off/Sale). Read it SECOND, for step wording.
+scenarios_file: knowledge/erp-fixedasset-scenarios.md
 active_cr:                                 # fill in when a CR is chosen
 created: 2026-09-17
 notes: >
   Fixed Asset is the active sub-domain (knowledge/erp-fixedasset.md).
   Live UI exploration and Playwright+Python automation exist for it:
-  19 test files under automation/tests, 28 element catalog files and 2
-  end-to-end flows in e2e-flows/. The knowledge file
+  31 test files under automation/tests, 35 element catalog files and 2
+  end-to-end flows in e2e-flows/ (counts as of 2026-10-09). The knowledge file
   knowledge/erp-finance.md is kept from the project's earlier Income
   Statement/Balance Sheet sub-domain work. No test-case Excel exists
-  yet and no CR has been chosen for this sub-domain.
+  yet and no CR has been chosen for this sub-domain. The change request
+  FAHOV2-643 (Asset Addition with Reference Number) is recorded in the
+  knowledge file as not yet live.

@@ -14,6 +14,23 @@ team's own detailed, battle-tested standard — plus the three automation-
 tracking columns this framework adds on top.
 
 ## Input
+- The project's domain knowledge file (`knowledge_file` in
+  `project_config.yaml`, e.g. `knowledge/erp-fixedasset.md`) — read this FIRST,
+  starting with its block "How to write test cases from this file" and its
+  coverage map. It has one screen sheet per screen (§16: path, fields with
+  mandatory marks and limits, buttons, validations and messages, statuses and
+  approvals, accounting entry, test focus, conflicts and gaps). Load only the
+  sheets for the screens in the CR. A cell that says `not documented` is
+  NEEDS_CLARIFICATION: write the expected result as "System should show a
+  validation message (exact text to be confirmed)", never a guessed message.
+  `CONFLICT_NEEDS_REVIEW` rows show both versions: do not pick one silently.
+  Sheets about the change request FAHOV2-643 are not live behaviour.
+- The project's scenario guide (`scenarios_file`, e.g.
+  `knowledge/erp-fixedasset-scenarios.md`) — read it SECOND, and only for the
+  screens it covers (the coverage map says which): it has fully worked
+  scenarios (precondition, steps, test data, expected result) to copy the
+  step wording from. It does NOT cover every screen. Scenarios tagged DERIVED
+  have exact messages "to be confirmed"; keep that wording.
 - `projects/<project>/business_knowledge/` (reviewed output of the
   Business Analyst agent)
 - `projects/<project>/domain-docs/` — if a module-specific Instructions
