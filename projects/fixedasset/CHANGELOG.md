@@ -1,5 +1,8 @@
 # fixedasset — CHANGELOG
 
+## 2026-10-09 (reports folder is committed)
+- `.gitignore` no longer ignores `automation/reports/`; the whole folder (HTML report, screenshots, traces, allure-results, downloads) can be pushed to GitHub.
+
 ## 2026-10-08 (screenshots sorted into passed / failed)
 - Screenshots are saved under `screenshots/passed/<test>/` or `screenshots/failed/<test>/`. `sort_screenshots_by_result()` in `utils/run_context.py` moves the folder after each test; `conftest.py` calls it. Rule written in the `logging-reporting` and `python-playwright-pom` skills, `test-reporter` agent and `HOW_TO_RUN.md`.
 

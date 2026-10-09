@@ -2,8 +2,7 @@
 __pycache__/
 *.pyc
 automation/reports/*/
-!automation/reports/.gitkeep
 automation/automation_mapping/_archive/
-.pytest_cache/
 automation/logs/*.log
+.pytest_cache/
 .claude/settings.local.json
