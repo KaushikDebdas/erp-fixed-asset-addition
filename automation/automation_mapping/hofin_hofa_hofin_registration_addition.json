@@ -1,0 +1,24 @@
+{
+  "flow_name": "Asset Registration & Asset Addition (HOFIN -> HOFA -> HOFIN)",
+  "source_doc": "projects/fixedasset/e2e-flows/asset-registration-addition-hofin-hofa-hofin.md",
+  "explored": "2026-10-10",
+  "environment": "HOFIN https://hofin42.erp.bracits.net/ , HOFA https://env42.erp.bracits.net/",
+  "roles": ["HOFIN creator", "HOFA acknowledger", "HOFIN approver"],
+  "note": "Temporary review file. Locators now live in the page classes; the permanent record is automation/element_catalog/vendor_bill_payable.md, asset_registration_pending_review_list.md, hofin_approval_list.md and asset_serial_global_list.md.",
+  "steps": [
+    {"step_no": 1, "role": "HOFIN creator", "page": "HofinLoginPage", "business_action": "Sign in", "locator_strategy": "get_by_placeholder / get_by_role", "locator": "Your email address; Password; button Login", "status": "VERIFIED"},
+    {"step_no": 2, "role": "HOFIN creator", "page": "VendorBillPayablePage", "business_action": "Open Vendor > Payable Journal > + Create", "locator_strategy": "get_by_role / css", "locator": "link Vendor; a[href=/brac/vendor/pending-bill-payable-list]; link + Create", "status": "VERIFIED"},
+    {"step_no": 3, "role": "HOFIN creator", "page": "VendorBillPayablePage", "business_action": "Fill the bill header; Bill Date = the Date field (#transactionDate)", "locator_strategy": "css / get_by_role", "locator": "#vendor input, #purchaseMethod input, Bill/Invoice No.: *, #billDate calendar, Total Bill Amount: *, #bankAccount input", "status": "VERIFIED", "note": "amount and text boxes need key presses; Bill Date is read-only"},
+    {"step_no": 4, "role": "HOFIN creator", "page": "VendorBillPayablePage", "business_action": "Fill Bill Allocation (project, A/C code, purpose, amount >= 20000) and Add", "locator_strategy": "css / xpath", "locator": "#project input, #chartOfAccount input, #purpose input, Amount: *, following Add after heading", "status": "VERIFIED", "produces_data": "transaction_no appears (VP########)"},
+    {"step_no": 5, "role": "HOFIN creator", "page": "VendorBillPayablePage", "business_action": "Fixed Asset Details popup: registration (no parent) or addition (tick, choose parent serial)", "locator_strategy": "css", "locator": "app-vendor-fixed-asset-modal: #budgetAllocation, #isFixedAssetAddition, #fixedAssetProfile, #sourceOfFund, #quantity, #unitPrice, #assetItemName, a.btn-add", "status": "VERIFIED", "consumes_data": "asset_serial_number (addition only)"},
+    {"step_no": 6, "role": "HOFIN creator", "page": "VendorBillPayablePage", "business_action": "Confirm > Yes, read Transaction No., Submit", "locator_strategy": "get_by_role / get_by_text", "locator": "Confirm; Yes; #transactionNo; Submit", "status": "VERIFIED", "produces_data": "transaction_no"},
+    {"step_no": 7, "role": "HOFA acknowledger", "page": "AssetRegistrationPendingReviewPage", "business_action": "Find the Transaction No. and acknowledge", "locator_strategy": "get_by_placeholder / get_by_role / get_by_text", "locator": "Enter Payable Number(Min 3 char...); Search; row View; button Acknowledge", "status": "VERIFIED", "consumes_data": "transaction_no"},
+    {"step_no": 8, "role": "HOFIN approver", "page": "HofinApprovalPage", "business_action": "Approval > Approval, Feature = Vendor Bill Payable-Vendor, find the Transaction No., Action, Approve", "locator_strategy": "css", "locator": "#feature input; #status input; Transaction Number; a.btn-search; row Action; button.btn-info Approve", "status": "VERIFIED", "consumes_data": "transaction_no"},
+    {"step_no": 9, "role": "HOFA acknowledger", "page": "AssetSerialGlobalListPage", "business_action": "Read the newest parent serial; later check the extended asset and the Addition History", "locator_strategy": "css", "locator": "#assetSerialGlobalList; #assetFilterForm #assetSerial; #parentAssetSerial; #assetAdditionHistoryList", "status": "VERIFIED", "produces_data": "asset_serial_number"}
+  ],
+  "open_points": [
+    "Toast text after Submit ('Transaction Submitted Successfully') was not seen; success is checked by the view screen.",
+    "The newest parent serial is read from the top of the Global List; another user registering an asset at the same moment could be picked up."
+  ],
+  "overall_status": "READY_FOR_AUTOMATION"
+}

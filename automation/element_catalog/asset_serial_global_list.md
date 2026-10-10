@@ -70,3 +70,11 @@
   - Disposal Info: SL, Disposal Type, Asset Serial, Accumulated Depreciated, Written down Value, Auction/Sale Value, Base Value, Auction Start Date, Auction End Date, Approval Status, Disposal Status, Disposal Date.
   - Attachment: shows `File :` and `No Attachment` when none is attached.
 - Evidence: `evidence/asset_serial_global_list.png`, `evidence/asset_serial_global_list_detail.png`.
+
+## Parent and extended assets (CR FAHOV2-643) — explored live 2026-10-10
+- Filter form: the Asset Serial filter is `#assetFilterForm #assetSerial`. The same id exists inside the profile popup (`#commonModal`), so the filter is always read inside the form.
+- An addition approved in HOFIN creates a separate row `<parent serial>-1` (then `-2`, ...) with the same item, group and project as the added item, Assign Status UNASSIGNED and Utilization Status IN_USE. An exact serial search for the parent does not return its extended assets.
+- Extended asset popup: field `#parentAssetSerial` holds the parent serial (label "Reference Asset" also exists, `#refAssetSerial`, empty). Tabs: Details, Depreciation History, Revaluation History, Transaction History, Expenditure, Disposal Info, Attachment. There is NO Addition History tab.
+- Parent asset popup: the extra tab is named **Addition History** (CR conflict "Asset Addition" vs "Addition History" settled by the live screen). Its grid `#assetAdditionHistoryList` has columns SL, Asset Serial (link), Addition Amount, Addition Date, Reference Number, Item Name, Acc. Depreciation, WDV, Impairment Status, Impairment ID. Example: `BBDASR00227699-1`, 25000, 13/09/2026, `JV09005503/26`, Sofa Set, 0, 24999.
+- Reference Number in the grid is the journal voucher number of the addition (`JV…`).
+- Page methods: `read_newest_parent_serial`, `verify_extended_asset_popup`, `read_addition_history_row`, `verify_parent_addition_history`.
