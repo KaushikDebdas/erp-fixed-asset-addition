@@ -36,8 +36,8 @@ class AssetSerialGlobalListPage(BasePage):
 
     def __init__(self, page):
         super().__init__(page)
-        # Filters
-        self.asset_serial_filter = page.locator("#assetSerial")
+        # Filters (inside the filter form: the popup has fields with the same ids)
+        self.asset_serial_filter = page.locator("#assetFilterForm #assetSerial")
         self.utilization_status_filter = page.locator("#status")
         self.assign_status_filter = page.locator("#assetAssignStatus")
         # Runs the filter
@@ -64,6 +64,8 @@ class AssetSerialGlobalListPage(BasePage):
         self.status_update_button = page.locator("#updateAssetBtn")
         self.new_item_specification_field = page.locator("#newItemSpecification")
         self.item_update_button = page.locator("#updateItemSpecification")
+        # Grid of the "Addition History" tab (a parent asset's popup only)
+        self.addition_history_table = self.popup.locator("#assetAdditionHistoryList")
 
     # ---- search -----------------------------------------------------------
 
@@ -232,6 +234,78 @@ class AssetSerialGlobalListPage(BasePage):
     def close_popup(self) -> None:
         """Close the Asset Profile Details popup."""
         self.click(self.popup_close_button, "Close button of Asset Profile Details popup")
+
+    # ---- parent and extended assets (CR FAHOV2-643) -------------------------------
+
+    def read_newest_parent_serial(self, item_name: str) -> str:
+        """
+        Return the serial of the newest parent asset with this item name. Call
+        it right after `navigate_here`: the unfiltered list shows the newest
+        asset first. Rows of extended assets (serial with "-1", "-2", ...) are
+        skipped, because only a parent asset can take an addition.
+        """
+        self.wait_for_table_to_reload(self.results_table)
+        rows = self.results_table.locator("tbody tr")
+        for index in range(rows.count()):
+            cells = [c.strip() for c in rows.nth(index).locator("td").all_inner_texts()]
+            serial = cells[ASSET_SERIAL_COLUMN_INDEX]
+            name = cells[ASSET_SERIAL_COLUMN_INDEX + 1]
+            if "-" not in serial and name == item_name:
+                action_logger.info(f"Newest parent asset with item {item_name}: {serial}")
+                return serial
+        raise AssertionError(f"No parent asset with item name '{item_name}' is listed on the first page.")
+
+    def verify_extended_asset_popup(self, extended_serial: str, parent_serial: str) -> None:
+        """
+        Open the popup of an extended asset and confirm its "Parent Asset" field
+        shows the parent serial and that it has no "Addition History" tab (only a
+        parent asset has that tab). The popup is closed afterwards.
+        """
+        assertion_logger.info(f"Verifying the popup of extended asset {extended_serial}")
+        self.open_asset_popup(extended_serial)
+        shown_parent = self.get_popup_value("parentAssetSerial")
+        tab_names = self.get_tab_names()
+        self.close_popup()
+        assert shown_parent == parent_serial, (
+            f"The Parent Asset of {extended_serial} should be {parent_serial} but shows '{shown_parent}'."
+        )
+        assert "Addition History" not in tab_names, (
+            f"The extended asset {extended_serial} should have no Addition History tab but its tabs are {tab_names}."
+        )
+
+    def read_addition_history_row(self, serial: str) -> dict:
+        """
+        Open the "Addition History" tab of the popup and return the row of this
+        extended asset as {column heading: text}. Only a parent asset has the tab.
+        """
+        tab_link = self.popup.locator("a[data-toggle=tab]", has_text="Addition History")
+        self.click(tab_link, "Addition History tab")
+        self.wait_until_visible(self.addition_history_table, "Addition History grid")
+        self.wait_until_visible(
+            self.addition_history_table.locator("tbody tr", has_text=serial), f"history row of {serial}"
+        )
+        return self.read_row_values(self.addition_history_table, serial)
+
+    def verify_parent_addition_history(self, parent_serial: str, extended_serial: str, expected: dict) -> None:
+        """
+        Open the popup of a parent asset and confirm its "Addition History" tab
+        lists the extended asset with the values in `expected` ({column heading:
+        text}, for example {"Addition Amount": "25000"}). The popup is closed afterwards.
+        """
+        assertion_logger.info(f"Verifying the Addition History of {parent_serial}")
+        self.open_asset_popup(parent_serial)
+        tab_names = self.get_tab_names()
+        assert "Addition History" in tab_names, (
+            f"The parent asset {parent_serial} should have an Addition History tab but its tabs are {tab_names}."
+        )
+        found = self.read_addition_history_row(extended_serial)
+        self.close_popup()
+        problems = []
+        for heading, wanted in expected.items():
+            actual = found.get(heading, "<column not found>")
+            if actual != wanted:
+                problems.append(f"{heading}: expected '{wanted}' but found '{actual}'")
+        assert not problems, f"The Addition History row of {extended_serial} is not as expected: {problems}"
 
     # ---- the Change buttons -----------------------------------------------
 
