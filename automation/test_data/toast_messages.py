@@ -47,6 +47,8 @@ UNASSIGN_DRAFT_TOAST = "Asset Un-Assign Draft Successfully"
 UNASSIGN_SUBMIT_TOAST = "Asset Un-Assign Submit Successfully"
 UNASSIGN_SAME_EMPLOYEE_TOAST = "Asset assigned to same employee!"
 TRANSACTION_APPROVE_TOAST = "Approved successfully"
+# Shown when an extended asset's serial (<parent>-1) is searched in Asset Assign (CR FAHOV2-643)
+ASSET_NOT_FOUND_TOAST = "No asset found"
 ACKNOWLEDGE_TOAST = "Acknowledged successfully"
 
 # ---------------------------------------------------------------------------

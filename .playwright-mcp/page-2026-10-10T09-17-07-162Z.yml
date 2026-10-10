@@ -1,0 +1,17 @@
+- generic [ref=e2]:
+  - generic [ref=e6]:
+    - generic [ref=e7]: HO Finance
+    - generic [ref=e11]:
+      - generic [ref=e12]:
+        - textbox "Your email address" [ref=e13]: dijendra.nm@brac.net
+        - generic:
+          - generic [aria-hidden]: 
+      - generic [ref=e15]:
+        - textbox "Password" [active] [ref=e16]: Brac@1234
+        - generic:
+          - generic [aria-hidden]: 
+      - button "Login" [ref=e19] [cursor=pointer]
+      - generic [ref=e20]: Sign In With SSO
+      - generic [ref=e21]: © Copyright 2023 Brac IT - All Rights Reserved
+  - generic:
+    - list

@@ -33,6 +33,9 @@ OPEN_LIST_ATTEMPTS = 3
 # Path of the Fixed Asset module on the ERP site
 FIXED_ASSET_PATH = "/nodef/fixedasset"
 
+# Spaces shown in front of an extended asset's serial in every list (CR FAHOV2-643)
+EXTENDED_SERIAL_INDENT = " " * 4
+
 
 class BasePage:
     """Common actions shared by every page object."""
@@ -476,6 +479,48 @@ class BasePage:
             if actual != wanted:
                 problems.append(f"{heading}: expected '{wanted}' but found '{actual}'")
         assert not problems, f"The row of {row_text} is not as expected: {problems}"
+
+    def read_serial_cells(self, rows: Locator) -> list:
+        """
+        Return one {"sl": ..., "serial": ...} for each row of a grid: the SL number
+        and the Asset Serial as shown (the spaces in front of an extended asset's
+        serial are kept; the screen writes them as non-breaking spaces, which are
+        returned as ordinary spaces). They are the first two visible cells of a row.
+        """
+        found = []
+        for index in range(rows.count()):
+            cells = rows.nth(index).locator("td:visible")
+            serial_text = cells.nth(1).inner_text().replace("\xa0", " ")
+            found.append({"sl": cells.nth(0).inner_text().strip(), "serial": serial_text})
+        return found
+
+    def verify_extended_rows_below_parent(self, rows: Locator, parent_serial: str, extended_serials: list) -> None:
+        """
+        Confirm a grid lists the parent asset with its SL number, and directly
+        below it each extended asset in `extended_serials` with no SL number and
+        its serial indented by 4 spaces. Names every difference.
+        """
+        assertion_logger.info(f"Verifying {extended_serials} are listed below {parent_serial}")
+        found = self.read_serial_cells(rows)
+        serials = [row["serial"].strip() for row in found]
+        assert parent_serial in serials, f"Expected the parent {parent_serial} in the grid but it lists {serials}."
+        parent_index = serials.index(parent_serial)
+        problems = []
+        if found[parent_index]["sl"] == "":
+            problems.append(f"the parent {parent_serial} has no SL number")
+        for position, extended_serial in enumerate(extended_serials):
+            row_index = parent_index + 1 + position
+            if row_index >= len(found):
+                problems.append(f"{extended_serial} is not listed directly below the parent")
+                continue
+            if found[row_index]["serial"] != EXTENDED_SERIAL_INDENT + extended_serial:
+                problems.append(
+                    f"row below the parent shows '{found[row_index]['serial']}' instead of "
+                    f"'{EXTENDED_SERIAL_INDENT}{extended_serial}' (the serial with 4 spaces in front)"
+                )
+            if found[row_index]["sl"] != "":
+                problems.append(f"{extended_serial} has an SL number '{found[row_index]['sl']}'")
+        assert not problems, f"The grid does not list the extended assets of {parent_serial} as expected: {problems}"
 
     def close_popup_if_present(self, timeout: int = 3000) -> None:
         """

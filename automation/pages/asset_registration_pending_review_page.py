@@ -13,6 +13,13 @@ from utils.logger import assertion_logger
 
 LIST_LINK_NAME = "Asset Registration Pending/Review List"
 
+# Message shown when Acknowledge is clicked before the request's asset details have loaded
+NOT_LOADED_TOAST = "You have to select a Asset first"
+
+# Times Acknowledge is clicked while the details are still loading, and the wait between them (milliseconds)
+ACKNOWLEDGE_ATTEMPTS = 4
+DETAILS_LOAD_WAIT = 3000
+
 
 class AssetRegistrationPendingReviewPage(BasePage):
     """Page object for the Asset Registration Pending/Review List screen."""
@@ -55,7 +62,15 @@ class AssetRegistrationPendingReviewPage(BasePage):
         """Open the row with View, click Acknowledge and check the success message."""
         view_link = self.get_row(transaction_no).get_by_text("View", exact=True)
         self.click(view_link, f"View link of {transaction_no}")
+        self.wait_for_page_load()
         self.wait_until_visible(self.acknowledge_button, "Acknowledge button")
-        self.click(self.acknowledge_button, "Acknowledge button")
-        toast = self.get_toast_text()
+        toast = ""
+        for attempt in range(ACKNOWLEDGE_ATTEMPTS):
+            self.wait_for_toast_to_clear()
+            self.click(self.acknowledge_button, "Acknowledge button")
+            toast = self.get_toast_text()
+            if NOT_LOADED_TOAST not in toast:
+                break
+            # The request details are still loading: wait a moment, then click again
+            self.page.wait_for_timeout(DETAILS_LOAD_WAIT)
         self.verify_toast_contains(toast, data.ACKNOWLEDGED_TOAST, "Acknowledge")

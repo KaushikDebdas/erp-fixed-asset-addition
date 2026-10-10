@@ -5,7 +5,13 @@ Use this page object at the start of every test that needs a logged-in
 user — call `login(username, password)` once the browser tab is pointed
 at BASE_URL.
 """
+from urllib.parse import urlsplit
+
 from pages.base_page import BasePage
+from utils.logger import action_logger
+
+# Maximum time to wait for the sign-in screen to show after logging out (milliseconds)
+LOG_OUT_TIMEOUT = 30000
 
 
 class LoginPage(BasePage):
@@ -23,6 +29,18 @@ class LoginPage(BasePage):
     def wait_for_login_page(self) -> None:
         """Wait until the Username field is visible, so the page is ready to use."""
         self.wait_until_visible(self.username_field, "Username field")
+
+    def log_out(self) -> None:
+        """
+        End the session by opening the site's /logout address; the sign-in screen
+        is then shown. Call it when a test or flow no longer needs the user, so
+        the account has no session left open (the ERP allows one session per user
+        and a second login ends the first).
+        """
+        parts = urlsplit(self.page.url)
+        action_logger.info("Log out")
+        self.page.goto(f"{parts.scheme}://{parts.netloc}/logout", wait_until="domcontentloaded")
+        self.page.wait_for_url("**/openid-connect/auth**", timeout=LOG_OUT_TIMEOUT)
 
     def login(self, username: str, password: str) -> None:
         """

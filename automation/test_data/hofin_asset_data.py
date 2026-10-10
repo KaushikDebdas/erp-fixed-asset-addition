@@ -35,6 +35,9 @@ QUANTITY = "1"
 UNIT_PRICE = "25000"
 ITEM_SPECIFICATION = "AUTO-SPEC"
 
+# The project as the Asset Write-off screen lists it
+WRITE_OFF_PROJECT = "[015] Microfinance (Dabi)"
+
 # --- HOFIN approval list -----------------------------------------------------
 APPROVAL_FEATURE_SEARCH_TEXT = "bill"
 APPROVAL_FEATURE_OPTION = "Vendor Bill Payable-Vendor"

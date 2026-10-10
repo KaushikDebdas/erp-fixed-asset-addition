@@ -6,12 +6,17 @@ with Action and clicks Approve. The Feature filter must be set to "Vendor Bill
 Payable-Vendor", otherwise the search finds nothing. See
 `automation/element_catalog/hofin_approval_list.md`.
 """
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+
 from pages.base_page import BasePage
 from test_data import hofin_asset_data as data
-from utils.logger import assertion_logger
+from utils.logger import action_logger, assertion_logger
 
 # Number of times the list is opened again to wait for the APPROVED row
 APPROVED_CHECK_ATTEMPTS = 6
+
+# Maximum time to wait for the approval list to open again (milliseconds)
+RELOAD_TIMEOUT = 60000
 
 # Time to wait for the row of the Transaction No. in each attempt (milliseconds)
 ROW_TIMEOUT = 15000
@@ -39,6 +44,7 @@ class HofinApprovalPage(BasePage):
         """Click Approval > Approval and wait for the filters."""
         self.click(self.approval_menu, "Approval menu")
         self.click(self.approval_link, "Approval link")
+        self.wait_for_page_load()
         self.wait_until_visible(self.feature_input, "Feature filter")
 
     def get_row(self, transaction_no: str):
@@ -64,6 +70,7 @@ class HofinApprovalPage(BasePage):
         """Open the bill with Action and click Approve. The list is shown again once it is approved."""
         action_button = self.get_row(transaction_no).get_by_role("button", name="Action")
         self.click(action_button, f"Action button of {transaction_no}")
+        self.wait_for_page_load()
         self.wait_until_visible(self.approve_button, "Approve button")
         self.click(self.approve_button, "Approve button")
         self.page.wait_for_url("**/workflow-transaction/list**")
@@ -77,8 +84,12 @@ class HofinApprovalPage(BasePage):
         """
         assertion_logger.info(f"Verifying {transaction_no} is APPROVED")
         for attempt in range(APPROVED_CHECK_ATTEMPTS):
-            self.page.reload(wait_until="domcontentloaded")
-            self.wait_until_visible(self.feature_input, "Feature filter")
+            try:
+                self.page.reload(wait_until="domcontentloaded", timeout=RELOAD_TIMEOUT)
+                self.feature_input.wait_for(state="visible", timeout=RELOAD_TIMEOUT)
+            except PlaywrightTimeoutError:
+                action_logger.info("The approval list did not open in time; opening it again")
+                continue
             self.choose_from_ng_select(
                 self.feature_input, data.APPROVAL_FEATURE_SEARCH_TEXT, data.APPROVAL_FEATURE_OPTION
             )

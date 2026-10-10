@@ -37,6 +37,7 @@ from pages.hofin_login_page import HofinLoginPage
 from pages.login_page import LoginPage
 from pages.vendor_bill_payable_page import VendorBillPayablePage
 from test_data import hofin_asset_data as data
+from utils.helpers import unique_name
 from utils.logger import action_logger
 from utils.run_context import attach_trace_to_report, take_numbered_screenshot, trace_path
 
@@ -53,8 +54,8 @@ class HofinAssetFlow:
         self.browser = browser
         self.test_item = test_item
         self.maximize_window = maximize_window
-        # Contexts opened by `open_hofa_global_list`, closed at the end of the test
-        self.kept_contexts = []
+        # Sessions opened by `open_hofa_global_list` as (context, log out method), closed at the end of the test
+        self.kept_sessions = []
 
     # ---- stages ---------------------------------------------------------------
 
@@ -67,8 +68,8 @@ class HofinAssetFlow:
         self.require_logins(HOFIN_CREATOR_USERNAME, HOFIN_CREATOR_PASSWORD, "HOFIN_CREATOR")
         stage = "hofin_creator_addition" if parent_serial != "" else "hofin_creator_registration"
         context, page = self.open_role_page()
+        hofin_login = HofinLoginPage(page)
         try:
-            hofin_login = HofinLoginPage(page)
             hofin_login.open_login_page(HOFIN_URL)
             hofin_login.login(HOFIN_CREATOR_USERNAME, HOFIN_CREATOR_PASSWORD)
             bill = VendorBillPayablePage(page)
@@ -85,9 +86,9 @@ class HofinAssetFlow:
             bill.submit_and_verify()
             self.take_screenshot(page, f"bill {transaction_no} submitted")
         except Exception:
-            self.finish_role(context, page, stage, failed=True)
+            self.finish_role(context, page, stage, True, hofin_login.log_out)
             raise
-        self.finish_role(context, page, stage, failed=False)
+        self.finish_role(context, page, stage, False, hofin_login.log_out)
         return transaction_no
 
     def acknowledge(self, transaction_no: str) -> None:
@@ -95,8 +96,9 @@ class HofinAssetFlow:
         self.require_logins(HOFA_ACK_USERNAME, HOFA_ACK_PASSWORD, "HOFA_ACK")
         stage = f"hofa_acknowledger_{transaction_no}"
         context, page = self.open_role_page()
+        hofa_login = LoginPage(page)
         try:
-            self.login_to_hofa(page, HOFA_ACK_USERNAME, HOFA_ACK_PASSWORD)
+            self.login_to_hofa(hofa_login, HOFA_ACK_USERNAME, HOFA_ACK_PASSWORD)
             pending_list = AssetRegistrationPendingReviewPage(page)
             pending_list.navigate_here()
             pending_list.search_by_transaction_no(transaction_no)
@@ -107,17 +109,17 @@ class HofinAssetFlow:
             pending_list.verify_status(transaction_no, data.STATUS_ACKNOWLEDGED)
             self.take_screenshot(page, f"{transaction_no} acknowledged")
         except Exception:
-            self.finish_role(context, page, stage, failed=True)
+            self.finish_role(context, page, stage, True, hofa_login.log_out)
             raise
-        self.finish_role(context, page, stage, failed=False)
+        self.finish_role(context, page, stage, False, hofa_login.log_out)
 
     def approve(self, transaction_no: str) -> None:
         """HOFIN approver stage: find the Transaction No. in the approval list and approve it."""
         self.require_logins(HOFIN_APPROVER_USERNAME, HOFIN_APPROVER_PASSWORD, "HOFIN_APPROVER")
         stage = f"hofin_approver_{transaction_no}"
         context, page = self.open_role_page()
+        hofin_login = HofinLoginPage(page)
         try:
-            hofin_login = HofinLoginPage(page)
             hofin_login.open_login_page(HOFIN_URL)
             hofin_login.login(HOFIN_APPROVER_USERNAME, HOFIN_APPROVER_PASSWORD)
             approval = HofinApprovalPage(page)
@@ -128,9 +130,43 @@ class HofinAssetFlow:
             approval.verify_approved(transaction_no)
             self.take_screenshot(page, f"{transaction_no} approved")
         except Exception:
-            self.finish_role(context, page, stage, failed=True)
+            self.finish_role(context, page, stage, True, hofin_login.log_out)
             raise
-        self.finish_role(context, page, stage, failed=False)
+        self.finish_role(context, page, stage, False, hofin_login.log_out)
+
+    def create_parent_asset(self) -> str:
+        """
+        Register a new parent asset through the three roles (HOFIN creator, HOFA
+        acknowledger, HOFIN approver) and return its serial, read from the Global
+        List as the newest parent asset.
+        """
+        registration_no = self.create_bill(unique_name("REG"))
+        self.acknowledge(registration_no)
+        self.approve(registration_no)
+        global_list = self.open_hofa_global_list()
+        parent_serial = global_list.read_newest_parent_serial(data.ASSET_ITEM_NAME)
+        self.close_all()
+        return parent_serial
+
+    def add_extended_asset(self, parent_serial: str) -> None:
+        """Add one extended asset to the parent asset through the three roles (the same journey as an addition)."""
+        addition_no = self.create_bill(unique_name("ADD"), parent_serial)
+        self.acknowledge(addition_no)
+        self.approve(addition_no)
+
+    def create_parent_with_extended_asset(self, extension_count: int = 1) -> tuple:
+        """
+        Register a new parent asset and add `extension_count` extended assets to it.
+        Returns (parent serial, [extended serials]): the extended serials are the
+        parent serial plus "-1", "-2", ... in the order they were added. Used by the
+        tests of other screens that need a parent asset that has extended assets.
+        """
+        parent_serial = self.create_parent_asset()
+        extended_serials = []
+        for number in range(1, extension_count + 1):
+            self.add_extended_asset(parent_serial)
+            extended_serials.append(f"{parent_serial}-{number}")
+        return parent_serial, extended_serials
 
     def open_hofa_global_list(self) -> AssetSerialGlobalListPage:
         """
@@ -140,25 +176,26 @@ class HofinAssetFlow:
         """
         self.require_logins(HOFA_ACK_USERNAME, HOFA_ACK_PASSWORD, "HOFA_ACK")
         context, page = self.open_role_page()
-        self.kept_contexts.append(context)
-        self.login_to_hofa(page, HOFA_ACK_USERNAME, HOFA_ACK_PASSWORD)
+        hofa_login = LoginPage(page)
+        self.kept_sessions.append((context, hofa_login.log_out))
+        self.login_to_hofa(hofa_login, HOFA_ACK_USERNAME, HOFA_ACK_PASSWORD)
         global_list = AssetSerialGlobalListPage(page)
         global_list.navigate_here()
         return global_list
 
     def close_all(self) -> None:
-        """Close the browser contexts kept open for the test. Called by the fixture at the end of the test."""
-        for context in self.kept_contexts:
+        """Log out and close the browser windows kept open for the test. Called by the fixture at the end of the test."""
+        for context, log_out in self.kept_sessions:
+            self.try_log_out(log_out)
             context.close()
-        self.kept_contexts = []
+        self.kept_sessions = []
 
     # ---- helpers ----------------------------------------------------------------
 
-    def login_to_hofa(self, page, username: str, password: str) -> None:
-        """Open HOFA, sign in with the ERP sign-in screen and close the advertisement popup."""
+    def login_to_hofa(self, login_page, username: str, password: str) -> None:
+        """Open HOFA, sign in with the ERP sign-in screen (`login_page`) and close the advertisement popup."""
         action_logger.info(f"Open URL: {HOFA_URL}")
-        page.goto(HOFA_URL)
-        login_page = LoginPage(page)
+        login_page.page.goto(HOFA_URL)
         login_page.wait_for_login_page()
         login_page.login(username, password)
         login_page.close_popup_if_present()
@@ -171,19 +208,34 @@ class HofinAssetFlow:
         self.maximize_window(context, page)
         return context, page
 
-    def finish_role(self, context, page, stage: str, failed: bool) -> None:
+    def finish_role(self, context, page, stage: str, failed: bool, log_out) -> None:
         """
-        Close a role's browser window. A failed stage first takes a screenshot
-        and saves its trace in the report; a passed stage drops the trace.
+        Log the role out and close its browser window. `log_out` is the log-out
+        method of the role's login page. Logging out leaves the account with no open
+        session, so the next stage or test can log in with it without ending
+        another session. A failed stage first takes a screenshot and saves its
+        trace in the report; a passed stage drops the trace.
         """
         if failed:
             self.take_screenshot(page, f"{stage} FAILED")
+        self.try_log_out(log_out)
+        if failed:
             trace_file = trace_path(f"{self.test_item.name}_{stage}")
             context.tracing.stop(path=trace_file)
             attach_trace_to_report(trace_file)
         else:
             context.tracing.stop()
         context.close()
+
+    def try_log_out(self, log_out) -> None:
+        """
+        Call a log-out method. A log-out that does not complete is only logged: it
+        must never hide the result of the stage that has just run.
+        """
+        try:
+            log_out()
+        except Exception as error:
+            action_logger.info(f"The log out did not complete: {error}")
 
     def take_screenshot(self, page, description: str) -> None:
         """Take the next numbered screenshot of the test."""

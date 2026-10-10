@@ -80,6 +80,19 @@ class AssetSerialGlobalListPage(BasePage):
         self.click(self.search_button, "Search button")
         self.wait_for_row_or_no_data(self.results_table, serial)
 
+    def search_by_exact_serial(self, serial: str) -> None:
+        """
+        Filter by Asset Serial and wait until the grid has really reloaded, so the
+        rows read afterwards belong to this search. The search is an exact match: it
+        returns only that serial, never its extended assets. Prefer it to
+        `search_by_serial` whenever the serial is the start of other serials (a parent
+        and its extended assets).
+        """
+        self.type_text(self.asset_serial_filter, serial, "Asset Serial filter")
+        with self.page.expect_response("**faAssetProfile/getList**"):
+            self.click(self.search_button, "Search button")
+        self.wait_for_table_to_reload(self.results_table)
+
     def filter_by_utilization_status(self, status: str) -> None:
         """Pick an Asset Utilization Status in the filter (does not search yet)."""
         action_logger.info(f"Filter: Asset Utilization Status -> {status}")
@@ -169,6 +182,33 @@ class AssetSerialGlobalListPage(BasePage):
             if found != wanted:
                 problems.append(f"{field_id}: expected '{wanted}' but found '{found}'")
         assert not problems, f"The popup is not as expected: {problems}"
+
+    def verify_moved_together(self, parent_serial: str, extended_serial: str, building: str) -> None:
+        """
+        After an Internal Movement of the parent: confirm the popups of the parent
+        and of its extended asset show the new Building and the same Floor. Each
+        asset is searched, its popup opened and closed again.
+        """
+        assertion_logger.info(f"Verifying {parent_serial} and {extended_serial} moved together")
+        locations = {}
+        for serial in (parent_serial, extended_serial):
+            self.search_by_exact_serial(serial)
+            self.open_asset_popup(serial)
+            locations[serial] = (self.get_popup_value("buildingName"), self.get_popup_value("floorNo"))
+            self.close_popup()
+        parent_building, parent_floor = locations[parent_serial]
+        assert parent_building == building, f"Expected the parent {parent_serial} in building '{building}' but it shows '{parent_building}'."
+        assert parent_floor != "", f"Expected the parent {parent_serial} to show a floor but the Floor Number is empty."
+        assert locations[extended_serial] == (parent_building, parent_floor), (
+            f"Expected the extended asset to be at {(parent_building, parent_floor)} like its parent "
+            f"but it shows {locations[extended_serial]}."
+        )
+
+    def verify_all_assigned(self, serials: list) -> None:
+        """Confirm every serial in `serials` shows the Assign Status ASSIGNED (each is searched with its exact serial)."""
+        for serial in serials:
+            self.search_by_exact_serial(serial)
+            self.verify_assign_status(serial, "ASSIGNED")
 
     def verify_serial_not_listed(self, serial: str) -> None:
         """Confirm no result row shows this Asset Serial (call after searching it)."""
@@ -271,6 +311,57 @@ class AssetSerialGlobalListPage(BasePage):
         )
         assert "Addition History" not in tab_names, (
             f"The extended asset {extended_serial} should have no Addition History tab but its tabs are {tab_names}."
+        )
+
+    def read_addition_history_serials(self, parent_serial: str) -> list:
+        """
+        Search a parent asset, open its popup and its "Addition History" tab, and
+        return the serial of every extended asset the tab lists. The popup is closed
+        afterwards.
+        """
+        self.search_by_exact_serial(parent_serial)
+        self.open_asset_popup(parent_serial)
+        tab_link = self.popup.locator("a[data-toggle=tab]", has_text="Addition History")
+        self.click(tab_link, "Addition History tab")
+        self.wait_until_visible(self.addition_history_table, "Addition History grid")
+        rows = self.addition_history_table.locator("tbody tr").filter(has_not_text="No data available")
+        self.wait_until_visible(rows.first, "Addition History row")
+        serials = [row["serial"].strip() for row in self.read_serial_cells(rows)]
+        self.close_popup()
+        return serials
+
+    def read_assignment_of(self, serial: str) -> dict:
+        """
+        Search an asset (exact serial), open its popup and return its assignment as
+        {"status", "employee", "building", "floor", "room"}. The popup is closed afterwards.
+        """
+        self.search_by_exact_serial(serial)
+        self.open_asset_popup(serial)
+        assignment = {
+            "status": self.get_popup_value("assignUnassignStatus"),
+            "employee": self.get_popup_value("assignedEmployee"),
+            "building": self.get_popup_value("buildingName"),
+            "floor": self.get_popup_value("floorNo"),
+            "room": self.get_popup_value("roomNo"),
+        }
+        self.close_popup()
+        return assignment
+
+    def verify_same_assignment_as_parent(self, parent_serial: str, extended_serial: str) -> None:
+        """
+        Confirm an extended asset added to an assigned parent was assigned
+        automatically: it is ASSIGNED to the same employee, in the same building,
+        floor and room as its parent (CR FAHOV2-643, F02).
+        """
+        assertion_logger.info(f"Verifying {extended_serial} has the assignment of {parent_serial}")
+        parent = self.read_assignment_of(parent_serial)
+        extended = self.read_assignment_of(extended_serial)
+        assert parent["status"] == "ASSIGNED" and parent["employee"] != "", (
+            f"Expected the parent {parent_serial} to be ASSIGNED to an employee but it shows {parent}."
+        )
+        assert extended == parent, (
+            f"Expected the new extended asset {extended_serial} to have its parent's assignment {parent} "
+            f"but it shows {extended}."
         )
 
     def read_addition_history_row(self, serial: str) -> dict:

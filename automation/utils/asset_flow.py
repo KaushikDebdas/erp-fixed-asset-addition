@@ -93,6 +93,33 @@ def unassign_and_approve(unassign_page, approval_list_page, serial: str, handove
     action_logger.info(f"Asset {serial} is now unassigned")
 
 
+def write_off_and_approve(
+    global_list_page, write_off_page, write_off_list_page, write_off_approval_page, serial: str, project: str
+) -> None:
+    """
+    Write off an unassigned asset and approve the write-off, so the asset is
+    disposed and no longer listed. A write-off only accepts an asset whose
+    Utilization Status is not IN_USE, so the asset is set to DAMAGE first. Used to
+    prepare test data (for example an extended asset that must become inactive).
+    """
+    global_list_page.mark_asset_damaged(serial, "AUTOMATION_TEST damaged for write off")
+    write_off_page.navigate_here()
+    write_off_page.select_project(project)
+    write_off_page.select_asset(serial, serial)
+    write_off_page.enter_note("write off")
+    write_off_page.add_to_grid()
+    write_off_page.submit_and_verify()
+
+    write_off_list_page.navigate_here()
+    write_off_list_page.filter_by_status("PENDING")
+    write_off_id = write_off_list_page.get_newest_write_off_id()
+    write_off_approval_page.navigate_here()
+    write_off_approval_page.filter_by_status("PENDING")
+    write_off_approval_page.select_write_off(write_off_id)
+    write_off_approval_page.approve_selected_and_verify()
+    action_logger.info(f"Asset {serial} is written off (write-off {write_off_id})")
+
+
 def move_and_approve(
     movement_page, approval_list_page, serial: str, employee_pin: str, building: str, note: str
 ) -> None:

@@ -26,6 +26,10 @@ MONTH_NAMES = [
 # Most months the Bill Date calendar is moved back to reach the business date
 MAX_MONTHS_BACK = 24
 
+# Times Add is clicked in the Fixed Asset Details popup, and the time to wait for the item row after each click (milliseconds)
+ADD_ITEM_ATTEMPTS = 3
+ITEM_ROW_WAIT = 20000
+
 # Maximum time to wait for the bill to be saved, the Transaction No. to appear
 # and the screen to change after Submit (milliseconds)
 SAVE_TIMEOUT = 60000
@@ -102,6 +106,7 @@ class VendorBillPayablePage(BasePage):
         self.click(self.vendor_menu, "Vendor menu")
         self.click(self.payable_journal_link, "Payable Journal link")
         self.click(self.create_link, "+ Create link")
+        self.wait_for_page_load()
         self.wait_until_visible(self.date_field, "Date field")
 
     # ---- bill header -------------------------------------------------------------
@@ -164,6 +169,7 @@ class VendorBillPayablePage(BasePage):
         self.choose_from_ng_select(self.purpose_input, data.PURPOSE_SEARCH_TEXT, data.PURPOSE_OPTION)
         self.type_with_keys(self.allocation_amount_field, data.BILL_AMOUNT, "Bill Allocation Amount field")
         self.click(self.allocation_add_button, "Add button of Bill Allocation Details")
+        self.wait_for_page_load()
         self.wait_until_visible(self.fixed_asset_details_link, "Fixed Asset Details link")
 
     # ---- fixed asset details popup ---------------------------------------------------
@@ -192,8 +198,20 @@ class VendorBillPayablePage(BasePage):
         self.type_with_keys(self.unit_price_field, data.UNIT_PRICE, "Unit Price field")
         self.choose_from_ng_select(self.asset_item_input, data.ASSET_ITEM_SEARCH_TEXT, data.ASSET_ITEM_OPTION)
         self.type_with_keys(self.item_specification_field, data.ITEM_SPECIFICATION, "Item Specification field")
-        self.click(self.popup_add_button, "Add button of the popup")
-        self.wait_until_visible(self.popup_item_row, "item row in the popup")
+        self.add_item_to_popup_list()
+
+    def add_item_to_popup_list(self) -> None:
+        """
+        Click Add in the popup until the item shows in the popup's item list. The
+        list is empty until the item is added, so clicking again never adds it twice.
+        """
+        for attempt in range(ADD_ITEM_ATTEMPTS):
+            self.click(self.popup_add_button, "Add button of the popup")
+            if self.is_shown_within(self.popup_item_row, "item row in the popup", ITEM_ROW_WAIT):
+                return
+        raise AssertionError(
+            f"The item was not added to the list of the Fixed Asset Details popup after {ADD_ITEM_ATTEMPTS} clicks on Add."
+        )
 
     def choose_parent_asset(self, parent_serial: str) -> None:
         """
@@ -264,3 +282,4 @@ class VendorBillPayablePage(BasePage):
                 "After Submit the bill should open in view mode but the page shows "
                 f"{self.page.url}."
             )
+        self.wait_for_page_load()

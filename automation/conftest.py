@@ -296,6 +296,59 @@ def logged_in_page(browser, request):
     per test (see `trace_one_test` in utils/run_context.py).
     """
     from config.settings import TEST_PASSWORD, TEST_USERNAME
+
+    context, page = open_logged_in_tab(browser, TEST_USERNAME, TEST_PASSWORD)
+
+    yield page
+
+    log_out_quietly(page)
+    context.tracing.stop()
+    context.close()
+
+
+@pytest.fixture(scope="module")
+def assign_user_logged_in_page(browser, request):
+    """
+    Like `logged_in_page`, but the tab is logged in as the Asset Assign user
+    (ASSIGN_USER_USERNAME / ASSIGN_USER_PASSWORD in .env). Use it in a test file
+    that runs the Asset Assign screens with that user, by overriding `page` to
+    return this tab (see tests/test_33_asset_assign_extended_assets.py).
+    """
+    from config.settings import ASSIGN_USER_PASSWORD, ASSIGN_USER_USERNAME
+
+    assert ASSIGN_USER_USERNAME and ASSIGN_USER_PASSWORD, (
+        "The Asset Assign user is missing. Add ASSIGN_USER_USERNAME and ASSIGN_USER_PASSWORD to .env."
+    )
+    context, page = open_logged_in_tab(browser, ASSIGN_USER_USERNAME, ASSIGN_USER_PASSWORD)
+
+    yield page
+
+    log_out_quietly(page)
+    context.tracing.stop()
+    context.close()
+
+
+def log_out_quietly(page) -> None:
+    """
+    Log the user of this tab out, so the account has no session left open when a test
+    file ends (the ERP allows one session per user). A log-out that does not complete
+    is only logged: it must not turn a passed test file into an error.
+    """
+    from pages.login_page import LoginPage
+    from utils.logger import action_logger
+
+    try:
+        LoginPage(page).log_out()
+    except Exception as error:
+        action_logger.info(f"The log out at the end of the test file did not complete: {error}")
+
+
+def open_logged_in_tab(browser, username: str, password: str) -> tuple:
+    """
+    Open a new browser window on HOFA (the Fixed Asset application), log in with
+    the given user and close the advertisement popup if it appears. Tracing is
+    started. Returns (context, page).
+    """
     from pages.login_page import LoginPage
 
     # Open the page at the full size of the maximized browser window.
@@ -305,16 +358,11 @@ def logged_in_page(browser, request):
     maximize_window(context, page)
     page.goto(BASE_URL)
 
-    # Log in once and close the advertisement popup if it appears
     login_page = LoginPage(page)
     login_page.wait_for_login_page()
-    login_page.login(TEST_USERNAME, TEST_PASSWORD)
+    login_page.login(username, password)
     login_page.close_popup_if_present()
-
-    yield page
-
-    context.tracing.stop()
-    context.close()
+    return context, page
 
 
 @pytest.fixture
@@ -332,13 +380,86 @@ def hofin_flow(browser, request):
     flow.close_all()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def hofin_flow_data():
     """
-    An empty dictionary shared by the tests of one file, so a test can leave a value
-    (the parent asset serial) for the next test that needs it.
+    An empty dictionary shared by all the tests of a run, so a test can leave a value
+    (the parent and extended asset serials) for the next test, in any file, that needs it.
     """
     return {}
+
+
+@pytest.fixture
+def parent_with_extended(hofin_flow, hofin_flow_data):
+    """
+    A parent asset that has one extended asset, as {"parent": serial, "extended": serial}.
+    Made through HOFIN, HOFA and HOFIN the first time a test asks for it in a run (a few
+    minutes); every later test of the run gets the same two assets.
+    """
+    if "extended_serial" not in hofin_flow_data:
+        parent_serial, extended_serials = hofin_flow.create_parent_with_extended_asset()
+        hofin_flow_data["parent_serial"] = parent_serial
+        hofin_flow_data["extended_serial"] = extended_serials[0]
+    return {"parent": hofin_flow_data["parent_serial"], "extended": hofin_flow_data["extended_serial"]}
+
+
+@pytest.fixture
+def parent_with_inactive_extended(
+    hofin_flow, hofin_flow_data, asset_serial_global_list_page, asset_write_off_page,
+    asset_write_off_list_page, asset_write_off_approval_list_page
+):
+    """
+    A second parent asset with three extended assets, the last one written off
+    (disposed, so inactive), as {"parent": serial, "active": [two serials],
+    "inactive": serial}. Made once per run: through HOFIN, HOFA and HOFIN, then the
+    third extended asset is set to DAMAGE, written off and approved. It is a
+    different parent from `parent_with_extended`, so a test that assigns it does
+    not disturb the other tests.
+    """
+    from test_data.hofin_asset_data import WRITE_OFF_PROJECT
+    from utils.asset_flow import write_off_and_approve
+
+    if "inactive_pair" not in hofin_flow_data:
+        parent_serial, extended_serials = hofin_flow.create_parent_with_extended_asset(3)
+        write_off_and_approve(
+            asset_serial_global_list_page, asset_write_off_page, asset_write_off_list_page,
+            asset_write_off_approval_list_page, extended_serials[2], WRITE_OFF_PROJECT,
+        )
+        hofin_flow_data["inactive_pair"] = {
+            "parent": parent_serial, "active": extended_serials[:2], "inactive": extended_serials[2],
+        }
+    return hofin_flow_data["inactive_pair"]
+
+
+@pytest.fixture
+def assigned_parent_with_extended(
+    parent_with_extended, assign_page, transaction_approval_page, asset_serial_global_list_page, acknowledgement_page
+):
+    """
+    The parent asset and its extended asset, ASSIGNED to the test employee and
+    acknowledged, which is the state Asset Internal Movement and Asset Un Assign
+    need (an asset with an acknowledgement pending is not offered there). It does
+    only the steps that are missing: assigns and approves when the parent is
+    UNASSIGNED, then acknowledges when an acknowledgement is waiting. Works in the
+    tab of the user that is the assigned employee. Returns the same dictionary
+    as `parent_with_extended`.
+    """
+    from test_data.asset_transaction_data import ASSIGNEE_PIN, UNASSIGNED
+    from test_data.toast_messages import ACKNOWLEDGE_TOAST
+    from utils.asset_flow import assign_and_approve
+
+    parent_serial = parent_with_extended["parent"]
+    status = asset_serial_global_list_page.open_and_read_assign_status(parent_serial)
+    if status == UNASSIGNED:
+        assign_and_approve(
+            assign_page, transaction_approval_page, parent_serial, ASSIGNEE_PIN, "AUTOMATION_TEST setup assign"
+        )
+    acknowledgement_page.navigate_here()
+    if acknowledgement_page.has_pending_for_serial(parent_serial):
+        acknowledgement_page.open_details_of_row_with_serial(parent_serial)
+        toast = acknowledgement_page.acknowledge_in_popup_and_get_toast()
+        acknowledgement_page.verify_toast_contains(toast, ACKNOWLEDGE_TOAST, "Acknowledge in the setup")
+    return parent_with_extended
 
 
 @pytest.fixture

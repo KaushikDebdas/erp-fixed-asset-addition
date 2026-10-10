@@ -89,3 +89,6 @@ def test_asset_addition_hofin_hofa_hofin(hofin_flow, hofin_flow_data):
         {"Addition Amount": data.UNIT_PRICE, "Item Name": data.ASSET_ITEM_NAME},
     )
     hofin_flow.take_screenshot(global_list.page, "parent asset addition history checked")
+
+    # Step 7: keep the extended asset serial for the tests of other screens
+    hofin_flow_data["extended_serial"] = extended_serial

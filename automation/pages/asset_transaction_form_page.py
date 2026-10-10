@@ -13,7 +13,10 @@ The search boxes are autocompletes: type, click the small purple search
 icon, then click the suggestion. Only the click on the suggestion fills in
 the screen.
 """
-from pages.base_page import OPEN_LIST_ATTEMPTS, BasePage
+from playwright.sync_api import expect
+
+from pages.base_page import GRID_RELOAD_TIMEOUT, OPEN_LIST_ATTEMPTS, BasePage
+from test_data.toast_messages import ASSET_NOT_FOUND_TOAST
 from utils.logger import action_logger, assertion_logger
 
 
@@ -115,6 +118,97 @@ class AssetTransactionFormPage(BasePage):
         """Return the Asset Serial of every row in the Asset List (second visible cell, after SL)."""
         rows = self.asset_list_table.locator("tbody tr").filter(has_not_text="No data available")
         return [rows.nth(i).locator("td:visible").nth(1).inner_text().strip() for i in range(rows.count())]
+
+    # ---- extended assets (CR FAHOV2-643) ---------------------------------------
+
+    def get_asset_list_rows(self):
+        """Return the rows of the Asset List (without the 'No data available' row)."""
+        return self.asset_list_table.locator("tbody tr").filter(has_not_text="No data available")
+
+    def verify_serial_not_found(self, serial: str) -> None:
+        """
+        Type a serial, click search and confirm the message "No asset found" is
+        shown and no suggestion is offered. The serial of an extended asset
+        (<parent>-1) cannot be selected on its own.
+        """
+        self.wait_for_toast_to_clear()
+        self.type_text(self.asset_serial_box, serial, "Asset Serial box")
+        self.click(self.asset_serial_search_icon, "Asset Serial search button")
+        toast = self.get_toast_text()
+        self.verify_toast_text(toast, ASSET_NOT_FOUND_TOAST, f"searching the serial {serial}")
+        assert self.suggestions.count() == 0, (
+            f"Expected no suggestion for {serial} but the list offers {self.suggestions.all_inner_texts()}."
+        )
+
+    def verify_only_parent_suggested(self, parent_serial: str, extended_serial: str) -> None:
+        """
+        Search the parent serial and confirm exactly one suggestion is offered,
+        the parent's, and that the extended asset is not in the list.
+        """
+        self.type_text(self.asset_serial_box, parent_serial, "Asset Serial box")
+        for attempt in range(OPEN_LIST_ATTEMPTS):
+            self.click(self.asset_serial_search_icon, "Asset Serial search button")
+            if self.is_shown_within(self.suggestions.first, "Suggestion"):
+                break
+        offered = [text.strip() for text in self.suggestions.all_inner_texts()]
+        assertion_logger.info(f"Verifying only {parent_serial} is suggested")
+        assert len(offered) == 1 and offered[0].startswith(parent_serial), (
+            f"Expected exactly one suggestion, for {parent_serial}, but the list offers {offered}."
+        )
+        assert extended_serial not in " ".join(offered), (
+            f"The extended asset {extended_serial} must not be suggested but the list offers {offered}."
+        )
+
+    def verify_extended_assets_in_list(self, parent_serial: str, extended_serials: list) -> None:
+        """
+        Confirm the Asset List shows each extended asset directly below its parent
+        (indented, no SL number), that only the parent row has the delete button,
+        and that no extended row has any button.
+        """
+        rows = self.get_asset_list_rows()
+        # The extended rows are added together with the parent; wait until all are shown
+        expect(rows).to_have_count(1 + len(extended_serials), timeout=GRID_RELOAD_TIMEOUT)
+        self.verify_extended_rows_below_parent(rows, parent_serial, extended_serials)
+        assertion_logger.info("Verifying only the parent row has a delete button")
+        assert rows.nth(0).locator("button.delete").count() == 1, (
+            f"Expected the parent row of {parent_serial} to have a delete button."
+        )
+        for index in range(1, rows.count()):
+            buttons = rows.nth(index).locator("button, a").count()
+            assert buttons == 0, f"Expected no action button on extended row {index + 1} but it has {buttons}."
+
+    def verify_extended_assets_in_full_list(self, parent_serial: str, extended_serials: list) -> None:
+        """
+        For a list that holds many assets (Search By Employee Pin loads all of an
+        employee's assets): confirm each extended asset is listed directly below its
+        parent, indented, without an SL number, and that its row has no button.
+        """
+        rows = self.get_asset_list_rows()
+        self.verify_extended_rows_below_parent(rows, parent_serial, extended_serials)
+        assertion_logger.info("Verifying the extended rows have no button")
+        found = self.read_serial_cells(rows)
+        for index, row in enumerate(found):
+            if row["serial"].strip() in extended_serials:
+                buttons = rows.nth(index).locator("button, a").count()
+                assert buttons == 0, f"Expected no action button on the row of {row['serial'].strip()} but it has {buttons}."
+
+    def verify_serial_not_in_list(self, serial: str) -> None:
+        """Confirm the Asset List does not hold this serial (for example a disposed extended asset)."""
+        assertion_logger.info(f"Verifying {serial} is not in the Asset List")
+        listed = [row["serial"].strip() for row in self.read_serial_cells(self.get_asset_list_rows())]
+        assert serial not in listed, f"Expected {serial} not to be in the Asset List but it holds {listed}."
+
+    def remove_parent_from_list(self) -> None:
+        """Click the delete button of the first row (the parent) in the Asset List."""
+        self.click(self.get_asset_list_rows().first.locator("button.delete"), "delete button of the parent row")
+
+    def verify_asset_list_empty(self) -> None:
+        """Confirm the Asset List is empty: it shows only the 'No data available' row."""
+        assertion_logger.info("Verifying the Asset List is empty")
+        empty_row = self.asset_list_table.locator("tbody tr", has_text="No data available")
+        self.wait_until_visible(empty_row, "empty Asset List message")
+        rows = self.get_asset_list_rows().all_inner_texts()
+        assert rows == [], f"Expected an empty Asset List but it still holds {rows}."
 
     # ---- search by employee PIN (Un Assign and Internal Movement) -----------
 

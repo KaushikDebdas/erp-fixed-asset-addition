@@ -39,6 +39,9 @@ class AssetAssignAcknowledgementPage(BasePage):
         self.page_acknowledge_button = page.locator("#btnAcknowledgement").first
         # "My Assigned Asset" grid (the id is spelled this way on the page)
         self.my_assets_table = page.locator("#afterAssetAcknowledgemenedtList")
+        # The line under it ("Showing 1 to 10 of 17 entries") and its "Show N entries" choice
+        self.my_assets_info = page.locator("#afterAssetAcknowledgemenedtList_info")
+        self.my_assets_page_size = page.locator("select[name='afterAssetAcknowledgemenedtList_length']")
         # Details popup
         self.popup = page.locator(".modal.in")
         self.popup_assets_table = self.popup.locator("#transactionDetailsList")
@@ -119,6 +122,37 @@ class AssetAssignAcknowledgementPage(BasePage):
         """Return the Asset Serial of every asset listed in the popup."""
         rows = self.popup_assets_table.locator("tbody tr")
         return [rows.nth(i).locator("td:visible").nth(1).inner_text().strip() for i in range(rows.count())]
+
+    def show_all_my_assets(self) -> None:
+        """
+        Choose the largest "Show N entries" value of My Assigned Asset, so every
+        asset of the employee is on one page (the grid shows 10 rows a page and an
+        employee can own many assets). The caller waits for the rows it needs.
+        """
+        expect(self.my_assets_info).not_to_have_text("")
+        values = self.my_assets_page_size.evaluate("select => Array.from(select.options).map(o => o.value)")
+        self.my_assets_page_size.select_option(values[-1])
+
+    def verify_my_assets_include(self, serials: list) -> None:
+        """
+        Confirm the My Assigned Asset grid lists every serial in `serials` (it fills a
+        little after an acknowledgement is saved, so each row is waited for).
+        """
+        assertion_logger.info(f"Verifying My Assigned Asset lists {serials}")
+        self.show_all_my_assets()
+        for serial in serials:
+            expect(self.my_assets_table.locator("tbody tr", has_text=serial).first).to_be_visible(timeout=15000)
+        listed = [text.strip() for text in self.get_my_assigned_serials()]
+        missing = [serial for serial in serials if serial not in listed]
+        assert not missing, f"Expected My Assigned Asset to list {serials} but {missing} are missing; it lists {listed}."
+
+    def verify_popup_extended_assets_below_parent(self, parent_serial: str, extended_serials: list) -> None:
+        """
+        Confirm the open Details popup lists each extended asset directly below its
+        parent, with no SL number and its serial indented by 4 spaces (CR FAHOV2-643).
+        """
+        rows = self.popup_assets_table.locator("tbody tr").filter(has_not_text="No data available")
+        self.verify_extended_rows_below_parent(rows, parent_serial, extended_serials)
 
     def close_popup(self) -> None:
         """Close the Details popup without acknowledging."""

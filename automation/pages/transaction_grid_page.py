@@ -120,6 +120,20 @@ class TransactionGridPage(BasePage):
         rows = self.popup_assets_table.locator("tbody tr")
         return [rows.nth(i).locator("td:visible").nth(1).inner_text().strip() for i in range(rows.count())]
 
+    def verify_popup_extended_assets_below_parent(self, parent_serial: str, extended_serials: list) -> None:
+        """
+        Confirm the open Details popup lists each extended asset directly below its
+        parent, with no SL number and its serial indented by 4 spaces (CR FAHOV2-643).
+        """
+        rows = self.popup_assets_table.locator("tbody tr").filter(has_not_text="No data available")
+        self.verify_extended_rows_below_parent(rows, parent_serial, extended_serials)
+
+    def verify_popup_does_not_list(self, serial: str) -> None:
+        """Confirm the open Details popup does not list this serial (for example a disposed extended asset)."""
+        assertion_logger.info(f"Verifying the Details popup does not list {serial}")
+        listed = self.get_popup_asset_serials()
+        assert serial not in listed, f"Expected the Details popup not to list {serial} but it lists {listed}."
+
     def get_popup_asset_headers(self) -> list:
         """Return the column headings of the popup's asset list."""
         headers = self.popup_assets_table.locator("thead th:visible").all_inner_texts()
