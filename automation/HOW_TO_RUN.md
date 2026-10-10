@@ -4,7 +4,8 @@
 1. Install Python 3.10+ — check with `python --version`
 2. Install dependencies: `pip install -r requirements.txt`
 3. Install Playwright's browser: `playwright install chromium`
-4. Copy `.env.example` to `.env` and fill in `BASE_URL` and credentials
+4. Copy `.env.example` to `.env` and fill in `HOFA_URL` (the Fixed Asset application),
+   `HOFIN_URL` (only for the asset registration / addition flow) and credentials
    (add extra role credentials here too, for multi-role E2E flows).
    Never commit the real `.env` — it's already in `.gitignore`.
 5. Install Node.js 18+ (`node --version`) — required by the Playwright MCP
@@ -159,7 +160,7 @@ Find what you see in the left column and try the fix next to it.
 
 | What you see | What to do |
 |---|---|
-| `BASE_URL not set` error | Check `.env` exists and `BASE_URL` is filled in |
+| `HOFA_URL not set` error | Check `.env` exists and `HOFA_URL` is filled in |
 | Browser not found | Run `playwright install chromium` |
 | Login fails inside a test | Check credentials in `.env` are still current |
 | A test is skipped unexpectedly | Check its `@pytest.mark` decorators match the `-m` filter you ran |

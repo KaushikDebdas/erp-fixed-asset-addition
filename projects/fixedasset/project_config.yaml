@@ -1,7 +1,11 @@
 project_name: fixedasset
 domain: Finance
 sub_domain: Fixed Asset
-application_url: https://erpstaging.brac.net/
+# Confirmed by the user 2026-10-10. hofa_url is the Fixed Asset application used by every
+# Fixed Asset test (there is no separate base URL). hofin_url is used only by the
+# FAHOV2-643 addition flow: HOFIN creates -> HOFA acknowledges -> HOFIN approves.
+hofa_url: https://env42.erp.bracits.net/
+hofin_url: https://hofin42.erp.bracits.net/
 environment: QA
 knowledge_file: knowledge/erp-fixedasset.md
 # knowledge_file above is read FIRST when writing test cases from a new CR: its
@@ -10,7 +14,7 @@ knowledge_file: knowledge/erp-fixedasset.md
 # (Registration, Profile/Split, Transaction, Expense, Transfer/Challan,
 # Write-off/Sale). Read it SECOND, for step wording.
 scenarios_file: knowledge/erp-fixedasset-scenarios.md
-active_cr:                                 # fill in when a CR is chosen
+active_cr: FAHOV2-643                      # Asset Addition with Reference Number (CR v1.6)
 created: 2026-09-17
 notes: >
   Fixed Asset is the active sub-domain (knowledge/erp-fixedasset.md).

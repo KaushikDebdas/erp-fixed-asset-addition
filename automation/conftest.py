@@ -318,6 +318,30 @@ def logged_in_page(browser, request):
 
 
 @pytest.fixture
+def hofin_flow(browser, request):
+    """
+    The stages of an asset registration / addition that starts in HOFIN (HOFIN
+    creator, HOFA acknowledger, HOFIN approver), each in its own browser window.
+    Needed because that journey logs in to two applications with three users, so
+    it cannot use the single `page` fixture. See utils/hofin_flow.py.
+    """
+    from utils.hofin_flow import HofinAssetFlow
+
+    flow = HofinAssetFlow(browser, request.node, maximize_window)
+    yield flow
+    flow.close_all()
+
+
+@pytest.fixture(scope="module")
+def hofin_flow_data():
+    """
+    An empty dictionary shared by the tests of one file, so a test can leave a value
+    (the parent asset serial) for the next test that needs it.
+    """
+    return {}
+
+
+@pytest.fixture
 def aaq_page(page):
     """Asset Registration by AAQ page object, ready to use."""
     from pages.asset_registration_aaq_page import AssetRegistrationAaqPage

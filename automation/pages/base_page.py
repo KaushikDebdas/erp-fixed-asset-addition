@@ -73,6 +73,32 @@ class BasePage:
         action_logger.info(f"Type into: {element_name}")
         element.fill(text)
 
+    def type_with_keys(self, element: Locator, text: str, element_name: str) -> None:
+        """
+        Type into a text box one key at a time, like a person does. Some boxes
+        only react to real key presses (a total is calculated from the amount
+        typed, a suggestion list opens), and `type_text` does not trigger them.
+        The box is cleared first. Like `type_text`, the text is not logged.
+        """
+        action_logger.info(f"Type with keys into: {element_name}")
+        element.clear()
+        element.press_sequentially(text)
+
+    def choose_from_ng_select(self, box_input: Locator, search_text: str, option_name: str) -> None:
+        """
+        Choose a value in a search drop-down box of the finance application
+        (an ng-select box): click the box input `box_input`, type `search_text`
+        (leave it empty when the list opens by itself), then click the option
+        named exactly `option_name`.
+        """
+        action_logger.info(f"Choose in drop-down: {option_name}")
+        box_input.click()
+        if search_text != "":
+            box_input.press_sequentially(search_text)
+        option = self.page.get_by_role("option", name=option_name, exact=True)
+        option.wait_for(state="visible")
+        option.click()
+
     def get_text(self, element: Locator, element_name: str) -> str:
         """Return the visible text of an element."""
         action_logger.info(f"Read text of: {element_name}")
