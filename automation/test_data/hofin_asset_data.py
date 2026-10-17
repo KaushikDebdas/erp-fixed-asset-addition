@@ -49,3 +49,8 @@ STATUS_ACKNOWLEDGED = "ACKNOWLEDGED"
 STATUS_APPROVED = "APPROVED"
 # Serial of an asset added to a parent is the parent serial plus "-1", "-2", ...
 FIRST_EXTENSION_SUFFIX = "-1"
+# Number of extended assets the data-preparation test adds to its new parent asset
+DATA_PREP_EXTENDED_COUNT = 1
+# Serial of an existing parent asset for the data-preparation test to add to.
+# Leave empty ("") to register a new parent asset first. Example: "FA-000123"
+EXISTING_PARENT_SERIAL = "BBDASR00227727"
