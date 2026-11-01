@@ -23,7 +23,7 @@ The tests run top to bottom:
     3. The Submit-only path (usage_b): Submit straight from the form, Approve, UNASSIGNED
 
 Both assets end UNASSIGNED, which is the state the expense (test_16) and write-off
-(test_27) files use them in.
+(test_26) files use them in.
 
 To run part of the file:
     pytest tests/test_13_asset_unassign.py -k "same_employee"
@@ -32,7 +32,6 @@ import pytest
 
 from test_data.asset_transaction_data import (
     ASSIGNED,
-    ASSIGNEE_NAME,
     ASSIGNEE_PIN,
     FURNITURE_FORM_DETAILS,
     HANDOVER_NAME,
@@ -69,6 +68,7 @@ def test_unassign_to_same_employee_is_refused(page, unassign_page, transactions,
     """Asset Un Assign: the form shows the assigned asset with its current assignee, and it cannot be handed over to the employee who already holds it."""
     # Step 1: select the assigned asset; the form shows the Furniture asset, ASSIGNED, with its current assignee
     serial = transactions.ensure_assigned()
+    assignee_name = transactions.get_assignee_name()
     unassign_page.navigate_here()
     unassign_page.select_asset_by_serial(serial)
     take_screenshot(f"asset {serial} selected")
@@ -76,7 +76,7 @@ def test_unassign_to_same_employee_is_refused(page, unassign_page, transactions,
         "assetName": FURNITURE_FORM_DETAILS["assetName"],
         "previousAssignStatus": ASSIGNED,
         "assignedEmployeePinNo": ASSIGNEE_PIN,
-        "assignedEmployeeName": ASSIGNEE_NAME,
+        "assignedEmployeeName": assignee_name,
     }
     unassign_page.verify_form_shows(serial, expected)
 
@@ -101,13 +101,14 @@ def test_unassign_full_flow_draft_submit_approve(
     """Asset Un Assign: Draft, Submit from the Transaction List, Approve, and the asset becomes UNASSIGNED."""
     # Step 1: get the assigned asset, fill the form (hand over to a different employee) and save a Draft
     serial = transactions.ensure_assigned()
+    branch = transactions.get_user_branch()
     unassign_page.navigate_here()
     transaction_date = unassign_page.fill_form(serial, HANDOVER_SEARCH, NOTE)
     unassign_page.verify_employee_selected(HANDOVER_PIN, HANDOVER_NAME)
     take_screenshot("unassign form filled")
     unassign_page.draft_and_verify_toast(UNASSIGN_DRAFT_TOAST)
     take_screenshot("unassign draft saved")
-    expected = build_expected(HANDOVER_PIN, HANDOVER_NAME, NOTE, transaction_date)
+    expected = build_expected(HANDOVER_PIN, HANDOVER_NAME, NOTE, transaction_date, branch=branch)
 
     # Step 2: Transaction List: check the Draft, open Edit, and Submit
     submit_draft_from_list(

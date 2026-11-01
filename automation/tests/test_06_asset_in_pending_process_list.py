@@ -104,17 +104,21 @@ def test_pending_list_columns_and_unknown_serial(page, pending_process_list_page
 @pytest.mark.regression
 def test_pending_list_status_filter(page, pending_process_list_page, take_screenshot):
     """Asset In Pending Process List: the Status filter keeps only rows with that Status."""
-    # Step 1: open the list and filter by Status APPROVED
+    # Step 1: open the list and read the Status of a row that is really in it
     pending_process_list_page.navigate_here()
-    pending_process_list_page.filter_by_status("APPROVED")
-    take_screenshot("filtered by approved status")
-    if not pending_process_list_page.has_data_rows():
-        pytest.skip("No pending rows with Status APPROVED on this environment right now.")
+    rows = pending_process_list_page.read_rows()
+    if not rows:
+        pytest.skip("No asset is in a pending process on this environment right now.")
+    status = rows[0]["Status"]
 
-    # Step 2: every row shown has that Status
+    # Step 2: filter by that Status
+    pending_process_list_page.filter_by_status(status)
+    take_screenshot(f"filtered by {status} status")
+
+    # Step 3: there are rows, and every row shown has that Status
     statuses = pending_process_list_page.get_visible_statuses()
-    assert statuses, "Expected at least one row."
-    assert set(statuses) == {"APPROVED"}, f"Found other statuses: {set(statuses)}"
+    assert statuses, f"Expected at least one row with Status {status} but the grid shows none."
+    assert set(statuses) == {status}, f"Expected only Status {status} but found {set(statuses)}."
 
 
 # ---------------------------------------------------------------------------

@@ -14,6 +14,8 @@ from pages.base_page import BasePage
 from utils.helpers import day_of_month
 from utils.logger import action_logger, assertion_logger
 
+# Maximum time to wait for the searched vendor to show in the list (milliseconds)
+
 
 class AssetRegistrationAaqPage(BasePage):
     """Page object for the Asset Registration by AAQ create/update form."""
@@ -121,13 +123,17 @@ class AssetRegistrationAaqPage(BasePage):
         """Type the Note/Remarks text."""
         self.type_text(self.remarks_field, remarks, "Note/Remarks field")
 
-    def select_vendor(self, vendor: str) -> None:
-        """Search and pick the Vendor/Supplier/Lessor Name via the select2 widget."""
+    def select_vendor(self) -> str:
+        """
+        Open the Vendor/Supplier/Lessor Name list and pick its first vendor (the vendors
+        depend on the user's office). Returns the text of the vendor that was picked.
+        """
         self.click(self.vendor_trigger, "Vendor/Supplier/Lessor Name trigger")
-        self.type_text(self.select2_search_box, vendor, "Vendor search box")
-        option = self.page.get_by_role("option", name=vendor)
-        self.wait_until_visible(option, f"Vendor option '{vendor}'")
-        self.click(option, f"Vendor option '{vendor}'")
+        first_option = self.page.locator(".select2-drop-active").get_by_role("option").first
+        self.wait_until_visible(first_option, "First vendor option")
+        picked_vendor = first_option.inner_text().strip()
+        self.click(first_option, f"Vendor option '{picked_vendor}'")
+        return picked_vendor
 
     def select_asset_item(self, search_text: str, option_name: str) -> None:
         """
@@ -313,6 +319,16 @@ class AssetRegistrationAaqPage(BasePage):
         assertion_logger.info("Verifying Submit is rejected with the validation toast")
         self.verify_toast_text(submit_toast, expected_toast, "Submit")
 
+    def use_picked_vendor_in(self, data: dict, picked_vendor: str) -> None:
+        """
+        Put the vendor that was really picked into the registration data, so the
+        later checks compare with it: vendor text, name (the text before "[") and
+        the number the form fills in.
+        """
+        data["vendor"] = picked_vendor
+        data["vendor_name"] = picked_vendor.split("[")[0].strip()
+        data["vendor_number"] = self.read_vendor_details()["number"]
+
     def fill_form_until_add(self, data: dict) -> str:
         """
         Fill the form from a registration data dict (see
@@ -325,7 +341,7 @@ class AssetRegistrationAaqPage(BasePage):
         self.select_project(data["project"])
         self.choose_sub_type(data.get("sub_type", "spot"))
         purchase_date = self.set_purchase_date_equal_to_registration_date()
-        self.select_vendor(data["vendor"])
+        self.use_picked_vendor_in(data, self.select_vendor())
         self.select_asset_item(data["asset_item_search"], data["asset_item_selected"])
         self.enter_item_details(data["item_specification"], data["quantity"], data["unit_price"])
         if "measurement" in data:
@@ -400,7 +416,8 @@ class AssetRegistrationAaqPage(BasePage):
         self.draft_and_verify_success()
 
     def create_and_submit(self, data: dict) -> None:
-        """Fill the form and submit it for approval, checking the success toast."""
+        """Fill the form and submit it for approval, checking the success toast. Stops first when the business day is closed."""
+        self.verify_business_day_open()
         self.fill_registration_form(data)
         self.submit_and_verify_success()
 

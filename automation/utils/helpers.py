@@ -14,6 +14,7 @@ Sections:
     3. Calendar widgets (pick a month and year in the month picker)
 """
 import random
+import re
 import string
 from datetime import datetime, timedelta
 
@@ -52,6 +53,137 @@ def random_text(length: int = 8) -> str:
     Example: random_text(5) -> "QWKTZ"
     """
     return "".join(random.choice(string.ascii_uppercase) for _ in range(length))
+
+
+def employee_pin_from_username(username: str, length: int = 8) -> str:
+    """
+    Return the employee PIN of a user whose login name is the PIN without its
+    leading zeros. Returns "" when the login name is not all digits.
+
+    Example: employee_pin_from_username("15370") -> "00015370"
+    """
+    if not username or not username.isdigit():
+        return ""
+    return username.zfill(length)
+
+
+def simplify_office_text(text: str) -> str:
+    """
+    Return the text in lower case without spaces, hyphens and the leading zeros of
+    an office code, so two spellings of one office compare equal.
+
+    Example: "[BO - 0272] Kendua" and "[BO-272]Kendua" both give "[bo272]kendua"
+    """
+    text = text.lower().replace(" ", "").replace("-", "")
+    return re.sub(r"(?<=\D)0+(?=\d)", "", text)
+
+
+def bracket_code_of(text: str) -> str:
+    """
+    Return the text inside the first square brackets, or the whole text when there are none.
+
+    Example: bracket_code_of("Head Office [ BDHO ]") -> "BDHO"
+    """
+    found = re.search(r"\[\s*([^\]]+?)\s*\]", text)
+    if found:
+        return found.group(1)
+    return text.strip()
+
+
+def expected_columns(wanted: list, found: list, optional: list) -> list:
+    """
+    Return the wanted column headings, leaving out an optional heading that the screen does not show.
+    Some columns (for example Department) only appear for offices that have them.
+
+    Example: expected_columns(["SL", "Department"], ["SL"], ["Department"]) -> ["SL"]
+    """
+    columns = []
+    for heading in wanted:
+        if heading in optional and heading not in found:
+            continue
+        columns.append(heading)
+    return columns
+
+
+def search_word_of(text: str) -> str:
+    """
+    Return the longest run of letters and digits in the text. It is a good word to type in a
+    search box, because the search finds every entry that contains it.
+
+    Example: search_word_of("[BO-0233]-Chagalnaiya") -> "Chagalnaiya"
+    """
+    words = re.findall(r"[A-Za-z0-9]+", text)
+    if not words:
+        return text
+    return max(words, key=len)
+
+
+def challan_row_problems(row: dict, challan_data: dict, sending_branch: str, status_column: str, in_number_column: str) -> list:
+    """
+    Compare the In-Challan grid row of an approved challan with the challan data it was created
+    with. Returns one sentence per difference (an empty list when everything matches): status
+    APPROVED, an In Challan number, From and To Project, Sending Branch and Receiving Branch
+    (spaces, hyphens and leading zeros are ignored). `row` is {column heading: cell text}.
+    """
+    problems = []
+    if row.get(status_column) != "APPROVED":
+        problems.append(f"{status_column}: expected 'APPROVED' but found '{row.get(status_column)}'")
+    if row.get(in_number_column, "") == "":
+        problems.append(f"{in_number_column}: expected a number but the cell is empty")
+    for column, key in [("From Project", "from_project"), ("To Project", "to_project")]:
+        if row.get(column) != challan_data[key]:
+            problems.append(f"{column}: expected '{challan_data[key]}' but found '{row.get(column)}'")
+    if not office_matches(row.get("Sending Branch", ""), sending_branch):
+        problems.append(f"Sending Branch: expected one containing '{sending_branch}' but found '{row.get('Sending Branch')}'")
+    wanted_receiving = simplify_office_text(challan_data["receiving_branch"])
+    if wanted_receiving not in simplify_office_text(row.get("Receiving Branch", "")):
+        problems.append(
+            f"Receiving Branch: expected one containing '{challan_data['receiving_branch']}' but found '{row.get('Receiving Branch')}'"
+        )
+    return problems
+
+
+def office_words(text: str) -> set:
+    """
+    Return the words and numbers of an office text in lower case, with the leading zeros of a
+    number removed. The order and the brackets do not matter, so the two ways the ERP writes
+    one office give the same words.
+
+    Example: office_words("Chagalnaiya [ 0233 ]") -> {"chagalnaiya", "233"}
+             office_words("[BO - 0233] Chagalnaiya") -> {"bo", "233", "chagalnaiya"}
+    """
+    words = re.findall(r"[A-Za-z]+|\d+", text)
+    return {word.lower().lstrip("0") or "0" for word in words}
+
+
+def office_matches(shown: str, wanted: str) -> bool:
+    """
+    Return True when one of the two texts has all the words of the other, whatever the order,
+    brackets, spaces, hyphens or leading zeros (one spelling may leave out the office type, such
+    as BO). Use it to check that a screen shows the office a user chose. When `wanted` is empty
+    (no DEFAULT_BRANCH in .env: the user has one office), any office that is shown is accepted.
+
+    Example: office_matches("[BO - 0233] Chagalnaiya", "Chagalnaiya [ 0233 ]") -> True
+    """
+    if not wanted:
+        return shown.strip() != ""
+    shown_words = office_words(shown)
+    wanted_words = office_words(wanted)
+    return wanted_words <= shown_words or shown_words <= wanted_words
+
+
+def find_one_text(names: list, wanted: str, what: str) -> str:
+    """
+    Return the one name that matches `wanted` (an exact match wins over a partial one; the order
+    of the words, brackets, spaces, hyphens and leading zeros are ignored). Stops with a message
+    listing the names when none or several match. `what` names the kind of entry in the message,
+    e.g. "Receiving Branch".
+    """
+    exact = [name for name in names if office_words(name) == office_words(wanted)]
+    partial = [name for name in names if office_words(wanted) <= office_words(name)]
+    matches = exact or partial
+    assert len(matches) == 1, f"{what} '{wanted}' matched {len(matches)} entries, expected 1. Entries: {names}"
+    return matches[0]
 
 
 # ---------------------------------------------------------------------------

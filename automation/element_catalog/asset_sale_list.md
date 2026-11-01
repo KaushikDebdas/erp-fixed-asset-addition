@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Page class | `pages/asset_sale_list_page.py` → `AssetSaleListPage` (inherits `AssetWriteOffListPage`); used by `tests/test_30_asset_sale.py` and `test_31_asset_sale_approval_list.py` |
+| Page class | `pages/asset_sale_list_page.py` → `AssetSaleListPage` (inherits `AssetWriteOffListPage`); used by `tests/test_29_asset_sale.py` and `test_30_asset_sale_approval_list.py` |
 | Module / menu path | Fixed Asset >> Asset Disposal >> Asset Sale List |
 | Entry URL | `https://erpstaging.brac.net/nodef/fixedasset#!faAssetDisposalSale/showEditDisposalSaleScheduleList` |
 | Last explored | 2026-10-08 |

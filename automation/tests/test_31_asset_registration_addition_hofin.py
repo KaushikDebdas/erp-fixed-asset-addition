@@ -1,5 +1,5 @@
 """
-test_32_asset_registration_addition_hofin.py: the asset registration and the
+test_31_asset_registration_addition_hofin.py: the asset registration and the
 asset addition that start in HOFIN (CR FAHOV2-643).
 
 Flow: projects/fixedasset/e2e-flows/asset-registration-addition-hofin-hofa-hofin.md
@@ -18,9 +18,9 @@ DATA_PREP_EXTENDED_COUNT (4) extended assets to it, then prints all the serials.
 
 Logins (HOFIN creator, HOFA acknowledger, HOFIN approver) and both URLs come
 from .env. To run the two flow tests, run test 1 first, or the whole file:
-    pytest tests/test_32_asset_registration_addition_hofin.py
+    pytest tests/test_31_asset_registration_addition_hofin.py
 To prepare data only (works alone, from any folder state):
-    pytest tests/test_32_asset_registration_addition_hofin.py -m data_prep
+    pytest tests/test_31_asset_registration_addition_hofin.py -m data_prep
 """
 import pytest
 
@@ -53,6 +53,7 @@ def test_asset_registration_hofin_hofa_hofin(hofin_flow, hofin_flow_data):
 
     # Step 5: keep the parent asset serial for the addition test
     hofin_flow_data["parent_serial"] = parent_serial
+
 
 
 @pytest.mark.regression
@@ -98,15 +99,16 @@ def test_asset_addition_hofin_hofa_hofin(hofin_flow, hofin_flow_data):
     # Step 7: keep the extended asset serial for the tests of other screens
     hofin_flow_data["extended_serial"] = extended_serial
 
-# @pytest.mark.skip(reason="data prep test is not part of the flow, and is skipped by default")
+
+#@pytest.mark.skip(reason="data prep test is not part of the flow, and is skipped by default")
 @pytest.mark.data_prep
 def test_prepare_parent_with_extended_assets(hofin_flow, hofin_flow_data):
-    """
-    Data preparation for the "Asset Registration & Asset Addition (HOFIN > HOFA >
-    HOFIN)" flow: adds DATA_PREP_EXTENDED_COUNT extended assets to the parent asset
-    EXISTING_PARENT_SERIAL, or to a new parent asset when that is empty.
-    Needs no other test to run first.
-    """
+    
+    #Data preparation for the "Asset Registration & Asset Addition (HOFIN > HOFA >
+    #HOFIN)" flow: adds DATA_PREP_EXTENDED_COUNT extended assets to the parent asset
+    #EXISTING_PARENT_SERIAL, or to a new parent asset when that is empty.
+    #Needs no other test to run first.
+    
     parent_serial = data.EXISTING_PARENT_SERIAL
 
     # Step 1: with no existing parent, register a new parent asset
@@ -117,13 +119,17 @@ def test_prepare_parent_with_extended_assets(hofin_flow, hofin_flow_data):
     for number in range(data.DATA_PREP_EXTENDED_COUNT):
         hofin_flow.add_extended_asset(parent_serial)
 
-    # Step 3: check that the parent asset is listed in the HOFA Global List
+    # Step 3: the parent asset lists at least the extended assets that were just added
     global_list = hofin_flow.open_hofa_global_list()
-    global_list.search_by_serial(parent_serial)
+    extended_serials = global_list.read_addition_history_serials(parent_serial)
     hofin_flow.take_screenshot(global_list.page, f"parent asset {parent_serial} with new extended assets")
+    assert len(extended_serials) >= data.DATA_PREP_EXTENDED_COUNT, (
+        f"{data.DATA_PREP_EXTENDED_COUNT} extended assets were added to parent asset {parent_serial}, "
+        f"but its Addition History lists {len(extended_serials)}: {extended_serials}"
+    )
 
     # Step 4: show the prepared parent serial in the terminal
-    print(f"\nPREPARED DATA: parent asset {parent_serial} with {data.DATA_PREP_EXTENDED_COUNT} new extended assets")
+    print(f"\nPREPARED DATA: parent asset {parent_serial} with {len(extended_serials)} extended assets {extended_serials}")
 
     # Step 5: keep the parent serial for any later test in the same run
     hofin_flow_data["parent_serial"] = parent_serial

@@ -11,6 +11,7 @@ Transaction Details" popup from each row's Details link. See
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 from pages.base_page import BasePage
+from utils.helpers import expected_columns
 from utils.logger import action_logger, assertion_logger
 
 # How many rows are looked at when searching for the row that holds a serial
@@ -18,6 +19,9 @@ MAX_ROWS_TO_CHECK = 10
 
 # Number of times a row's Details popup is opened when its asset list does not load
 DETAILS_OPEN_ATTEMPTS = 2
+
+# Maximum time to wait for the popup's asset list to appear after its loader (milliseconds)
+DETAILS_LOAD_TIMEOUT = 120000
 
 
 class TransactionGridPage(BasePage):
@@ -89,11 +93,16 @@ class TransactionGridPage(BasePage):
     # ---- the Details popup ----------------------------------------------------
 
     def open_details_of_row(self, row_index: int) -> None:
-        """Click Details on a row and wait until the popup has loaded its asset list."""
+        """
+        Click Details on a row and wait until the popup has loaded its asset list.
+        The popup shows a loader first and the list appears when the loader ends,
+        which can take a while, so the wait is long and happens once.
+        """
         row = self.results_table.locator("tbody tr").nth(row_index)
         self.click(row.get_by_role("link", name="Details"), f"Details link of row {row_index + 1}")
+        action_logger.info("Wait until the Details popup has loaded its asset list")
         real_asset_row = self.popup_assets_table.locator("tbody tr").filter(has_not_text="No data available")
-        real_asset_row.first.wait_for(state="visible", timeout=30000)
+        real_asset_row.first.wait_for(state="visible", timeout=DETAILS_LOAD_TIMEOUT)
 
     def open_details_when_loaded(self, row_index: int) -> bool:
         """
@@ -120,20 +129,6 @@ class TransactionGridPage(BasePage):
         rows = self.popup_assets_table.locator("tbody tr")
         return [rows.nth(i).locator("td:visible").nth(1).inner_text().strip() for i in range(rows.count())]
 
-    def verify_popup_extended_assets_below_parent(self, parent_serial: str, extended_serials: list) -> None:
-        """
-        Confirm the open Details popup lists each extended asset directly below its
-        parent, with no SL number and its serial indented by 4 spaces (CR FAHOV2-643).
-        """
-        rows = self.popup_assets_table.locator("tbody tr").filter(has_not_text="No data available")
-        self.verify_extended_rows_below_parent(rows, parent_serial, extended_serials)
-
-    def verify_popup_does_not_list(self, serial: str) -> None:
-        """Confirm the open Details popup does not list this serial (for example a disposed extended asset)."""
-        assertion_logger.info(f"Verifying the Details popup does not list {serial}")
-        listed = self.get_popup_asset_serials()
-        assert serial not in listed, f"Expected the Details popup not to list {serial} but it lists {listed}."
-
     def get_popup_asset_headers(self) -> list:
         """Return the column headings of the popup's asset list."""
         headers = self.popup_assets_table.locator("thead th:visible").all_inner_texts()
@@ -143,6 +138,16 @@ class TransactionGridPage(BasePage):
         """Close the Details popup."""
         self.click(self.popup_close_button, "Close button of Details popup")
         self.popup.wait_for(state="hidden")
+
+    def verify_popup_extended_assets_below_parent(self, parent: str, extended_serials: list) -> None:
+        """Confirm the open Details popup lists `extended_serials` directly below `parent`: no SL, indented."""
+        self.verify_extended_rows_below_parent(self.popup_assets_table, parent, extended_serials, "Details popup")
+
+    def verify_popup_does_not_list(self, serial: str) -> None:
+        """Confirm the open Details popup does not list `serial`."""
+        assertion_logger.info(f"Verifying the Details popup does not list {serial}")
+        serials = self.get_popup_asset_serials()
+        assert serial not in serials, f"Expected {serial} not to be in the Details popup but it lists {serials}."
 
     def find_row_with_serial(self, serial: str, transaction_type: str, status: str) -> int:
         """
@@ -213,8 +218,9 @@ class TransactionGridPage(BasePage):
         assert found == expected, f"Details popup field '{field_id}': expected '{expected}' but found '{found}'."
 
     def verify_popup_asset_headers(self, expected: list) -> None:
-        """Confirm the popup's asset list has exactly these column headings."""
+        """Confirm the popup's asset list has these column headings; Department Name is only expected when shown."""
         found = self.get_popup_asset_headers()
+        expected = expected_columns(expected, found, ["Department Name"])
         assert found == expected, f"Expected the popup asset columns {expected} but found {found}."
 
     def open_transaction_of_asset(self, serial: str, transaction_type: str, status: str) -> int:

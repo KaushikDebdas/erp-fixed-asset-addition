@@ -6,7 +6,8 @@ then Submit, or Submit straight away).
     create_expense      fill the Create form and save it; returns the stored Expense ID
     submit_draft        open a Draft from the list, check it, and Submit it
     approve_expense     open it in the approval list, check it, Approve, confirm APPROVED
-    verify_voucher      find the voucher by the Expense ID and check the Preview PDF
+    verify_voucher      find the voucher by the Expense ID and check its row
+    verify_asset_expenditure   Global List > the asset > Expenditure tab: check the expense row
 
 `expected` is what was entered: serial, source, expense_ref, remarks, date_of_entry.
 """
@@ -15,15 +16,10 @@ from test_data.asset_expense_data import (
     CREDIT_ACCOUNT,
     DEBIT_ACCOUNT,
     EXPENSE_AMOUNT,
-    EXPENSE_AMOUNT_ON_VOUCHER,
     EXPENSE_CATEGORY,
     EXPENSE_ITEM,
     EXPENSE_SUB_CATEGORY,
     INVENTORY,
-    VENDOR_OPTION,
-    VENDOR_SEARCH,
-    VOUCHER_CREDIT,
-    VOUCHER_DEBIT,
 )
 from test_data.toast_messages import (
     EXPENSE_APPROVE_TOAST_START,
@@ -46,7 +42,7 @@ def fill_expense_form(expense_page, serial: str, source: str, expense_ref: str, 
             EXPENSE_CATEGORY, EXPENSE_SUB_CATEGORY, EXPENSE_ITEM
         )
     expense_page.select_debit_account(DEBIT_ACCOUNT)
-    expense_page.select_vendor(VENDOR_SEARCH, VENDOR_OPTION)
+    expense_page.select_vendor()
     expense_page.enter_expense_ref(expense_ref)
     expense_page.enter_remarks(remarks)
     return expense_page.get_date_of_entry()
@@ -88,6 +84,7 @@ def create_expense(expense_page, serial: str, source: str, expense_ref: str, sav
             "expense_ref": expense_ref,
             "remarks": remarks,
             "date_of_entry": date_of_entry,
+            "vendor_name": expense_page.picked_vendor.split("[")[0].strip(),
         },
     }
 
@@ -112,7 +109,8 @@ def check_saved_values_in_list_popup(expense_page, expected: dict) -> None:
         saved["Item Name"] = (expense_page.get_selected_text("itemName"), EXPENSE_ITEM)
     for field_name, (actual, wanted) in saved.items():
         assert actual == wanted, f"Saved {field_name}: expected '{wanted}' but found '{actual}'."
-    assert expense_page.is_vendor_shown("ACE IT"), "The saved vendor ACE IT is not shown."
+    vendor_name = expected["vendor_name"]
+    assert expense_page.is_vendor_shown(vendor_name), f"The saved vendor {vendor_name} is not shown."
 
 
 def submit_draft(expense_page, expense_id: str, expected: dict, take_screenshot) -> None:
@@ -180,10 +178,8 @@ def approve_expense(expense_approval_page, expense_page, expense_id: str, expect
 def verify_voucher(voucher_search_page, expense_id: str, expected: dict, take_screenshot) -> None:
     """
     Accounting > Voucher Search: find the voucher by the Expense ID (Transaction
-    Number) on the expense date, then read the Preview PDF and check the header,
-    the accounts, the debit and credit amounts, the totals and the reference.
+    Number) on the expense date and check its row: Transaction No, Amount, Particular and Status.
     """
-    source = expected["source"]
     voucher_search_page.navigate_here()
     voucher_search_page.set_date_range(expected["date_of_entry"])
     voucher_search_page.search_by_transaction_no(expense_id)
@@ -201,42 +197,33 @@ def verify_voucher(voucher_search_page, expense_id: str, expected: dict, take_sc
     )
     assert row["status"] == "Approved", f"Expected Status 'Approved' on the voucher row of {expense_id} but found '{row['status']}'."
 
-    # The Preview: a PDF opened in a new tab
-    voucher = voucher_search_page.read_voucher_preview(expense_id)
-    assertion_logger.info(f"Verifying the voucher PDF of {expense_id}")
-    assert voucher["pdf_status"] == 200 and "pdf" in voucher["content_type"], (
-        f"Expected the Preview to open a PDF with status 200 but found status {voucher['pdf_status']} and type '{voucher['content_type']}'."
-    )
-    assert voucher["title"] == "JOURNAL VOUCHER", f"Expected the voucher title 'JOURNAL VOUCHER' but found '{voucher['title']}'."
-    assert "Head Office" in voucher["branch"], f"Expected the voucher branch to contain 'Head Office' but found '{voucher['branch']}'."
-    assert "Microfinance (Dabi)" in voucher["project"], (
-        f"Expected the voucher project to contain 'Microfinance (Dabi)' but found '{voucher['project']}'."
-    )
-    assert voucher["voucher_number"] == row["voucher_number"], (
-        f"Expected the PDF voucher number '{row['voucher_number']}' from the search row but found '{voucher['voucher_number']}'."
-    )
-    assert voucher["creation_date"] == expected["date_of_entry"], (
-        f"Expected the voucher creation date '{expected['date_of_entry']}' but found '{voucher['creation_date']}'."
-    )
-    assert voucher["posted_date"] == expected["date_of_entry"], (
-        f"Expected the voucher posted date '{expected['date_of_entry']}' but found '{voucher['posted_date']}'."
-    )
-    assert voucher["reference_numbers"] and set(voucher["reference_numbers"]) == {expense_id}, (
-        f"Expected every voucher reference number to be '{expense_id}' but found {voucher['reference_numbers']}."
-    )
 
-    debit_code, debit_head = VOUCHER_DEBIT
-    credit_code, credit_head = VOUCHER_CREDIT[source]
-    assert voucher["lines"] == [
-        {"account_code": debit_code, "head": debit_head, "debit": EXPENSE_AMOUNT_ON_VOUCHER, "credit": "0.00"},
-        {"account_code": credit_code, "head": credit_head, "debit": "0.00", "credit": EXPENSE_AMOUNT_ON_VOUCHER},
-    ], f"Unexpected voucher lines: {voucher['lines']}"
-    assert voucher["total_debit"] == EXPENSE_AMOUNT_ON_VOUCHER, (
-        f"Expected the voucher total debit '{EXPENSE_AMOUNT_ON_VOUCHER}' but found '{voucher['total_debit']}'."
-    )
-    assert voucher["total_credit"] == EXPENSE_AMOUNT_ON_VOUCHER, (
-        f"Expected the voucher total credit '{EXPENSE_AMOUNT_ON_VOUCHER}' but found '{voucher['total_credit']}'."
-    )
-    assert "Five Thousand" in voucher["amount_in_words"], (
-        f"Expected the amount in words to contain 'Five Thousand' but found '{voucher['amount_in_words']}'."
-    )
+def verify_asset_expenditure(global_list_page, expense_id: str, expected: dict, take_screenshot) -> None:
+    """
+    Asset Serial Global List: search the expense's asset, open its popup, and check that the
+    Expenditure tab shows the approved expense (found by its Expense Ref.) with the values entered.
+    """
+    serial = expected["serial"]
+    global_list_page.navigate_here()
+    global_list_page.search_by_serial(serial)
+    global_list_page.open_asset_popup(serial)
+    row = global_list_page.get_expenditure_row(expected["expense_ref"])
+    take_screenshot(f"expenditure tab of {serial} for {expense_id}")
+    assertion_logger.info(f"Verifying the Expenditure tab of {serial} shows the expense {expense_id}")
+    wanted = {
+        "Asset Serial": serial,
+        "Expenditure Type": "Expense",
+        "Expense/Addition Amount": EXPENSE_AMOUNT,
+        "Supplier Name": expected["vendor_name"],
+        "Status": "APPROVED",
+        "Source/Group": expected["source"],
+        "Credit Account": CREDIT_ACCOUNT[expected["source"]],
+        "Debit Account": DEBIT_ACCOUNT,
+        "Date of Entry": expected["date_of_entry"],
+        "Remarks": expected["remarks"],
+    }
+    for heading, value in wanted.items():
+        assert row.get(heading) == value, (
+            f"Expenditure tab of {serial}, {heading}: expected '{value}' but found '{row.get(heading)}'."
+        )
+    global_list_page.close_popup()

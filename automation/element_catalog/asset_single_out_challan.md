@@ -2,10 +2,10 @@
 
 | Field | Value |
 |---|---|
-| Page class | `pages/single_out_challan_page.py` → `SingleOutChallanPage` (inherits `SingleChallanListPage` in `pages/single_challan_list_page.py`); tests in `tests/test_23_asset_single_out_challan.py`, stages in `utils/single_challan_flow.py` |
+| Page class | `pages/single_out_challan_page.py` → `SingleOutChallanPage` (inherits `SingleChallanListPage` in `pages/single_challan_list_page.py`); tests in `tests/test_22_asset_single_out_challan.py`, stages in `utils/single_challan_flow.py` |
 | Module / menu path | Fixed Asset >> Single Challan >> Asset Single Out Challan (menu links: Asset Single Out Challan, Asset Single Out Challan Approval List, Asset Single In-Challan, Gate Pass Generation, Asset Receivable List, Asset Returnable List) |
 | Entry URL | `https://erpstaging.brac.net/nodef/fixedasset#!faAssetSingleChallan/show` (reach via menu click) |
-| Role needed | one user does everything for now (the logged-in `TEST_USERNAME`); explored with `abushoaib.asik` and `00015370` |
+| Role needed | one user does everything for now (the logged-in `ERP_USERNAME`); explored with `abushoaib.asik` and `00015370` |
 | Last explored | 2026-10-08 |
 | Screenshot | `evidence/asset_single_out_challan_create.png`, `evidence/asset_single_out_challan_add_serial.png` |
 
@@ -51,3 +51,9 @@
 - The serial box lists every approved, unassigned asset that fits the item; type the serial to find one.
 - The challan stays in the same branch (Head Office), project `[015]` to `[060] Progoti` (the same projects as Asset Shipment).
 - Explored with challans OC-79823 (Submit path, serial `BBDASR00227758`, approved) and OC-79824 (Draft, Edit, Submit, left PENDING without a serial).
+
+## Receiving Branch and the three scenarios (2026-10-15)
+Path: Fixed Asset >> Single Challan >> Asset Single Out Challan >> Create.
+- Receiving Branch box: `#s2id_destinationBranch` (search box; offices are listed as `[BO - 0233] Chagalnaiya`). Sending Branch: `#s2id_office .select2-chosen` (pre-filled with the signed-in user's branch, for example `Head Office [ BDHO ]`).
+- The code finds the Receiving Branch whatever the spelling in `.env`; an empty value means the Sending Branch (`SingleOutChallanPage.choose_receiving_branch`, `BasePage.choose_office_from_select2`).
+- Combinations run: same branch / different project (`[015]` to `[060] Progoti`); another branch (Head Office to `[BO - 0233] Chagalnaiya`) / same project; another branch / different project. The challan is then approved in Asset Single Out Challan Approval List and acknowledged by a user of the receiving branch (see `asset_single_in_challan.md`). Test data: `test_data/asset_shipment_data.py`.

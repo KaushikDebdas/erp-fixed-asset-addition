@@ -26,13 +26,16 @@ What is inside:
 - At the end of every run, one self-contained HTML report is built in that
   folder: Test_Report_<date>_<time>.html (opens by double-click).
 """
-import importlib.util
 import os
 import sys
 
 import pytest
 from playwright.sync_api import sync_playwright
 from config.settings import BASE_URL, ENVIRONMENT
+from test_data.asset_shipment_data import (
+    OTHER_BRANCH_DIFFERENT_PROJECT,
+    OTHER_BRANCH_SAME_PROJECT,
+)
 from utils.logger import test_logger
 from utils.run_context import (
     attach_trace_to_report,
@@ -91,22 +94,8 @@ def pytest_configure(config):
 def pytest_collection_finish(session):
     """
     Remembers how many tests will run, for the "[3/64]" count in the START line.
-    Also stops the run at once when a selected test reads a voucher PDF (it uses
-    the `voucher_search_page` fixture) and this Python does not have `pypdf`.
-    Tests that do not read PDFs, such as the Generate Barcode tests, run anyway.
     """
     TEST_COUNT["total"] = len(session.items)
-    if session.config.option.collectonly:
-        return
-    voucher_tests = [item for item in session.items if "voucher_search_page" in item.fixturenames]
-    if voucher_tests and importlib.util.find_spec("pypdf") is None:
-        pytest.exit(
-            f"pypdf is not installed in this Python ({sys.executable}), and {len(voucher_tests)} selected "
-            "tests read voucher PDFs. Run the tests with the project's own Python, from the project folder: "
-            "python -m pytest automation (after activating this project's .venv), "
-            "or .venv/Scripts/python.exe -m pytest automation",
-            returncode=2,
-        )
 
 
 def pytest_runtest_logstart(nodeid, location):
@@ -255,6 +244,79 @@ def take_screenshot(page, request):
     return _take
 
 
+@pytest.fixture(scope="module")
+def hofin_flow_data():
+    """
+    A dictionary shared by the tests of one file, so a test can leave a value
+    (for example the parent asset serial) for the next test:
+
+        hofin_flow_data["parent_serial"] = parent_serial
+    """
+    return {}
+
+
+@pytest.fixture
+def hofin_flow(browser, request):
+    """
+    The HOFIN > HOFA > HOFIN asset flow (utils/hofin_flow.py). Each stage opens
+    its own browser window for its own login. Windows kept open for the test
+    (the HOFA Global List) are closed at the end of the test.
+    """
+    from utils.hofin_flow import HofinAssetFlow
+
+    flow = HofinAssetFlow(browser, request.node, maximize_window)
+    yield flow
+    flow.close_all()
+
+
+@pytest.fixture(scope="session")
+def extended_asset_pairs():
+    """
+    The parent assets with extended assets made during this run, shared by every
+    test file, so each pair is made only once per run. Tests read it through
+    `parent_with_extended`; nothing is saved between runs.
+    """
+    return {}
+
+
+@pytest.fixture
+def parent_with_extended(hofin_flow, extended_asset_pairs):
+    """
+    A new parent asset with one extended asset (CR FAHOV2-643), as
+    {"parent": serial, "extended": serial}. The first test of a run that asks for it
+    makes it through HOFIN, HOFA and HOFIN (a few minutes); later tests reuse it.
+    """
+    if "one_extended" not in extended_asset_pairs:
+        parent, extended_serials = hofin_flow.create_parent_with_extended_asset(1)
+        extended_asset_pairs["one_extended"] = {"parent": parent, "extended": extended_serials[0]}
+    return extended_asset_pairs["one_extended"]
+
+
+@pytest.fixture
+def parent_with_inactive_extended(
+    hofin_flow, extended_asset_pairs, asset_serial_global_list_page, asset_write_off_page,
+    asset_write_off_list_page, asset_write_off_approval_list_page,
+):
+    """
+    A new parent asset with three extended assets, the third written off so it is
+    inactive (CR FAHOV2-643), as {"parent": serial, "active": [first two], "inactive": third}.
+    The first test of a run that asks for it makes it (several minutes); later tests reuse it.
+    """
+    from test_data.hofin_asset_data import WRITE_OFF_PROJECT
+    from utils.write_off_flow import write_off_one_asset
+
+    if "inactive_extended" not in extended_asset_pairs:
+        parent, extended_serials = hofin_flow.create_parent_with_extended_asset(3)
+        write_off_one_asset(
+            asset_serial_global_list_page, asset_write_off_page, asset_write_off_list_page,
+            asset_write_off_approval_list_page, extended_serials[2], WRITE_OFF_PROJECT,
+        )
+        extended_asset_pairs["inactive_extended"] = {
+            "parent": parent, "active": extended_serials[:2], "inactive": extended_serials[2],
+        }
+    return extended_asset_pairs["inactive_extended"]
+
+
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
 def pytest_runtest_makereport(item, call):
     """
@@ -295,61 +357,7 @@ def logged_in_page(browser, request):
     Tracing is started here. The test file starts and stops one trace chunk
     per test (see `trace_one_test` in utils/run_context.py).
     """
-    from config.settings import TEST_PASSWORD, TEST_USERNAME
-
-    context, page = open_logged_in_tab(browser, TEST_USERNAME, TEST_PASSWORD)
-
-    yield page
-
-    log_out_quietly(page)
-    context.tracing.stop()
-    context.close()
-
-
-@pytest.fixture(scope="module")
-def assign_user_logged_in_page(browser, request):
-    """
-    Like `logged_in_page`, but the tab is logged in as the Asset Assign user
-    (ASSIGN_USER_USERNAME / ASSIGN_USER_PASSWORD in .env). Use it in a test file
-    that runs the Asset Assign screens with that user, by overriding `page` to
-    return this tab (see tests/test_33_asset_assign_extended_assets.py).
-    """
-    from config.settings import ASSIGN_USER_PASSWORD, ASSIGN_USER_USERNAME
-
-    assert ASSIGN_USER_USERNAME and ASSIGN_USER_PASSWORD, (
-        "The Asset Assign user is missing. Add ASSIGN_USER_USERNAME and ASSIGN_USER_PASSWORD to .env."
-    )
-    context, page = open_logged_in_tab(browser, ASSIGN_USER_USERNAME, ASSIGN_USER_PASSWORD)
-
-    yield page
-
-    log_out_quietly(page)
-    context.tracing.stop()
-    context.close()
-
-
-def log_out_quietly(page) -> None:
-    """
-    Log the user of this tab out, so the account has no session left open when a test
-    file ends (the ERP allows one session per user). A log-out that does not complete
-    is only logged: it must not turn a passed test file into an error.
-    """
-    from pages.login_page import LoginPage
-    from utils.logger import action_logger
-
-    try:
-        LoginPage(page).log_out()
-    except Exception as error:
-        action_logger.info(f"The log out at the end of the test file did not complete: {error}")
-
-
-def open_logged_in_tab(browser, username: str, password: str) -> tuple:
-    """
-    Open a new browser window on HOFA (the Fixed Asset application), log in with
-    the given user and close the advertisement popup if it appears. Tracing is
-    started. Returns (context, page).
-    """
-    from pages.login_page import LoginPage
+    from config.settings import DEFAULT_BRANCH, ERP_PASSWORD, ERP_USERNAME
 
     # Open the page at the full size of the maximized browser window.
     context = browser.new_context(no_viewport=True)
@@ -357,109 +365,65 @@ def open_logged_in_tab(browser, username: str, password: str) -> tuple:
     page = context.new_page()
     maximize_window(context, page)
     page.goto(BASE_URL)
+    sign_in(page, ERP_USERNAME, ERP_PASSWORD, DEFAULT_BRANCH)
+
+    yield page
+
+    context.tracing.stop()
+    context.close()
+
+
+def sign_in(page, username: str, password: str, branch: str) -> None:
+    """
+    Sign in on a tab that shows the sign-in screen: stop with a clear reason if
+    the login failed, choose the user's office when the ERP asks for one, close
+    the advertisement popup if it appears, and remember which user this tab is.
+    """
+    from pages.login_page import LoginPage
+    from utils.login_session import remember_user
 
     login_page = LoginPage(page)
     login_page.wait_for_login_page()
     login_page.login(username, password)
+    login_page.verify_logged_in(username)
+    login_page.select_office_if_asked(branch)
     login_page.close_popup_if_present()
-    return context, page
+    remember_user(page, username, password, branch)
 
 
-@pytest.fixture
-def hofin_flow(browser, request):
+@pytest.fixture(scope="module")
+def assignee_logged_in_page(browser):
     """
-    The stages of an asset registration / addition that starts in HOFIN (HOFIN
-    creator, HOFA acknowledger, HOFIN approver), each in its own browser window.
-    Needed because that journey logs in to two applications with three users, so
-    it cannot use the single `page` fixture. See utils/hofin_flow.py.
+    A second browser tab signed in as the second user (ASSIGN_ERP_USERNAME in
+    .env), shared by every test in the same file. It is the employee an asset is
+    assigned to, who is the only user that can acknowledge the assignment. It
+    lives in its own browser context, so it never shares a session with the main
+    user's tab. The tests are skipped when the second user is not set in .env.
     """
-    from utils.hofin_flow import HofinAssetFlow
+    from config.settings import ASSIGN_DEFAULT_BRANCH, ASSIGN_ERP_PASSWORD, ASSIGN_ERP_USERNAME
 
-    flow = HofinAssetFlow(browser, request.node, maximize_window)
-    yield flow
-    flow.close_all()
+    from config.settings import ERP_USERNAME
 
+    if not ASSIGN_ERP_USERNAME or not ASSIGN_ERP_PASSWORD:
+        pytest.skip("ASSIGN_ERP_USERNAME and ASSIGN_ERP_PASSWORD are not set in .env")
+    # The ERP allows one login per user, so a second tab with the same user would log the first one out
+    assert ASSIGN_ERP_USERNAME != ERP_USERNAME, (
+        "ASSIGN_ERP_USERNAME is the same user as ERP_USERNAME. The ERP does not allow two logins "
+        "of one user at the same time: use a different user for the employee who acknowledges."
+    )
 
-@pytest.fixture(scope="session")
-def hofin_flow_data():
-    """
-    An empty dictionary shared by all the tests of a run, so a test can leave a value
-    (the parent and extended asset serials) for the next test, in any file, that needs it.
-    """
-    return {}
+    context = browser.new_context(no_viewport=True)
+    # Tracing is started so a test file that works only in this tab can record one trace chunk per test
+    context.tracing.start(screenshots=True, snapshots=True)
+    page = context.new_page()
+    maximize_window(context, page)
+    page.goto(BASE_URL)
+    sign_in(page, ASSIGN_ERP_USERNAME, ASSIGN_ERP_PASSWORD, ASSIGN_DEFAULT_BRANCH)
 
+    yield page
 
-@pytest.fixture
-def parent_with_extended(hofin_flow, hofin_flow_data):
-    """
-    A parent asset that has one extended asset, as {"parent": serial, "extended": serial}.
-    Made through HOFIN, HOFA and HOFIN the first time a test asks for it in a run (a few
-    minutes); every later test of the run gets the same two assets.
-    """
-    if "extended_serial" not in hofin_flow_data:
-        parent_serial, extended_serials = hofin_flow.create_parent_with_extended_asset()
-        hofin_flow_data["parent_serial"] = parent_serial
-        hofin_flow_data["extended_serial"] = extended_serials[0]
-    return {"parent": hofin_flow_data["parent_serial"], "extended": hofin_flow_data["extended_serial"]}
-
-
-@pytest.fixture
-def parent_with_inactive_extended(
-    hofin_flow, hofin_flow_data, asset_serial_global_list_page, asset_write_off_page,
-    asset_write_off_list_page, asset_write_off_approval_list_page
-):
-    """
-    A second parent asset with three extended assets, the last one written off
-    (disposed, so inactive), as {"parent": serial, "active": [two serials],
-    "inactive": serial}. Made once per run: through HOFIN, HOFA and HOFIN, then the
-    third extended asset is set to DAMAGE, written off and approved. It is a
-    different parent from `parent_with_extended`, so a test that assigns it does
-    not disturb the other tests.
-    """
-    from test_data.hofin_asset_data import WRITE_OFF_PROJECT
-    from utils.asset_flow import write_off_and_approve
-
-    if "inactive_pair" not in hofin_flow_data:
-        parent_serial, extended_serials = hofin_flow.create_parent_with_extended_asset(3)
-        write_off_and_approve(
-            asset_serial_global_list_page, asset_write_off_page, asset_write_off_list_page,
-            asset_write_off_approval_list_page, extended_serials[2], WRITE_OFF_PROJECT,
-        )
-        hofin_flow_data["inactive_pair"] = {
-            "parent": parent_serial, "active": extended_serials[:2], "inactive": extended_serials[2],
-        }
-    return hofin_flow_data["inactive_pair"]
-
-
-@pytest.fixture
-def assigned_parent_with_extended(
-    parent_with_extended, assign_page, transaction_approval_page, asset_serial_global_list_page, acknowledgement_page
-):
-    """
-    The parent asset and its extended asset, ASSIGNED to the test employee and
-    acknowledged, which is the state Asset Internal Movement and Asset Un Assign
-    need (an asset with an acknowledgement pending is not offered there). It does
-    only the steps that are missing: assigns and approves when the parent is
-    UNASSIGNED, then acknowledges when an acknowledgement is waiting. Works in the
-    tab of the user that is the assigned employee. Returns the same dictionary
-    as `parent_with_extended`.
-    """
-    from test_data.asset_transaction_data import ASSIGNEE_PIN, UNASSIGNED
-    from test_data.toast_messages import ACKNOWLEDGE_TOAST
-    from utils.asset_flow import assign_and_approve
-
-    parent_serial = parent_with_extended["parent"]
-    status = asset_serial_global_list_page.open_and_read_assign_status(parent_serial)
-    if status == UNASSIGNED:
-        assign_and_approve(
-            assign_page, transaction_approval_page, parent_serial, ASSIGNEE_PIN, "AUTOMATION_TEST setup assign"
-        )
-    acknowledgement_page.navigate_here()
-    if acknowledgement_page.has_pending_for_serial(parent_serial):
-        acknowledgement_page.open_details_of_row_with_serial(parent_serial)
-        toast = acknowledgement_page.acknowledge_in_popup_and_get_toast()
-        acknowledgement_page.verify_toast_contains(toast, ACKNOWLEDGE_TOAST, "Acknowledge in the setup")
-    return parent_with_extended
+    context.tracing.stop()
+    context.close()
 
 
 @pytest.fixture
@@ -607,6 +571,103 @@ def transfer(
     )
 
 
+@pytest.fixture(scope="module")
+def ack_shipment_logged_in_page(browser):
+    """
+    A browser tab signed in as the shipment acknowledgement user (ACK_SHIPMENT_ERP_* in
+    .env), shared by every test in the same file. Its default branch is the receiving
+    branch of the shipment, so it is the user who sees the challan and acknowledges it.
+    It lives in its own browser context. The tests are skipped when the user is not set.
+    """
+    from config.settings import (
+        ACK_SHIPMENT_ERP_DEFAULT_BRANCH,
+        ACK_SHIPMENT_ERP_PASSWORD,
+        ACK_SHIPMENT_ERP_USERNAME,
+        ERP_USERNAME,
+    )
+
+    if not ACK_SHIPMENT_ERP_USERNAME or not ACK_SHIPMENT_ERP_PASSWORD:
+        pytest.skip("ACK_SHIPMENT_ERP_USERNAME and ACK_SHIPMENT_ERP_PASSWORD are not set in .env")
+    # The ERP allows one login per user, so a second tab with the same user would log the first one out
+    assert ACK_SHIPMENT_ERP_USERNAME != ERP_USERNAME, (
+        "ACK_SHIPMENT_ERP_USERNAME is the same user as ERP_USERNAME. The ERP does not allow two logins "
+        "of one user at the same time: use a different user for the receiving branch."
+    )
+
+    context = browser.new_context(no_viewport=True)
+    page = context.new_page()
+    maximize_window(context, page)
+    page.goto(BASE_URL)
+    sign_in(page, ACK_SHIPMENT_ERP_USERNAME, ACK_SHIPMENT_ERP_PASSWORD, ACK_SHIPMENT_ERP_DEFAULT_BRANCH)
+
+    yield page
+
+    context.close()
+
+
+@pytest.fixture
+def ack_in_challan_page(ack_shipment_logged_in_page):
+    """Asset Shipment In-Challan page object in the shipment acknowledgement user's tab."""
+    from pages.shipment_in_challan_page import ShipmentInChallanPage
+    return ShipmentInChallanPage(ack_shipment_logged_in_page)
+
+
+@pytest.fixture
+def take_ack_shipment_screenshot(ack_shipment_logged_in_page, request):
+    """Like `take_screenshot`, but photographs the shipment acknowledgement user's tab (`take_screenshot` shows the main tab)."""
+    def _take(description: str) -> str:
+        return take_numbered_screenshot(ack_shipment_logged_in_page, request.node, f"receiving user {description}")
+    return _take
+
+
+@pytest.fixture(scope="session")
+def shared_cross_transfer():
+    """The Asset Shipment flows to another branch of this run, one per scenario (used by `cross_transfer`)."""
+    return {}
+
+
+def build_cross_transfer(
+    scenario, assets, shipment_page, challan_page, challan_approval_page, in_challan_page,
+    ack_in_challan_page, shared_cross_transfer,
+):
+    """Return the TransferHelper of one scenario of a shipment to another branch (see utils/transfer_helper.py)."""
+    from utils.transfer_helper import TransferHelper
+
+    flows = shared_cross_transfer.setdefault(scenario, {})
+    return TransferHelper(
+        assets, shipment_page, challan_page, challan_approval_page, in_challan_page,
+        flows, scenario, ack_in_challan_page,
+    )
+
+
+@pytest.fixture
+def transfer_other_branch_same_project(
+    assets, shipment_page, challan_page, challan_approval_page, in_challan_page,
+    ack_in_challan_page, shared_cross_transfer,
+):
+    """
+    Like `transfer`, for a shipment to another branch with the same From and To Project. The
+    sender's tab creates and approves; the receiving user's tab (ACK_SHIPMENT_ERP_* in .env)
+    sees and acknowledges the challan.
+    """
+    return build_cross_transfer(
+        OTHER_BRANCH_SAME_PROJECT, assets, shipment_page, challan_page, challan_approval_page,
+        in_challan_page, ack_in_challan_page, shared_cross_transfer,
+    )
+
+
+@pytest.fixture
+def transfer_other_branch_different_project(
+    assets, shipment_page, challan_page, challan_approval_page, in_challan_page,
+    ack_in_challan_page, shared_cross_transfer,
+):
+    """Like `transfer_other_branch_same_project`, but the To Project is different from the From Project."""
+    return build_cross_transfer(
+        OTHER_BRANCH_DIFFERENT_PROJECT, assets, shipment_page, challan_page, challan_approval_page,
+        in_challan_page, ack_in_challan_page, shared_cross_transfer,
+    )
+
+
 @pytest.fixture
 def assign_page(page):
     """Asset Assign page object, ready to use."""
@@ -691,10 +752,21 @@ def registrations(aaq_page, registration_list_page, approval_list_page, shared_r
 
 
 @pytest.fixture
-def acknowledgement_page(page):
-    """Asset Assign Acknowledgement page object. The assigned employee is the logged-in user, so it works in the main tab."""
+def acknowledgement_page(assignee_logged_in_page):
+    """Asset Assign Acknowledgement page object. It works in the second user's tab: only the assigned employee can acknowledge."""
     from pages.asset_assign_acknowledgement_page import AssetAssignAcknowledgementPage
-    return AssetAssignAcknowledgementPage(page)
+    return AssetAssignAcknowledgementPage(assignee_logged_in_page)
+
+
+@pytest.fixture
+def take_assignee_screenshot(assignee_logged_in_page, request):
+    """
+    Like `take_screenshot`, but photographs the second user's tab. `take_screenshot`
+    always shows the main tab, so a test that works in both tabs needs this one for the second.
+    """
+    def _take(description: str) -> str:
+        return take_numbered_screenshot(assignee_logged_in_page, request.node, f"assignee {description}")
+    return _take
 
 
 @pytest.fixture
@@ -831,6 +903,61 @@ def single_challan(
     )
 
 
+@pytest.fixture
+def ack_single_in_challan_page(ack_shipment_logged_in_page):
+    """Asset Single In-Challan page object in the receiving-branch user's tab (ACK_SHIPMENT_ERP_* in .env)."""
+    from pages.single_in_challan_page import SingleInChallanPage
+    return SingleInChallanPage(ack_shipment_logged_in_page)
+
+
+@pytest.fixture(scope="session")
+def shared_cross_single_challan():
+    """The Single Challan flows to another branch of this run, one per scenario (used by the single_challan_other_branch_* fixtures)."""
+    return {}
+
+
+def build_cross_single_challan(
+    scenario, assets, single_out_challan_page, single_out_challan_approval_list_page,
+    single_in_challan_page, ack_single_in_challan_page, shared_cross_single_challan,
+):
+    """Return the SingleChallanFlow of one scenario of a challan to another branch (see utils/single_challan_flow.py)."""
+    from utils.single_challan_flow import SingleChallanFlow
+
+    flows = shared_cross_single_challan.setdefault(scenario, {})
+    return SingleChallanFlow(
+        assets, single_out_challan_page, single_out_challan_approval_list_page,
+        single_in_challan_page, flows, scenario, ack_single_in_challan_page,
+    )
+
+
+@pytest.fixture
+def single_challan_other_branch_same_project(
+    assets, single_out_challan_page, single_out_challan_approval_list_page,
+    single_in_challan_page, ack_single_in_challan_page, shared_cross_single_challan,
+):
+    """
+    Like `single_challan`, for a challan to another branch with the same From and To Project. The
+    sender's tab creates and approves; the receiving user's tab (ACK_SHIPMENT_ERP_* in .env) sees
+    the challan. Use the "submit" path.
+    """
+    return build_cross_single_challan(
+        OTHER_BRANCH_SAME_PROJECT, assets, single_out_challan_page, single_out_challan_approval_list_page,
+        single_in_challan_page, ack_single_in_challan_page, shared_cross_single_challan,
+    )
+
+
+@pytest.fixture
+def single_challan_other_branch_different_project(
+    assets, single_out_challan_page, single_out_challan_approval_list_page,
+    single_in_challan_page, ack_single_in_challan_page, shared_cross_single_challan,
+):
+    """Like `single_challan_other_branch_same_project`, but the To Project is different from the From Project."""
+    return build_cross_single_challan(
+        OTHER_BRANCH_DIFFERENT_PROJECT, assets, single_out_challan_page, single_out_challan_approval_list_page,
+        single_in_challan_page, ack_single_in_challan_page, shared_cross_single_challan,
+    )
+
+
 @pytest.fixture(scope="session")
 def shared_asset_pool():
     """
@@ -913,13 +1040,13 @@ def current_user(registration_list_page, shared_user):
     """
     from playwright.sync_api import expect
 
-    from config.settings import TEST_USERNAME
+    from config.settings import ERP_USERNAME
 
     if not shared_user:
         registration_list_page.navigate_here()
         expect(registration_list_page.created_by_filter).not_to_have_value("")
         box_text = registration_list_page.read_created_by()
-        shared_user["search_text"] = TEST_USERNAME
+        shared_user["search_text"] = ERP_USERNAME
         shared_user["name"] = box_text.split("-", 1)[1].strip()
     return shared_user
 

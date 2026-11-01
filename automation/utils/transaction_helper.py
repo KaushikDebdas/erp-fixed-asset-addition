@@ -26,7 +26,6 @@ from test_data.asset_transaction_data import (
     ASSIGNED,
     ASSIGNEE_PIN,
     HANDOVER_SEARCH,
-    MOVE_BUILDING,
     SETUP_ASSIGN_NOTE,
     SETUP_MOVE_NOTE,
     SETUP_UNASSIGN_NOTE,
@@ -37,6 +36,9 @@ from utils.asset_flow import assign_and_approve, move_and_approve, unassign_and_
 # The slots (test_data/asset_slots.py) of the two assets the transaction tests use
 USAGE_A = "usage_a"
 USAGE_B = "usage_b"
+
+# The assignee's name and the user's branch read from the Asset Assign form (filled by read_user_details)
+USER_DETAILS = {}
 
 
 class TransactionHelper:
@@ -81,6 +83,35 @@ class TransactionHelper:
             f"Asset {serial} should be {wanted} but its Assign Status is '{found}' "
             f"(the transaction that should have changed it did not)."
         )
+
+    def read_user_details(self) -> dict:
+        """
+        Return {"assignee_name": ..., "branch": ...}: the name of the employee with
+        ASSIGNEE_PIN and the branch of the logged-in user, as the Asset Assign form
+        shows them. The form is opened once per run and the answer is remembered.
+        """
+        if not USER_DETAILS:
+            assert ASSIGNEE_PIN, (
+                "The second user is not set: add ASSIGN_ERP_USERNAME (a numeric login name) "
+                "or ASSIGN_ERP_PIN to .env."
+            )
+            self.assign_page.navigate_here()
+            self.assign_page.select_employee(ASSIGNEE_PIN)
+            name = self.assign_page.get_employee_name()
+            branch = self.assign_page.get_branch_name()
+            assert name, f"The Asset Assign form shows no employee name for PIN {ASSIGNEE_PIN}."
+            assert branch, "The Asset Assign form shows no Branch Name."
+            USER_DETAILS["assignee_name"] = name
+            USER_DETAILS["branch"] = branch
+        return USER_DETAILS
+
+    def get_assignee_name(self) -> str:
+        """Return the name of the employee with ASSIGNEE_PIN, as the Asset Assign form shows it."""
+        return self.read_user_details()["assignee_name"]
+
+    def get_user_branch(self) -> str:
+        """Return the Branch Name the Asset Assign form shows for the logged-in user."""
+        return self.read_user_details()["branch"]
 
     # ------------------------------------------------------------------
     # The states
@@ -139,8 +170,8 @@ class TransactionHelper:
         """Hand the asset over to the hand-over employee and approve it, so the asset is UNASSIGNED."""
         unassign_and_approve(self.unassign_page, self.approval_page, serial, HANDOVER_SEARCH, SETUP_UNASSIGN_NOTE)
 
-    def move(self, serial: str) -> None:
-        """Move the asset to the movement building and approve it."""
-        move_and_approve(
-            self.movement_page, self.approval_page, serial, ASSIGNEE_PIN, MOVE_BUILDING, SETUP_MOVE_NOTE
+    def move(self, serial: str) -> str:
+        """Move the asset to the first building the form offers, approve it, and return that building's name."""
+        return move_and_approve(
+            self.movement_page, self.approval_page, serial, ASSIGNEE_PIN, SETUP_MOVE_NOTE
         )

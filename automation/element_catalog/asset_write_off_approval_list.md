@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Page class | `pages/asset_write_off_approval_list_page.py` → `AssetWriteOffApprovalListPage`; test `tests/test_29_asset_write_off_approval_list.py` |
+| Page class | `pages/asset_write_off_approval_list_page.py` → `AssetWriteOffApprovalListPage`; test `tests/test_28_asset_write_off_approval_list.py` |
 | Module / menu path | Fixed Asset >> Asset Disposal >> Asset Write-off Approval List |
 | Entry URL | `https://erpstaging.brac.net/nodef/fixedasset#!faAssetWriteOff/showWriteOffScheduleList` (reach via menu click) |
 | Role needed | a user with the write-off approval permission; the creator can approve their own write-off (explored and tested as user `00015370`, Sachindra Nath Ghosh; `abushoaib.asik` lacked the permission) |
@@ -22,5 +22,5 @@
 ## Notes
 - **Approve verified** (write-off 24480, grid checkbox + `#btnApprove`): toast, two lines, `Asset write-off approved successfully.` / `Journal voucher submitted successfully!`; the row then shows Approved By `SACHINDRA NATH GHOSH`, Approval Date and Status `APPROVED`. The Details popup `#btnForApprove` was not run successfully (only tried while blocked).
 - **Earlier failure:** with `abushoaib.asik` both Approve buttons (grid and popup) gave the toast `Api error - User not found` and the write-off stayed PENDING; that account has a permission problem. With a user that has the permission, the same click worked, and the same user can create, submit and approve.
-- `test_22` runs it all with one login: Draft, submit from the list, approve (1 passed).
+- `test_21` runs it all with one login: Draft, submit from the list, approve (1 passed).
 - Earlier APPROVED rows were approved by other users (for example write-off 24416 by `MD FOKHRUL ISLAM`).

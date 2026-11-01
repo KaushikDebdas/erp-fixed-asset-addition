@@ -194,7 +194,9 @@ class VendorBillPayablePage(BasePage):
             self.choose_parent_asset(parent_serial)
         self.click(self.source_of_fund_input, "Source Of Fund box")
         self.click(self.page.get_by_role("option").first, "first Source Of Fund option")
-        self.type_with_keys(self.quantity_field, data.QUANTITY, "Quantity field")
+        # An addition adds one asset: the popup sets Quantity to 1 and does not accept typing
+        if parent_serial == "":
+            self.type_with_keys(self.quantity_field, data.QUANTITY, "Quantity field")
         self.type_with_keys(self.unit_price_field, data.UNIT_PRICE, "Unit Price field")
         self.choose_from_ng_select(self.asset_item_input, data.ASSET_ITEM_SEARCH_TEXT, data.ASSET_ITEM_OPTION)
         self.type_with_keys(self.item_specification_field, data.ITEM_SPECIFICATION, "Item Specification field")
@@ -278,8 +280,10 @@ class VendorBillPayablePage(BasePage):
         try:
             self.page.wait_for_url("**/vendor-bill-payable/view/**", timeout=SAVE_TIMEOUT)
         except Exception:
+            dialog_text = self.page.locator("modal-container").first.inner_text(timeout=3000) if self.page.locator("modal-container").count() > 0 else "none"
+            toast_text = self.get_toast_text_or_empty(timeout=3000) or "none"
             raise AssertionError(
                 "After Submit the bill should open in view mode but the page shows "
-                f"{self.page.url}."
+                f"{self.page.url}. Dialog on screen: {dialog_text}. Toast on screen: {toast_text}."
             )
         self.wait_for_page_load()

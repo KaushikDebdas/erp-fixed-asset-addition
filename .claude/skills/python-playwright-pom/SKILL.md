@@ -17,7 +17,6 @@ automation/
 ├── pages/                # one class per page + base_page.py
 ├── tests/                # feature-organized, numbered: test_01_<feature>.py
 ├── element_catalog/      # PERMANENT record of every page/element seen
-├── automation_mapping/   # temporary review JSON, per automation-mapping skill
 ├── test_data/
 ├── utils/                # logger, run_context, helpers
 ├── config/               # settings.py reads .env
@@ -44,8 +43,8 @@ it fills any screen.
    test files.
 5. Check `pages/` for an existing class/method before writing a new one.
    Shared UI (nav bar, common modal) goes in `common_components.py`.
-6. Locators come from `ui-explorer`'s verified mapping and
-   `element_catalog/<page>.md`. Never guess one. If a step is
+6. Locators come from `element_catalog/<page>.md` (verified by
+   `ui-explorer`). Never guess one. If an element is
    `LOCATOR_REQUIRES_REVIEW`, stop and flag it.
 7. When a locator changes, update the page class AND the catalog file.
 

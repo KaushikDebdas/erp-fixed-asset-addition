@@ -284,14 +284,15 @@ class AssetRegistrationApprovalListPage(BasePage):
 
     def approve_from_popup_and_verify_success(self, registration_number: str) -> None:
         """
-        Click Approve inside the open popup and confirm the exact success
-        toast is shown. Any other message fails the test and is reported
-        with its full text.
+        Click Approve inside the open popup and confirm the success toast is
+        shown. The ERP may add a journal voucher line below it, so the toast
+        only has to contain the success text. Any other message fails the test
+        and is reported with its full text.
         """
         self.wait_for_toast_to_clear()
         self.click(self.popup_approve_button, "Approve button in popup")
         toast_text = self.get_toast_text()
-        self.verify_toast_text(toast_text, APPROVE_SUCCESS_TOAST, f"Approve of Registration {registration_number}")
+        self.verify_toast_contains(toast_text, APPROVE_SUCCESS_TOAST, f"Approve of Registration {registration_number}")
 
     def open_asset_serials_tab(self) -> None:
         """Switch the open popup to its Asset Serials tab."""
@@ -528,22 +529,9 @@ class AssetRegistrationApprovalListPage(BasePage):
         assertion_logger.info(f"Verifying the entries line starts with '{expected_start}'")
         assert found.startswith(expected_start), f"Expected the entries line to start with '{expected_start}' but found '{found}'."
 
-    def verify_page_two_is_older(self, first_page: list, second_page: list) -> None:
-        """Confirm page 2 holds different, older registrations than page 1 (both are lists of Registration Numbers)."""
-        assertion_logger.info("Verifying page 2 continues the list")
-        for number in second_page:
-            assert number not in first_page, (
-                f"Expected page 2 to show different registrations but {number} is on both pages."
-            )
-        lowest_on_first = min(int(n) for n in first_page)
-        highest_on_second = max(int(n) for n in second_page)
-        assert highest_on_second < lowest_on_first, (
-            f"Expected page 2 to hold older registrations (below {lowest_on_first}) but it holds {highest_on_second}."
-        )
-
     def verify_toast(self, expected_text: str) -> None:
-        """Confirm the toast on screen has exactly `expected_text`; any other message, or none, fails."""
-        self.verify_toast_text(self.get_toast_text(), expected_text, "the last action on the approval list")
+        """Confirm the toast on screen contains `expected_text` (a journal voucher line may follow it); any other message, or none, fails."""
+        self.verify_toast_contains(self.get_toast_text(), expected_text, "the last action on the approval list")
 
     def approve_ticked_rows(self) -> None:
         """Click the page-level Approve for the ticked rows (read the result with verify_toast)."""

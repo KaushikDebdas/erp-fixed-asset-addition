@@ -145,6 +145,7 @@
   <span><span class="sw" style="background:#2e7d5b"></span>Voucher Create</span>
   <span><span class="sw" style="background:#7b3f3f"></span>End / Stop</span>
 </div>
+<p class="sub" style="margin-top:6px">A box that is a screen shows where to open it, for example <b>Fixed Asset &gt;&gt; Asset Transfer &gt;&gt; Asset Shipment In-Challan</b>: open the Fixed Asset module, click the menu (Asset Transfer), then the screen.</p>
 
 <div class="toolbar" id="tabs">
   <button data-t="reg" class="active">Asset Registration</button>
@@ -204,6 +205,15 @@
       <button class="zoom-btn reset-btn" data-action="reset" title="Reset view">⤾ Reset</button>
     </div>
     <div class="diagram-viewport" data-viewport="transaction"><div class="mermaid" id="m-transaction"></div></div>
+    <div class="rules">
+      <h3>Who does what in Asset Assign</h3>
+      <ol>
+        <li>The user who assigns an asset (<b>Fixed Asset &gt;&gt; Asset Transaction &gt;&gt; Asset Assign</b>) can also approve it on <b>Fixed Asset &gt;&gt; Asset Transaction &gt;&gt; Transaction Approval List</b>.</li>
+        <li>Only the <b>employee the asset is assigned to</b> can acknowledge it, on <b>Fixed Asset &gt;&gt; Asset Transaction &gt;&gt; Asset Assign Acknowledgement</b>, signed in with his or her own login. The screen lists only the rows addressed to that employee.</li>
+        <li>The acknowledging employee needs the Asset Assign Acknowledgement menu. If the link is not on the menu, the user has no right to it.</li>
+        <li>Acknowledging does not change the transaction status (still APPROVED) or the asset's Assign Status (still ASSIGNED).</li>
+      </ol>
+    </div>
   </div>
 
   <div class="panel" id="p-transfer">
@@ -215,6 +225,18 @@
       <button class="zoom-btn reset-btn" data-action="reset" title="Reset view">⤾ Reset</button>
     </div>
     <div class="diagram-viewport" data-viewport="transfer"><div class="mermaid" id="m-transfer"></div></div>
+    <div class="rules">
+      <h3>Asset Shipment to the same or to another branch</h3>
+      <ol>
+        <li>The order of the screens: <b>Fixed Asset &gt;&gt; Asset Transfer &gt;&gt; Asset Shipment</b> (create the shipment and its challan, add the serial, submit the challan) &rarr; <b>Asset Shipment Challan Approval List</b> (approve the challan) &rarr; <b>Asset Shipment</b> again (approve the shipment; a Gate Pass is generated) &rarr; <b>Asset Shipment In-Challan</b> (the receiving side acknowledges) &rarr; <b>Gate Pass Generation</b> (preview the PDF).</li>
+        <li>Three combinations are allowed: (1) same branch, different project; (2) another branch, same project; (3) another branch, different project. Same branch with the same project is not allowed.</li>
+        <li>The <b>Sending Branch</b> is the office of the signed-in user. The <b>Receiving Branch</b> is chosen in the Create Challan popup; its list shows offices like <b>[BO - 0233] Chagalnaiya</b> and <b>[HO - BDHO] Head Office</b>.</li>
+        <li>The <b>From Project</b> is the project of the asset. The <b>To Project</b> must be mapped for the Receiving Branch; otherwise Draft says <b>Area code not found</b>. Example that works from Head Office to Chagalnaiya: <b>[015] Microfinance (Dabi)</b> to <b>[015] Microfinance (Dabi)</b> or to <b>[060] Progoti</b>.</li>
+        <li>For another branch the challan is acknowledged by a <b>different user, one who belongs to the Receiving Branch</b>. That user signs in, picks the Receiving Branch at Office Selection and opens <b>Fixed Asset &gt;&gt; Asset Transfer &gt;&gt; Asset Shipment In-Challan</b>. The list shows only the challans addressed to that office. The status is APPROVED until Acknowledge is clicked.</li>
+        <li>Acknowledge needs the receiving office's day open. On a closed day it is refused: <b>Business day not open for Fixed Asset.</b> and the status stays APPROVED. Check the Accounting Date in the top right corner first.</li>
+        <li>What a successful acknowledgement to another branch looks like (message, ACKNOWLEDGED, vouchers) has not been seen yet.</li>
+      </ol>
+    </div>
   </div>
 
   <div class="panel" id="p-single">
@@ -226,6 +248,16 @@
       <button class="zoom-btn reset-btn" data-action="reset" title="Reset view">⤾ Reset</button>
     </div>
     <div class="diagram-viewport" data-viewport="single"><div class="mermaid" id="m-single"></div></div>
+    <div class="rules">
+      <h3>Asset Single Challan to the same or to another branch</h3>
+      <ol>
+        <li>The order of the screens: <b>Fixed Asset &gt;&gt; Single Challan &gt;&gt; Asset Single Out Challan</b> (create and Submit the challan; click the Out Challan Number and Add Serial) &rarr; <b>Asset Single Out Challan Approval List</b> (approve) &rarr; <b>Asset Single In-Challan</b> (the receiving side acknowledges) &rarr; <b>Gate Pass Generation</b>.</li>
+        <li>The same three combinations of branch and project apply as for Asset Shipment (same branch with different project; another branch with the same or with a different project). Same branch with the same project is not allowed.</li>
+        <li>For another branch the challan is acknowledged by a user of the <b>Receiving Branch</b> on <b>Fixed Asset &gt;&gt; Single Challan &gt;&gt; Asset Single In-Challan</b>, signed in with his or her own login. The Sending Branch's user does not acknowledge it.</li>
+        <li>On a closed day Acknowledge is refused with <b>Business day not open for Fixed Asset.</b> and the status stays APPROVED. The Accounting Date is in the top right corner.</li>
+        <li>A Single Challan carries one project pair. For several project pairs create several Single Challans.</li>
+      </ol>
+    </div>
   </div>
 
   <div class="panel" id="p-expense">
@@ -643,20 +675,20 @@ const diagrams = {};
 
 diagrams.reg = `
 flowchart TD
-  A([Start: New Asset]) --> B[Asset Registration by AAQ]
+  A([Start: New Asset]) --> B["Asset Registration by AAQ\\nFixed Asset >> Registration >> Asset Registration by AAQ"]
   B --> C{Save as Draft?}
-  C -- Yes --> D[Asset Registration List]
+  C -- Yes --> D["Asset Registration List\\nFixed Asset >> Registration >> Asset Registration List"]
   D --> E[Review / Edit]
   E --> F[Submit]
   C -- No, Submit directly --> F
-  F --> G[Asset Approval by List]
+  F --> G["Asset Approval by List\\nFixed Asset >> Registration >> Asset Registration Approval List"]
   G --> H{Approve?}
   H -- No / Reject --> I([Rejected — back to Registration])
   H -- Yes --> J[/Asset ID / Serial generated/]
   J --> SG{Spot Purchase\\nor Gift Item?}
   SG -- Spot Purchase --> KS[[Journal Voucher:\\nFixed Asset Grp = Dr.\\nSupplier Payable-Capex = Cr.]]
   SG -- Gift Item --> KG[[Journal Voucher:\\nFixed Asset Grp = Dr.\\nOther Income = Cr.]]
-  KS --> L([Asset now in Asset Serial Global List])
+  KS --> L(["Asset now in Asset Serial Global List\\nFixed Asset >> Asset Profile >> Asset Serial Global List"])
   KG --> L
   F -.-> NV[Before approval, Draft or Pending:\\nVoucher Search finds no voucher]
   KS -.-> VC[Check the voucher:\\nAccounting > Voucher > Voucher Search\\nTransaction No = Registration Number\\nleave Date From and To empty]
@@ -678,7 +710,7 @@ flowchart TD
 
 diagrams.profile = `
 flowchart TD
-  subgraph G1["1. View and edit an asset: Asset Serial Global List"]
+  subgraph G1["1. View and edit an asset: Fixed Asset >> Asset Profile >> Asset Serial Global List"]
     A1["Search the asset\\nby Asset Serial"] --> A2["Click the Asset Serial:\\nAsset Profile Details popup"]
     A2 --> A3["Read the 7 tabs: Details, Depreciation,\\nRevaluation, Transaction History,\\nExpenditure, Disposal Info, Attachment"]
     A2 --> A4{"Change\\nsomething?"}
@@ -688,12 +720,12 @@ flowchart TD
     A4 -- Measurement --> A8["Change unlocks the box:\\ntype the value, then Update"]
   end
 
-  subgraph G2["2. Barcode: Generate Barcode"]
+  subgraph G2["2. Barcode: Fixed Asset >> Asset Profile >> Generate Barcode"]
     B1["Search the asset\\nand tick its row"] --> B2["Set the print quantity,\\nthen click Generate"]
     B2 --> B3[/"Barcode PDF opens\\nin a new tab"/]
   end
 
-  subgraph G3["3. Split an asset"]
+  subgraph G3["3. Split an asset: Fixed Asset >> Asset Profile >> Asset Serial Split, then Asset Serial Split List, then Asset Serial Split Approval List"]
     S1{"Measurement\\nabove zero?"}
     S1 -- No --> S2["Set it first in the Global List:\\nChange next to Measurement"]
     S2 -- then split --> S3
@@ -705,7 +737,7 @@ flowchart TD
     S6 -- Yes --> S8[/"New asset serials\\nare generated"/]
   end
 
-  subgraph G4["4. Check what is still pending: Asset In Pending Process List"]
+  subgraph G4["4. Check what is still pending: Fixed Asset >> Asset Profile >> Asset In Pending Process List"]
     P1["Search or filter\\nby Status"] --> P2["Shows every unfinished process\\nand the screen it is pending in"]
     P2 --> P3["Export to Excel"]
   end
@@ -726,25 +758,25 @@ flowchart TD
 
   B -- Assign --> C{Asset currently\\nassigned?}
   C -- Yes --> D([Cannot assign — already assigned])
-  C -- No --> E[Enter Asset Serial Number]
+  C -- No --> E["Enter Asset Serial Number\\nFixed Asset >> Asset Transaction >> Asset Assign"]
   E --> EA[Add to Grid]
   EA --> F[Search employee\\nby PIN or Name]
   F --> G{Save as draft\\nor submit?}
-  G -- Draft --> H[Goes to Transaction List]
-  G -- Submit --> I[Goes to Transaction Approval List]
+  G -- Draft --> H["Goes to Transaction List\\nFixed Asset >> Asset Transaction >> Transaction List"]
+  G -- Submit --> I["Goes to Transaction Approval List\\nFixed Asset >> Asset Transaction >> Transaction Approval List\\n(the user who assigned may approve)"]
   H --> J[Edit later, then submit]
   J --> I
 
   B -- Unassign --> K{Asset currently\\nassigned?}
   K -- No --> L([Cannot unassign — not assigned])
-  K -- Yes --> M[Search by Asset Serial No.\\nor Employee PIN]
+  K -- Yes --> M["Search by Asset Serial No.\\nor Employee PIN\\nFixed Asset >> Asset Transaction >> Asset Un Assign"]
   M --> N[Add to Grid]
   N --> O[Hand Over To]
   O --> I
 
   B -- Internal Movement --> P{Asset currently\\nassigned?}
   P -- No --> Q([Blocked — must be\\nassigned first])
-  P -- Yes --> R[Search by Asset Serial No.\\nor Employee PIN]
+  P -- Yes --> R["Search by Asset Serial No.\\nor Employee PIN\\nFixed Asset >> Asset Transaction >> Asset Internal Movement"]
   R --> S[Choose new location]
   S --> I
 
@@ -753,7 +785,7 @@ flowchart TD
   T -- Send Back --> H
   T -- Yes --> V([Transaction completed])
 
-  V -- Assign only --> W[Assigned employee opens\\nAsset Assign Acknowledgement]
+  V -- Assign only --> W["ONLY the assigned employee, signed in as himself or herself, opens\\nAsset Assign Acknowledgement\\nFixed Asset >> Asset Transaction >> Asset Assign Acknowledgement\\n(needs that menu right)"]
   W --> X[Click Details and verify\\nthe Asset Serial Number]
   X --> Y[Click Acknowledge]
   Y --> Z([Asset appears in\\nMy Assigned Asset])
@@ -772,75 +804,101 @@ flowchart TD
 
 diagrams.transfer = `
 flowchart TD
-  A([Start: Move asset to another branch]) --> B{Last 3 days of month?}
+  A([Start: Move asset to another branch or project]) --> B{Last 3 days of month?}
   B -- Yes --> Z([Not allowed — wait next month])
-  B -- No --> C[Asset Shipment created]
-  C --> D[Transfer Challan]
-  D --> E[Create Challan]
-  E --> F[/OutChallan number generated/]
-  F --> G{Serials added now?}
-  G -- No --> H[Add Serial later from Shipment List]
+  B -- No --> C["Create the Shipment\\nFixed Asset >> Asset Transfer >> Asset Shipment\\nSending Branch = the branch of the signed-in user"]
+  C --> D["Open the shipment, Transfer Challans tab, Create Challan\\nChoose Receiving Branch, From Project, To Project"]
+  D --> D1{Which combination?}
+  D1 -- Same branch,\\ndifferent project --> D2["1. Receiving Branch = Sending Branch\\nFrom Project is not the To Project"]
+  D1 -- Other branch,\\nsame project --> D3["2. Receiving Branch = another branch\\nFrom Project = To Project"]
+  D1 -- Other branch,\\ndifferent project --> D4["3. Receiving Branch = another branch\\nFrom Project is not the To Project"]
+  D1 -- Same branch,\\nsame project --> D5([Not allowed])
+  D2 --> E
+  D3 --> E
+  D4 --> E
+  E[/OutChallan number generated/] --> G{Serials added now?}
+  G -- No --> H["Add Serial later\\nFixed Asset >> Asset Transfer >> Asset Shipment\\n(open the shipment, then the challan)"]
   G -- Yes --> I[Add Serial]
   H --> I
   I --> J{Mark Disposal or\\nTransfer to Maintenance?}
   J -- Disposal --> K([Asset flagged: no longer usable])
   J -- Maintenance --> L([Asset routed to Maintenance])
-  J -- No, continue --> M[Asset Shipment Approval]
+  J -- No, continue --> M1["Submit the challan\\n(Update Challan, Submit)"]
+  M1 --> M2["Approve the challan\\nFixed Asset >> Asset Transfer >> Asset Shipment Challan Approval List"]
+  M2 --> M["Approve the shipment (Details tab, Approve)\\nFixed Asset >> Asset Transfer >> Asset Shipment"]
   M --> N{Approve shipment?}
   N -- No --> O([Rejected])
-  N -- Yes --> P[Gate Pass Generation]
+  N -- Yes --> P["Gate Pass Generation\\nFixed Asset >> Asset Transfer >> Gate Pass Generation"]
   P --> Q[/Gate Pass PDF/]
-  Q --> R[Asset Shipment In Challan\\nat Receiving Branch]
-  R --> S{Receiving branch\\nacknowledges?}
+  Q --> R["Asset Shipment In-Challan\\nFixed Asset >> Asset Transfer >> Asset Shipment In-Challan\\nSign in as a user of the RECEIVING BRANCH\\n(the list shows only challans addressed to that office)"]
+  R --> DD{Accounting Date of the receiving\\noffice shows DAY OPEN?}
+  DD -- No, DAY CLOSED --> DC(["Acknowledge refused:\\nBusiness day not open for Fixed Asset.\\nStatus stays APPROVED"])
+  DD -- Yes --> S{Receiving branch\\nacknowledges?}
   S -- No --> T([Pending at receiving branch])
   S -- Yes --> U[[Journal Voucher:\\nEquipment = Dr.\\nCurrent A/C with HO = Cr.]]
   U --> V([Transfer complete — Trial Balance updated])
   style B fill:#241c10,stroke:#c9862b,color:#e8c491
+  style D1 fill:#241c10,stroke:#c9862b,color:#e8c491
   style G fill:#241c10,stroke:#c9862b,color:#e8c491
   style J fill:#241c10,stroke:#c9862b,color:#e8c491
   style N fill:#241c10,stroke:#c9862b,color:#e8c491
+  style DD fill:#241c10,stroke:#c9862b,color:#e8c491
   style S fill:#241c10,stroke:#c9862b,color:#e8c491
   style U fill:#12241c,stroke:#2e7d5b,color:#a9e2c6
   style Z fill:#241313,stroke:#7b3f3f,color:#e8b0b0
   style O fill:#241313,stroke:#7b3f3f,color:#e8b0b0
+  style D5 fill:#241313,stroke:#7b3f3f,color:#e8b0b0
+  style DC fill:#241313,stroke:#7b3f3f,color:#e8b0b0
 `;
 
 diagrams.single = `
 flowchart TD
-  A([Start: Transfer within/between branch]) --> B[Asset Single Out Challan]
-  B --> C{Purpose?}
+  A([Start: Transfer within/between branch]) --> B["Asset Single Out Challan\\nFixed Asset >> Single Challan >> Asset Single Out Challan\\nSending Branch = the branch of the signed-in user"]
+  B --> B1{Which combination?}
+  B1 -- Same branch,\\ndifferent project --> C
+  B1 -- Other branch,\\nsame project --> C
+  B1 -- Other branch,\\ndifferent project --> C
+  B1 -- Same branch,\\nsame project --> B2([Not allowed])
+  C{Purpose?}
   C -- Lending an asset --> D[Check: Returnable]
   C -- Returning a lent asset --> E[Check: Receivable]
-  D --> F[Asset Single Out Approval]
-  E --> F
+  D --> SA["Add Serial: click the Out Challan Number, then Add Serial\\nFixed Asset >> Single Challan >> Asset Single Out Challan"]
+  E --> SA
+  SA --> F["Asset Single Out Approval\\nFixed Asset >> Single Challan >> Asset Single Out Challan Approval List"]
   F --> G{Approved?}
   G -- No --> H([Rejected])
-  G -- Yes --> I[Asset Single In Challan\\nat receiving side]
-  I --> J{Acknowledge receipt?}
+  G -- Yes --> I["Asset Single In Challan\\nFixed Asset >> Single Challan >> Asset Single In-Challan\\nSign in as a user of the RECEIVING BRANCH\\n(the list shows only challans addressed to that office)"]
+  I --> ID{Accounting Date of the receiving\\noffice shows DAY OPEN?}
+  ID -- No, DAY CLOSED --> IC(["Acknowledge refused:\\nBusiness day not open for Fixed Asset.\\nStatus stays APPROVED"])
+  ID -- Yes --> J{Acknowledge receipt?}
   J -- No --> K([Pending acknowledgement])
   J -- Yes --> L[/InChallan number generated/]
   L --> M[[OutChallan Voucher:\\nCurrent A/C w/ HO = Dr.\\nEquipment = Cr.]]
   L --> N[[InChallan Voucher:\\nEquipment = Dr.\\nCurrent A/C w/ HO = Cr.]]
   M --> O{Was it marked Returnable?}
   N --> O
-  O -- Yes --> P([Appears in Receivable List\\nuntil returned])
+  O -- Yes --> P(["Appears in Receivable List until returned\\nFixed Asset >> Single Challan >> Asset Receivable List"])
   O -- No --> Q([Transfer complete])
   P --> R{Returned later\\nmarked Receivable?}
-  R -- Yes --> S([Moves to Returnable List — confirmed back])
+  R -- Yes --> S(["Moves to Returnable List — confirmed back\\nFixed Asset >> Single Challan >> Asset Returnable List"])
   R -- No --> P
+  style B1 fill:#241c10,stroke:#c9862b,color:#e8c491
   style C fill:#241c10,stroke:#c9862b,color:#e8c491
   style G fill:#241c10,stroke:#c9862b,color:#e8c491
+  style ID fill:#241c10,stroke:#c9862b,color:#e8c491
   style J fill:#241c10,stroke:#c9862b,color:#e8c491
   style O fill:#241c10,stroke:#c9862b,color:#e8c491
   style R fill:#241c10,stroke:#c9862b,color:#e8c491
   style M fill:#12241c,stroke:#2e7d5b,color:#a9e2c6
   style N fill:#12241c,stroke:#2e7d5b,color:#a9e2c6
   style H fill:#241313,stroke:#7b3f3f,color:#e8b0b0
+  style B2 fill:#241313,stroke:#7b3f3f,color:#e8b0b0
+  style IC fill:#241313,stroke:#7b3f3f,color:#e8b0b0
 `;
 
 diagrams.expense = `
 flowchart TD
-  A([Start: Asset needs maintenance/expense]) --> B[Asset Expense entry]
+  A([Start: Asset needs maintenance/expense]) --> B["Asset Expense entry\\nFixed Asset >> Asset Expenditure >> Asset Expense"]
   B --> C{One asset or\\nmultiple same-type?}
   C -- One asset --> D[Enter Expense Amount]
   C -- Multiple --> E[Enter Total Expense Amount\\nplus Distribute]
@@ -852,7 +910,7 @@ flowchart TD
   H --> SD
   SD -- Draft --> DR[Saved as Draft\\nExpense ID is generated]
   DR --> DE[Open the Expense ID,\\nedit if needed, then Submit]
-  DE --> I[Asset Expense Approval]
+  DE --> I["Asset Expense Approval\\nFixed Asset >> Asset Expenditure >> Asset Expense Approval"]
   SD -- Submit --> SU[Submitted directly\\nExpense ID is generated]
   SU --> I
   I --> J{Approve?}
@@ -886,7 +944,7 @@ flowchart TD
 
 diagrams.dep = `
 flowchart TD
-  A([Month-end: Fixed Asset Module initiated]) --> B[Generate Depreciation Schedule]
+  A([Month-end: Fixed Asset Module initiated]) --> B["Generate Depreciation Schedule\\nFixed Asset >> Asset Depreciation >> Asset Depreciation Schedule List"]
   B --> C{Asset involved in a\\ntransfer?}
   C -- No --> G["Calculate depreciation for\\ncurrent branch"]
   C -- Yes --> D{Depreciation generated\\nbefore or after transfer\\nacknowledged?}
@@ -910,10 +968,10 @@ flowchart TD
 
   C -- Yes --> D([Unassign first — required])
   D --> C
-  C -- No --> E[Set Utilization Status\\nin Asset Global List]
-  E --> F[Asset Write Off]
-  F --> G[Write-Off Schedule List]
-  G --> H[Write off Schedule Approval List]
+  C -- No --> E["Set Utilization Status\\nin Asset Global List\\nFixed Asset >> Asset Profile >> Asset Serial Global List"]
+  E --> F["Asset Write Off\\nFixed Asset >> Asset Disposal >> Asset Write-off"]
+  F --> G["Write-Off Schedule List\\nFixed Asset >> Asset Disposal >> Asset Write-off List"]
+  G --> H["Write off Schedule Approval List\\nFixed Asset >> Asset Disposal >> Asset Write-off Approval List"]
   H --> I{Approve?}
   I -- No --> J([Rejected])
   I -- Yes --> K[[Journal Voucher:\\nGain/Loss on Property, Plant and Equipment = Dr.\\nAccumulated Depreciation and Amortization = Dr.\\nAsset Decrease = Cr.]]
@@ -924,9 +982,9 @@ flowchart TD
   P -- No --> R{Status = Stolen or\\nOffline-Transferred?}
   R -- Yes --> S([Cannot sell — blocked])
   R -- No --> T[Set Utilization Status]
-  T --> U[Asset Sale — choose\\nReceive Type: Cash / Bank]
-  U --> V[Asset Sale Schedule List]
-  V --> W[Asset Sale Schedule Approval List]
+  T --> U["Asset Sale — choose\\nReceive Type: Cash / Bank\\nFixed Asset >> Asset Disposal >> Asset Sale"]
+  U --> V["Asset Sale Schedule List\\nFixed Asset >> Asset Disposal >> Asset Sale List"]
+  V --> W["Asset Sale Schedule Approval List\\nFixed Asset >> Asset Disposal >> Asset Sale Approval List"]
   W --> X{Approve?}
   X -- No --> Y([Rejected])
   X -- Yes --> AA[[Credit Voucher:\\nCash/Bank = Dr.\\nSuspense A/C = Cr.]]

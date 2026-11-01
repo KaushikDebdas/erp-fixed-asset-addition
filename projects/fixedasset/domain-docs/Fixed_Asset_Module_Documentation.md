@@ -122,6 +122,7 @@ This document consolidates the screen-by-screen breakdown of the Fixed Asset mod
   3. Check that the **Asset Serial Number** shown is the asset that was assigned to you.
   4. Click **Acknowledge** (in the details window, or tick the row and use the Acknowledge button on the screen).
 - **Result:** The message **"Acknowledged successfully"** is shown, the assignment leaves the Pending list, and the asset appears in **My Assigned Asset**. The transaction itself still shows the status APPROVED in the Transaction List and the Transaction Approval List.
+- **Who does what *(checked on staging, 2026-10-14)*:** The user who assigns an asset can also approve the assignment (**Fixed Asset >> Asset Transaction >> Transaction Approval List**). Only the employee the asset is assigned to can acknowledge it, signed in with his or her own login: the screen lists only the rows addressed to that employee. The acknowledging employee needs the **Asset Assign Acknowledgement** menu; a user without that menu right (for example user 126060 of Chagalnaiya) cannot acknowledge. See section 11.
 
 ---
 
@@ -133,6 +134,8 @@ This document consolidates the screen-by-screen breakdown of the Fixed Asset mod
 - **Rule:** Cannot create a shipment during the **last 3 days of the month**.
 - **Output:** Shipment number generated.
 - **Note:** After creating the shipment, a **Chalan** (official supporting document) must also be generated.
+- **Path:** Fixed Asset >> Asset Transfer >> Asset Shipment. The order of the screens is: Asset Shipment (create the shipment and its challan, add the serial, submit the challan) > Asset Shipment Challan Approval List (approve the challan) > Asset Shipment again (approve the shipment) > Asset Shipment In-Challan (acknowledge) > Gate Pass Generation.
+- **Same or another branch, same or another project *(checked on staging, 2026-10-14 and 2026-10-15)*:** The **Sending Branch** is the office of the signed-in user. The **Receiving Branch** is chosen in the Create Challan popup. Three combinations work: (1) same branch, different project; (2) another branch, same project; (3) another branch, different project (for example from Head Office to `[BO - 0233] Chagalnaiya`, project `[015] Microfinance (Dabi)` to `[015] Microfinance (Dabi)` or to `[060] Progoti`). The same branch with the same project is not allowed. The To Project must be mapped for the Receiving Branch, or Draft says "Area code not found".
 
 ### Asset Shipment → Shipment List → Shipment No. → Transfer Challan → Create Challan
 - **Purpose:** A Challan is an official document containing: Challan No., asset details, asset quantity, sending/receiving branch, department, and project.
@@ -161,6 +164,9 @@ This document consolidates the screen-by-screen breakdown of the Fixed Asset mod
 ### Asset Shipment In-Challan
 - **Purpose:** When a branch sends assets via a shipment Challan, the receiving branch creates an "In-Challan" which must be **acknowledged**. Serial numbers can also be added here.
 - **Note:** No voucher is created until acknowledged.
+- **Path:** Fixed Asset >> Asset Transfer >> Asset Shipment In-Challan.
+- **Who acknowledges *(checked on staging, 2026-10-15)*:** When the Receiving Branch is another branch, the challan is acknowledged by a **different user, one who belongs to the Receiving Branch**. That user signs in, picks the Receiving Branch at Office Selection and opens this screen. The list shows only the challans addressed to that user's office, with status APPROVED and an In Challan number until Acknowledge is clicked.
+- **Closed day:** Acknowledge needs the receiving office's accounting day to be open (top right corner: `Accounting Date : dd-mm-yyyy [DAY OPEN]`). On `[DAY CLOSED]` the click is refused with **"Business day not open for Fixed Asset."** and the status stays APPROVED. What a successful acknowledgement to another branch looks like has not been seen yet.
 - **Output:** InChallan Voucher / Journal Voucher.
 - **Accounting Entry (on acknowledgment):**
   - Equipment — **Dr.**
@@ -190,6 +196,8 @@ This document consolidates the screen-by-screen breakdown of the Fixed Asset mod
 
 ### Asset Single-In Challan
 - **Purpose:** Used by the receiving branch/project to receive and acknowledge a transferred asset.
+- **Path:** Fixed Asset >> Single Challan >> Asset Single In-Challan. The Single Challan screens in order: Asset Single Out Challan > Asset Single Out Challan Approval List > Asset Single In-Challan > Gate Pass Generation.
+- **Another branch *(checked on staging, 2026-10-15)*:** The same three combinations of branch and project as Asset Shipment work (same branch with different project; another branch with the same or with a different project). For another branch the challan is acknowledged by a user of the **Receiving Branch**, signed in with his or her own login; the list shows only the challans addressed to that office. On a closed day Acknowledge is refused with "Business day not open for Fixed Asset." and the status stays APPROVED.
 - **Output:**
   1. InChallan number generated
   2. InChallan voucher created
@@ -340,6 +348,16 @@ This document consolidates the screen-by-screen breakdown of the Fixed Asset mod
 | **Asset Depreciation Statement (Group-Wise)** | Cost/depreciation details (Opening, Receive, Addition, Disposal, etc.) grouped by asset group over a date range. |
 | **Asset Depreciation History (Serial-Wise)** | Month-by-month depreciation history for a specific asset serial. |
 | **Asset Depreciation History (Group-Wise)** | Month-by-month depreciation history for an asset group, as of a given date. |
+
+---
+
+## 11. Signing in, office and accounting day *(checked on staging, 2026-10-14 and 2026-10-15)*
+*(Added after checking the application; the original sources did not describe it.)*
+- **Office Selection:** A user who works in more than one office sees an **Office Selection** screen after signing in ("Please select office to login"). Choose the office in the Office Code box (for example `[BO - 0233] Chagalnaiya`) and click **Go**. A user with one office goes straight to My Dashboard. The office chosen decides the Sending Branch of what the user creates, the vendors offered and the accounting day.
+- **Accounting Date and business day:** The top right corner of My Dashboard and of every Fixed Asset page shows `Accounting Date : dd-mm-yyyy [DAY OPEN]` or `[DAY CLOSED]`. On a closed day, creating and submitting still work, but approving and acknowledging are refused with **"Business day not open for Fixed Asset."** The status differs between offices.
+- **Menu rights:** A user sees only the menu links the user has the right to. If a link is missing, ask for the menu right.
+- **One login per user:** The ERP does not support concurrent login. Signing in again, in another browser or in a test run, ends the earlier session. People who work together (one creates, one acknowledges) must use different users.
+- **Screen paths** are written "Fixed Asset >> menu >> screen", for example Fixed Asset >> Asset Transfer >> Asset Shipment Challan Approval List. The flowchart file (`Fixed_Asset_Flowchart.html`) shows the path in every screen box.
 
 ---
 

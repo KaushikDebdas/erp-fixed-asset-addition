@@ -535,7 +535,7 @@ Conflicts between the SoW and the CR (both versions kept):
 - [CONFLICT_NEEDS_REVIEW] **(m) Disposal-alone rule for a child.** The SoW (1.9 "if parent asset is already disposed ... can only be disposed through Sale/Write-Off") talks about a child left after the parent was disposed, which sits oddly with CR v1.6 "selecting a parent for disposal disposes the parent and all children together". A child can only be left behind if it was not disposed with the parent, e.g. it was already in a blocked status. Not resolvable from the text; see (g) in §16.8. (SoW 1.9, 1.11, 1.12, 1.14 vs CR revision v1.6)
 
 ### 16.11 Live check of the HOFIN -> HOFA -> HOFIN addition (2026-10-10)
-Run on hofin42 / env42 with automation `test_32`. These are LIVE facts; the rest of §16 is still the CR text.
+Run on hofin42 / env42 with automation `test_31`. These are LIVE facts; the rest of §16 is still the CR text.
 - [CONFIRMED LIVE] Order: HOFIN creator submits the vendor bill (Vendor > Payable Journal > + Create), HOFA acknowledger acknowledges it in Registration > Asset Registration Pending/Review List (PENDING -> ACKNOWLEDGED, toast "Asset registration acknowledged successfully."), HOFIN approver approves in Approval > Approval (APPROVED).
 - [CONFIRMED LIVE] The Bill Date must equal the business date shown in the read-only Date field. A fixed asset A/C code (for example 1202010501-01 Furniture and Fixture) needs an amount of 20000 or more.
 - [CONFIRMED LIVE] The "Fixed Asset Serial No" search of an addition lists parent assets only. After approval a separate asset `<parent>-1` appears in the Asset Serial Global List (UNASSIGNED / IN_USE).

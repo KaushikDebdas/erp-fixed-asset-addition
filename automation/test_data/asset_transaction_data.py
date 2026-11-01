@@ -8,21 +8,19 @@ ASSIGN = "ASSIGN"
 UNASSIGN = "UNASSIGN"
 TRANSFER = "TRANSFER"  # the list's name for an Internal Movement
 
-# Employee the asset is assigned to (typed in the Employee PIN Search box)
-ASSIGNEE_PIN = "00015370"
-ASSIGNEE_NAME = "Sachindra Nath Ghosh"
+from config.settings import ASSIGN_ERP_PIN, ASSIGN_ERP_USERNAME
+from utils.helpers import employee_pin_from_username
+
+# Employee the asset is assigned to (typed in the Employee PIN Search box): the
+# second user from .env. The employee's name and the user's branch are not fixed
+# here; the tests read them from the Asset Assign form (TransactionHelper.read_user_details).
+ASSIGNEE_PIN = ASSIGN_ERP_PIN or employee_pin_from_username(ASSIGN_ERP_USERNAME)
 
 # Employee the asset is handed over to on Un Assign. The hand-over person
 # must be a different employee from the current holder.
 HANDOVER_SEARCH = "130276"
 HANDOVER_PIN = "00130276"
 HANDOVER_NAME = "Md. Abubokkor Siddik"
-
-# The branch the test user is logged in to (shown, disabled, in Branch Name)
-USER_BRANCH = "Head Office [ BDHO ]"
-
-# The building the asset is moved to on Internal Movement
-MOVE_BUILDING = "Head Office"
 
 # Note typed on the assignment that the `assigned_asset` fixture creates
 SETUP_ASSIGN_NOTE = "AUTOMATION_TEST setup assignment"

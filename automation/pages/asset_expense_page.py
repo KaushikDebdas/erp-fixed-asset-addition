@@ -48,6 +48,8 @@ class AssetExpensePage(BasePage):
         self.total_amount_field = page.locator("#expenseAmount")
         self.vendor_link = self.popup.get_by_role("link", name="-Select Party-")
         self.vendor_search_box = page.locator("input.select2-input[type=text]:visible")
+        # The vendor chosen by select_vendor (the first vendor of the list)
+        self.picked_vendor = ""
         self.expense_ref_field = page.locator("#expenseRef")
         self.remarks_field = page.locator("#remarks")
         self.draft_button = page.locator("#draftExpense")
@@ -207,13 +209,16 @@ class AssetExpensePage(BasePage):
         action_logger.info(f"Select: Debit A/C -> {account}")
         self.debit_account_select.select_option(label=account)
 
-    def select_vendor(self, search_text: str, option_name: str) -> None:
-        """Pick the Vendor/Supplier/Lessor Name through its search list (same widget as on the registration form)."""
+    def select_vendor(self) -> None:
+        """
+        Open the Vendor/Supplier/Lessor Name list and pick its first vendor (the vendors depend on
+        the user's office). The vendor picked is kept in `picked_vendor`.
+        """
         self.click(self.vendor_link, "Vendor/Supplier/Lessor Name link")
-        self.type_text(self.vendor_search_box, search_text, "Vendor search box")
-        option = self.page.get_by_role("option", name=option_name)
-        self.wait_until_visible(option, f"Vendor option '{option_name}'")
-        self.click(option, f"Vendor option '{option_name}'")
+        first_option = self.page.locator(".select2-drop-active").get_by_role("option").first
+        self.wait_until_visible(first_option, "First vendor option")
+        self.picked_vendor = first_option.inner_text().strip()
+        self.click(first_option, f"Vendor option '{self.picked_vendor}'")
 
     def is_vendor_shown(self, vendor_name: str) -> bool:
         """Return True if the popup shows this vendor as chosen."""

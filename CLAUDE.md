@@ -13,7 +13,7 @@
 ## Task → required skill / agent
 | Task | Load these skills | Agent |
 |---|---|---|
-| Explore a page's UI | ui-exploration, locator-strategy, automation-mapping | ui-explorer |
+| Explore a page's UI | ui-exploration, locator-strategy | ui-explorer |
 | Write or change page classes / tests | python-playwright-pom, locator-strategy | automation-engineer |
 | Run tests / build the report | logging-reporting, dependency-management | test-reporter |
 | Write test cases (Excel) | test-case-writing | test-case-generator |
@@ -91,61 +91,14 @@ Check this **before the first task of a session**. If anything below is
 missing, create/configure it (ask before installing anything that needs
 elevated permission) and record it in `projects/<project>/CHANGELOG.md`.
 
-### 1. The `.claude/` folder must exist at the project root
-Claude Code only auto-discovers subagents, skills, and permissions from
-inside `.claude/`. A plain top-level `agents/` or `skills/` folder is not
-enough on its own. Structure:
-```
-.claude/
-├── agents/          ← one file per agent (7 total), registered as subagents
-├── skills/          ← one <skill-name>/SKILL.md per skill, auto-discovered
-└── settings.json    ← project permissions (shared with the team)
-```
-- **`.claude/agents/<name>.md`** — Markdown with YAML frontmatter
-  (`name`, `description`, `tools` to restrict access, `model: inherit`,
-  and optionally `skills:` listing the skill names — matching each
-  skill's own `name:` field exactly — this agent relies on). The body
-  below the frontmatter is the agent's system prompt.
-- **`.claude/skills/<skill-name>/SKILL.md`** — the filename must be
-  exactly `SKILL.md`; the folder name and the `name:` field in its
-  frontmatter must match. Frontmatter needs at minimum `name` and a
-  `description` written as a trigger ("use when...") — that description
-  is what Claude uses to decide relevance, not just a title restatement.
-- **`.claude/settings.json`** — allow the routine commands (pytest, pip,
-  playwright, npx) and deny reading `.env`.
-- Keep personal overrides in `.claude/settings.local.json` (git-ignored).
-- Verify: the Agent tool's available-types list must include all 7 agent
-  names, and the Skill tool's available-skills list must include all 9
-  skill names. (The old `/agents` wizard has been removed — it now just
-  prints a pointer to edit the files directly or ask Claude to do it.)
-
-### 2. Playwright MCP server must be configured (needed by `ui-explorer`)
-This is separate from the Python `playwright` package in
-`requirements.txt`. It is a Node.js package that lets Claude Code drive a
-browser during UI exploration.
-1. Prerequisite: Node.js 18+ (`node --version`). If missing, ask the user
-   to install it.
-2. Create `.mcp.json` at the **project root** (committed to git, so every
-   team member gets the same setup):
-   ```json
-   {
-     "mcpServers": {
-       "playwright": {
-         "command": "npx",
-         "args": ["@playwright/mcp@latest"]
-       }
-     }
-   }
-   ```
-   Equivalent CLI command: `claude mcp add playwright npx @playwright/mcp@latest`
-3. Claude Code asks for approval the first time it sees a project-scoped
-   MCP server — the user approves it once.
-4. Verify: `/mcp` inside Claude Code (or `claude mcp list` in a terminal)
-   must show `playwright` as connected. If the MCP browser is missing, let
-   the MCP server install it, or run `npx playwright install chromium`.
-- Never start UI exploration until this check passes. If it fails, stop
-  and tell the user exactly what is missing — do not guess locators
-  instead.
+Needed once per machine/clone; the full steps are in
+`automation/HOW_TO_RUN.md` → "Claude Code setup details".
+- `.claude/` at the project root holds `agents/` (7), `skills/` (8, each
+  `<name>/SKILL.md`) and `settings.json`. Claude Code finds nothing outside it.
+- `.mcp.json` at the project root configures the `playwright` MCP server
+  (Node.js 18+); `/mcp` or `claude mcp list` must show it connected.
+- Never start UI exploration until both exist. If either is missing, stop and
+  tell the user exactly what is missing — do not guess locators instead.
 
 ## Project Onboarding
 - Never ask the user to hand-write `project_config.yaml`. Ask
@@ -241,14 +194,13 @@ express this. For these:
 - Determine locators per the `locator-strategy` skill's priority order.
   Never guess a locator — if nothing reliable resolves, write
   `LOCATOR_REQUIRES_REVIEW` and stop for that step.
-- Build a **temporary** mapping artifact (JSON) during exploration for
-  human verification — see the `automation-mapping` skill.
+- Record every locator in the element catalog during exploration, with a
+  status per element, and let the user check it before code is written.
 
-## Automation mapping is temporary — the element catalog is permanent
-The JSON in `automation/automation_mapping/` exists only so a human can
-verify locators before code is written; the `automation-mapping` skill
-has the full format and status values. Once the Automation Engineer
-writes the POM class, tests read locators from that `.py` file only.
+## The element catalog is the only locator record
+There is no separate mapping file. The catalog is what a human checks before
+code is written, and the Automation Engineer builds from it. Once the POM
+class is written, tests read locators from that `.py` file only.
 
 Every page the UI Explorer visits is ALSO recorded permanently in
 `automation/element_catalog/<page-name>.md` (template:
@@ -322,17 +274,16 @@ See `automation/HOW_TO_RUN.md` for exact commands.
 4. `knowledge-curator`
 5. `ui-explorer` — UI exploration only, never writes automation code
 6. `automation-engineer` — writes the automation code from `ui-explorer`'s
-   verified mapping; together with #5 covers both single-row and
+   verified catalog entries; together with #5 covers both single-row and
    end-to-end flow automation
 7. `test-reporter`
 
-## Skills (`.claude/skills/<name>/SKILL.md`) — 9 total, loaded on demand, not all at once
+## Skills (`.claude/skills/<name>/SKILL.md`) — 8 total, loaded on demand, not all at once
 - `dependency-management`
 - `knowledge-extraction`
 - `test-case-writing` — the real, detailed test case standard (base)
 - `e2e-automation-flows` — multi-step/multi-role flow documentation
 - `ui-exploration`
 - `locator-strategy`
-- `automation-mapping`
 - `python-playwright-pom`
 - `logging-reporting`

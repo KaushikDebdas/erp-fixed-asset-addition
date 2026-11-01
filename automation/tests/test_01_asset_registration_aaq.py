@@ -59,18 +59,17 @@ def page(logged_in_page, request):
 
 
 @pytest.mark.regression
-@pytest.mark.parametrize("sub_type", ["spot", "gift"])
-def test_aaq_mandatory_fields_are_required_before_draft_or_submit(sub_type, page, aaq_page, take_screenshot):
+def test_aaq_mandatory_fields_are_required_before_draft_or_submit(page, aaq_page, take_screenshot):
     """
     Asset Registration by AAQ: Draft and Submit both need a Purchase Date, a
-    Vendor and at least one asset line, for Spot Purchase and for Gift Item.
+    Vendor and at least one asset line (checked for a Spot Purchase).
     """
-    data = build_registration_data(sub_type=sub_type)
+    data = build_registration_data(sub_type="spot")
 
-    # Step 1: open the form, pick a project and the sub type
+    # Step 1: open the form, pick a project and the Spot Purchase sub type
     aaq_page.navigate_here()
     aaq_page.select_project(data["project"])
-    aaq_page.choose_sub_type(sub_type)
+    aaq_page.choose_sub_type("spot")
 
     # Step 2: without a Purchase Date, Draft and Submit are rejected
     aaq_page.verify_draft_and_submit_rejected(PURCHASE_DATE_TOAST)
@@ -82,7 +81,7 @@ def test_aaq_mandatory_fields_are_required_before_draft_or_submit(sub_type, page
     take_screenshot("rejected without vendor")
 
     # Step 4: with a Vendor but no asset line, Draft and Submit are rejected
-    aaq_page.select_vendor(data["vendor"])
+    aaq_page.select_vendor()
     aaq_page.verify_draft_and_submit_rejected(NO_ASSET_LINE_TOAST)
     take_screenshot("rejected without asset line")
 

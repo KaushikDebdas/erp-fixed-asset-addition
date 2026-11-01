@@ -18,7 +18,8 @@ Facts used here come from automation/element_catalog/asset_shipment.md.
 from playwright.sync_api import expect
 
 from pages.base_page import BasePage
-from utils.helpers import today
+from config.settings import DEFAULT_BRANCH
+from utils.helpers import office_matches, today
 from utils.logger import action_logger, assertion_logger
 
 # Maximum time to wait for a popup or a grid row to appear (milliseconds)
@@ -129,7 +130,7 @@ class AssetShipmentPage(BasePage):
         # ---- Create Shipment popup (and Update Shipment popup, which has the same fields) ----
         # Shipment No (read-only, shows AUTO until saved)
         self.shipment_no_field = page.locator("#shipmentNo")
-        # From Branch dropdown (only Head Office [ BDHO ])
+        # From Branch dropdown (only the logged-in user's branch)
         self.from_branch_field = page.locator("#office")
         # Shipment Date (read-only, pre-filled with today)
         self.shipment_date_field = page.locator("#faShipmentDate")
@@ -284,14 +285,16 @@ class AssetShipmentPage(BasePage):
     def verify_create_popup_defaults(self) -> None:
         """
         Confirm the Create Shipment popup is pre-filled: Shipment No shows AUTO,
-        From Branch is Head Office [ BDHO ], Shipment Date is today.
+        From Branch is the logged-in user's branch (DEFAULT_BRANCH in .env), Shipment Date is today.
         """
         found = self.read_create_popup_defaults()
         assertion_logger.info("Verifying the Create Shipment popup defaults")
         if found["shipment_no"] != "AUTO":
             raise AssertionError(f"Expected Shipment No 'AUTO' but found '{found['shipment_no']}'.")
-        if "BDHO" not in found["from_branch"]:
-            raise AssertionError(f"Expected From Branch to contain 'BDHO' but found '{found['from_branch']}'.")
+        if not office_matches(found["from_branch"], DEFAULT_BRANCH):
+            raise AssertionError(
+                f"Expected From Branch to be the logged-in user's branch '{DEFAULT_BRANCH}' but found '{found['from_branch']}'."
+            )
         if found["shipment_date"] != today():
             raise AssertionError(f"Expected Shipment Date '{today()}' (today) but found '{found['shipment_date']}'.")
 

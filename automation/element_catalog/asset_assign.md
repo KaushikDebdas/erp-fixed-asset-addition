@@ -37,6 +37,17 @@ Click the **Asset Transaction** tab, then one of six links: `Asset Assign` (`#!f
 | 19 | Submit button | Submits for approval | `page.locator("#save")` | "Submit" | VERIFIED locator; not clicked |
 | 20 | Reset button | Clears the form | `page.locator("#resetEditButton")` | "Reset" | VERIFIED locator; not clicked |
 
+## Parent and extended assets (CR FAHOV2-643 F02S01, read on env42 HOFA 2026-11-01 as user 15370, VERIFIED)
+| # | Element | Purpose | Locator | Text on screen | Status |
+|---|---|---|---|---|---|
+| 21 | "No asset found" toast | Shown when the serial of an extended asset (`<parent>-1`) is searched; no suggestion appears | `page.locator(".toast-message")` | No asset found | VERIFIED |
+| 22 | Parent suggestion | Searching the parent serial offers exactly one suggestion, the parent's (`BBDASR00227756-Sofa Set>Furniture>Furniture>Furniture and Fixture`); never one for its extended asset | `page.locator("ul.ui-autocomplete li:visible")` | suggestion list | VERIFIED |
+| 23 | Extended asset row | Added automatically right below its parent by Add to Grid: SL cell empty, serial cell `<span>&nbsp;&nbsp;&nbsp;&nbsp;BBDASR00227756-1</span>` (four non-breaking spaces), Action cell empty (no delete button); the other cells repeat the parent's values | `page.locator("#assetDetailsTable tbody tr")` (second visible cell is the serial) | indented serial | VERIFIED |
+| 24 | Delete button of the parent row | Removes the parent AND its extended asset at once, with no confirm dialog (`pleaseCheckToClearData()`); the grid then shows "No data available in table" | `page.locator("#assetDetailsTable button[name=deleteAction]").first` | trash icon | VERIFIED |
+- The grid has hidden columns (Asset Profile ID, Office ID, Project ID, Department ID, Room ID, AssignedEmployeeID and Note/Remarks); read the visible cells only (`td:visible`).
+- The Details popups of Transaction List, Transaction Approval List and Asset Assign Acknowledgement (`#transactionDetailsList`) show the extended asset the same way (empty SL, four-space indent); checked by `test_32` 2026-11-01.
+- My Assigned Asset (Acknowledgement screen) shows 10 rows per page; `select[name=afterAssetAcknowledgemenedtList_length]` offers 10, 20, 30, 50, 100.
+
 ## Notes
 - Reach the page by clicking the **Asset Transaction** tab and then the link `Asset Assign` (`page.get_by_role("link", name="Asset Assign", exact=True)`), after opening the module with `BasePage.open_fixed_asset_module()`. Direct navigation to the hash address is unreliable, as on every other screen.
 - Verified end-to-end with the test asset `BBDASR00227766` (Cabinet Table, project `Microfinance (Dabi)`, UNASSIGNED, IN_USE): after selecting its suggestion the screen showed Asset Item Name `Cabinet Table`, Sub Category `Wooden Furniture`, Category `Furniture`, Group `Furniture and Fixture`, Branch `[HO - BDHO] Head Office`, Project `Microfinance (Dabi)`, Assigned Status `UNASSIGNED`. These match the asset, and the box text starts with the serial that was typed, which is the check that the entered serial is the one that came back.
@@ -44,21 +55,3 @@ Click the **Asset Transaction** tab, then one of six links: `Asset Assign` (`#!f
 - The search buttons occasionally do not open the suggestion list on the first click; the page object clicks again (up to three times) before failing.
 - Only the suggestion click fills the screen: typing the serial or PIN and pressing the search button alone leaves every read-only field empty.
 - **Data created by this exploration:** one DRAFT Asset Assign transaction for asset `BBDASR00227766`, assigned to employee `00015370`, note `AUTOMATION_TEST assign note`. It was not submitted. A Draft can be edited or deleted from Transaction List (not opened yet).
-
-## Parent and extended assets (CR FAHOV2-643, F02) — explored live 2026-10-10, automated in `tests/test_33_asset_assign_extended_assets.py`
-- Typing the serial of an extended asset (`<parent>-1`) and clicking search shows the toast **"No asset found"** and offers no suggestion. Searching the parent serial offers one suggestion, the parent's; the extended asset is never suggested.
-- After Add to Grid the Asset List shows the parent row (SL `1`, delete button `button.delete`) and, directly below it, one row per extended asset: SL empty, no button, Asset Serial with 4 spaces in front (written as non-breaking spaces `\xa0`), and the bill text of the addition in Note/Remarks.
-- Deleting the parent row removes the extended rows too, without a confirmation; the grid shows "No data available in table".
-- Submit of the parent shows "Asset Assign Submit Successfully" and the assignment covers both assets: after Approve both are ASSIGNED in the Asset Serial Global List.
-- Hidden columns of the Asset List: Asset Profile ID, Office ID, Project ID, Department ID, Room ID, AssignedEmployeeID; the visible cells start with SL and Asset Serial, which is what `read_serial_cells` in `BasePage` reads.
-- Page methods: `verify_serial_not_found`, `verify_only_parent_suggested`, `verify_extended_assets_in_list`, `remove_parent_from_list`, `verify_asset_list_empty` (`AssetTransactionFormPage`); `verify_popup_extended_assets_below_parent` (`TransactionGridPage`, `AssetAssignAcknowledgementPage`).
-
-## More live findings for the CR (2026-10-10), automated in `tests/test_33_asset_assign_extended_assets.py` (pair A and pair B groups)
-- **Several extended assets:** a parent with `-1` and `-2` brings both below it, in order; the list holds nothing else.
-- **Inactive (disposed) extended asset:** an extended asset that is written off (set to DAMAGE in the Global List popup, written off from Asset Disposal > Asset Write-off, approved) is no longer listed in the Asset Serial Global List. Its serial gives "No asset found" in Asset Assign, and the parent does not bring it into the Asset List or into the Details popup of a Draft.
-- **Asset Write-off:** the Asset Serial box lists an extended asset on its own once its Utilization Status is not IN_USE (the parent, still IN_USE, is not offered). The extended asset can be written off without its parent.
-- **Draft path:** Draft with a parent shows "Asset Assign Draft Successfully"; the Transaction List (status DRAFT) Details popup lists the active extended assets below the parent. Edit then Submit and Approve assign the parent and its active extended assets.
-- **Transaction List:** after approval its Details popup (status APPROVED) lists the extended asset below the parent, indented, without SL.
-- **Acknowledgement:** acknowledging the parent's assignment puts the parent and its extended assets in My Assigned Asset. That grid shows 10 rows a page (`select[name='afterAssetAcknowledgemenedtList_length']`, no search box), so the tests choose the largest page size first.
-- **Auto-assign:** an extended asset added (HOFIN > HOFA > HOFIN) to a parent that is ASSIGNED is ASSIGNED automatically to the same employee, with the same Building, Floor and Room as the parent, without an Asset Assign made for it.
-- An Internal Movement or Un Assign does not offer an asset whose assignment still waits for acknowledgement ("No asset found"); acknowledge it first.

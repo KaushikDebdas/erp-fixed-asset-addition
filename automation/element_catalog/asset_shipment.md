@@ -89,3 +89,17 @@ Required fields marked `*`: Shipment No, From Branch, Shipment Date (the first a
 
 ## Not yet explored
 The Preview reports (challan, shipment gate pass, in-challan), Reject and Sendback outcomes, Reject on the shipment, editing and deleting a shipment, the filters and paging of the four lists, the branch and project rules (same branch needs different projects), the `Area code not found` projects, the month rule for Submit, the Disposal and Transfer to Maintenance options when adding a serial, "Quantity exceeded!", acknowledgement by a user of a different branch, the exact acknowledgement message, and **the journal vouchers**: the challan's Posted Accounts tab stayed empty after the acknowledgement, and Voucher Search (module Fixed Asset, accounting date `20/09/2026`, and the Out Challan, In Challan and Shipment numbers) found nothing as either user. The flow is in `projects/fixedasset/e2e-flows/asset-transfer-shipment.md`.
+
+## Receiving Branch, the three scenarios and who acknowledges (explored 2026-10-14 and 2026-10-15)
+Path: Fixed Asset >> Asset Transfer >> Asset Shipment >> open a shipment >> Transfer Challans tab >> Create.
+
+| # | Element | What it is for | Locator (Playwright) | Status |
+|---|---|---|---|---|
+| 1 | Sending Branch (read-only) | The branch of the signed-in user; cannot be changed | `#fromBranchId` in the Create Challan popup | VERIFIED |
+| 2 | Receiving Branch box | Search box listing offices as `[BO - 0233] Chagalnaiya` and `[HO - BDHO] Head Office`; type a word of the office, then click the result | `#s2id_toOffice a.select2-choice`, then `.select2-drop-active:visible .select2-result-label` | VERIFIED |
+| 3 | From Project / To Project boxes | Search boxes like the Receiving Branch | `#s2id_fromProject`, `#s2id_toProject` | VERIFIED |
+
+- The code finds the Receiving Branch whatever the spelling in `.env` (`[BO-0233]-Chagalnaiya`, `0233`, `Chagalnaiya`): spaces, hyphens and leading zeros are ignored, and an empty value means the Sending Branch (`BasePage.choose_office_from_select2`).
+- The select2 drop-down sometimes does not open on the first click, or closes before the text is typed; the click is repeated until the search field is open (`BasePage.open_select2`).
+- Three combinations were run: same branch / different project; another branch (Head Office to `[BO - 0233] Chagalnaiya`) / same project `[015]` to `[015]`; another branch / different project `[015]` to `[060] Progoti`. Same branch with the same project is not built (the message was not seen).
+- For another branch the challan is acknowledged by a user of the receiving branch on Asset Shipment In-Challan (see `asset_shipment_in_challan.md`). Test data: `test_data/asset_shipment_data.py`.

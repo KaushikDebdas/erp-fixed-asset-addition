@@ -14,7 +14,7 @@
 | # | Element | What it is for | Locator (Playwright) | Seen in the page as | Status |
 |---|---|---|---|---|---|
 | 1 | Organization Branch | Select2; only 'Head Office [ BDHO ]' for this user. | `page.locator("#office")` | "Organization Branch:" | VERIFIED |
-| 2 | Asset Serial | Free text; partial match. Fastest way to find one asset. | `page.locator("#assetSerial")` | "Asset Serial:" | VERIFIED |
+| 2 | Asset Serial | Free text; partial match. Fastest way to find one asset. | `page.locator('input[name="assetSerial"]')` (the popup also has an `#assetSerial`) | "Asset Serial:" | VERIFIED |
 | 3 | Asset Item Name | Free text. | `page.locator("#assetName")` | "Asset Item Name:" | VERIFIED |
 | 4 | Registration Type | Options: MRR, AAQ, LEASE, BOOKING. | `page.locator("#assetRegistrationType")` | "Registration Type:" | VERIFIED |
 | 5 | MRR Number | Free text. | `page.locator("#referenceNo")` | "MRR Number:" | VERIFIED |
@@ -66,15 +66,17 @@
   - Depreciation History: SL, Asset Serial, Asset Item Name, Category, Purchase Price, Depreciation Amount, WDV, Period.
   - Revaluation History: SL, Asset Serial, Asset Purchase Price(TK), Revaluation Date, Revaluation Amount(TK), Type Of Net Carrying, Difference LRA and CRA(TK).
   - Transaction History: SL, Asset Serial, Transaction Type, Transaction Date, New Assign Status, New Assigned Person, Building, Floor, Room, New Project, New Utilization Status, Transaction Status, Approved By, Approval Date, Created By, Remarks.
-  - Expenditure: SL, Asset Serial, Expenditure Type, Expense/Addition Amount, Reference Number, Supplier Name, Status, Credit Account, Debit Account, Date of Entry, Remarks.
+  - Expenditure (grid `#assetExpenditureList` in `#tab_expenditure`; read on staging 2026-10-15 after two approved Asset Expenses, VERIFIED): SL, Asset Serial, Inventory Asset Item Name, Inventory Asset Sub Category, Inventory Asset Category, Expenditure Type, Expense/Addition Amount, Reference Number, Supplier Name, Status, Source/Group, Credit Account, Debit Account, Inventory Name, Date of Entry, Remarks. One row per expense.
+    - Inventory expense: `Expense | 5000 | EXP420736 | Jewel and Brothers | APPROVED | Inventory | Other Inventory [1107010401-02] | Other Maintenance Expenses[5108010101-07] | | 21/09/2026 | AUTOMATION_TEST expense Inventory`.
+    - Accounts expense: `Expense | 5000 | EXP650673 | Jewel and Brothers | APPROVED | Accounts | Supplier Payable-Opex[2101010301-05] | Other Maintenance Expenses[5108010101-07] | | 21/09/2026 | AUTOMATION_TEST expense Accounts`.
+    - Expenditure Type is `Expense`; Source/Group is the Expense Source (`Inventory` or `Accounts`); Date of Entry is dd/mm/yyyy; Credit and Debit Account include the account code in brackets; Inventory Name is empty.
+    - The three `Inventory Asset ...` columns show `1 | 1 | 1` for the Inventory expense and `0 | 0 | 0` for the Accounts expense (the ERP shows ids or flags there, not names), so they are not compared.
+    - The serial link must be searched with `input[name="assetSerial"]`: while the popup is open a second read-only `#assetSerial` exists.
+    - Evidence: `evidence/global_list_expenditure_tab_inventory.png`.
+  - Addition History (grid `#assetAdditionHistoryList` in `#tab_addition_history`; read on env42 HOFA 2026-11-01, VERIFIED): shown ONLY for a parent asset that has additions, between Expenditure and Disposal Info. Columns: SL, Asset Serial, Addition Amount, Addition Date, Reference Number, Item Name, Acc. Depreciation, WDV, Impairment Status, Impairment ID. Example row of parent `BBDASR00227752`: `1 | BBDASR00227752-1 | 25000 | 13/09/2026 | JV09005680/26 | Sofa Set | 0 | 24999 | |`.
+  - Parent and extended assets (FAHOV2-643, read on env42 HOFA 2026-11-01, VERIFIED): an extended asset is a separate row of the grid with serial `<parent serial>-1`, `-2`, ... and the parent's item. Its popup shows the parent in `#commonModal #parentAssetSerial` (label "Parent Asset") and has no Addition History tab. `#refAssetSerial` (label "Reference Asset") stays empty for both.
+  - Grid order: before any search the grid lists the newest asset first (highest hidden Profile ID); the column headings cannot be sorted (`sorting_disabled`). `read_newest_parent_serial()` takes the first row of the item whose serial has no `-N` ending.
+  - Filter box: use `input[name="assetSerial"]`. After a popup is closed its read-only `#assetSerial` stays in the page, so `#assetSerial` alone matches two elements.
   - Disposal Info: SL, Disposal Type, Asset Serial, Accumulated Depreciated, Written down Value, Auction/Sale Value, Base Value, Auction Start Date, Auction End Date, Approval Status, Disposal Status, Disposal Date.
   - Attachment: shows `File :` and `No Attachment` when none is attached.
 - Evidence: `evidence/asset_serial_global_list.png`, `evidence/asset_serial_global_list_detail.png`.
-
-## Parent and extended assets (CR FAHOV2-643) — explored live 2026-10-10
-- Filter form: the Asset Serial filter is `#assetFilterForm #assetSerial`. The same id exists inside the profile popup (`#commonModal`), so the filter is always read inside the form.
-- An addition approved in HOFIN creates a separate row `<parent serial>-1` (then `-2`, ...) with the same item, group and project as the added item, Assign Status UNASSIGNED and Utilization Status IN_USE. An exact serial search for the parent does not return its extended assets.
-- Extended asset popup: field `#parentAssetSerial` holds the parent serial (label "Reference Asset" also exists, `#refAssetSerial`, empty). Tabs: Details, Depreciation History, Revaluation History, Transaction History, Expenditure, Disposal Info, Attachment. There is NO Addition History tab.
-- Parent asset popup: the extra tab is named **Addition History** (CR conflict "Asset Addition" vs "Addition History" settled by the live screen). Its grid `#assetAdditionHistoryList` has columns SL, Asset Serial (link), Addition Amount, Addition Date, Reference Number, Item Name, Acc. Depreciation, WDV, Impairment Status, Impairment ID. Example: `BBDASR00227699-1`, 25000, 13/09/2026, `JV09005503/26`, Sofa Set, 0, 24999.
-- Reference Number in the grid is the journal voucher number of the addition (`JV…`).
-- Page methods: `read_newest_parent_serial`, `verify_extended_asset_popup`, `read_addition_history_row`, `verify_parent_addition_history`.

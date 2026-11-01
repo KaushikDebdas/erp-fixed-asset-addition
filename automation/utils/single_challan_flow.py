@@ -16,7 +16,7 @@ Example:
 
 The stage handling (`reach`, `record`) comes from `utils/flow_stages.py`.
 """
-from test_data.asset_shipment_data import build_challan_data
+from test_data.asset_shipment_data import SAME_BRANCH_DIFFERENT_PROJECT, build_challan_data
 from utils.flow_stages import FlowStages
 
 # The pool slot (test_data/asset_slots.py) each path takes its asset from
@@ -31,17 +31,29 @@ class SingleChallanFlow(FlowStages):
         "submit": ["submitted", "serial_added", "approved", "acknowledged"],
     }
 
-    def __init__(self, assets, out_challan_page, approval_page, in_challan_page, shared: dict):
+    def __init__(self, assets, out_challan_page, approval_page, in_challan_page, shared: dict,
+                 scenario: str = SAME_BRANCH_DIFFERENT_PROJECT, receiving_in_challan_page=None):
         """
         `assets` is the asset pool: it gives each challan its approved asset. The three pages
-        work in the browser tab of the logged-in user (the same user does everything). `shared`
-        is the dictionary shared by the whole test run (fixture `shared_single_challan`).
+        work in the browser tab of the logged-in user. `shared` is the dictionary shared by the
+        whole test run (fixture `shared_single_challan`).
+        `scenario` says where the challan goes (see test_data/asset_shipment_data.py).
+        `receiving_in_challan_page` is the Single In-Challan page in the tab of the receiving-branch
+        user; leave it out when the sender receives (the same branch).
         """
         super().__init__(shared)
         self.assets = assets
         self.out_challan_page = out_challan_page
         self.approval_page = approval_page
         self.in_challan_page = in_challan_page
+        self.scenario = scenario
+        self.receiving_in_challan_page = receiving_in_challan_page
+
+    def receiving_page(self):
+        """Return the Single In-Challan page of the user who receives: the receiving-branch user's tab when there is one, else the sender's own."""
+        if self.receiving_in_challan_page is not None:
+            return self.receiving_in_challan_page
+        return self.in_challan_page
 
     def get_serial(self, path: str) -> str:
         """Return the Asset Serial of the asset this path uses (registered and approved now when the pool has none yet)."""
@@ -51,12 +63,19 @@ class SingleChallanFlow(FlowStages):
     # The stages
     # ------------------------------------------------------------------
 
-    def create_challan(self, button: str) -> str:
-        """Create a challan with Draft or Submit (`button` is "draft" or "submit") and return its Out Challan Number."""
+    def create_challan(self, button: str, path: str) -> str:
+        """
+        Create a challan with Draft or Submit (`button` is "draft" or "submit") and return its Out
+        Challan Number. The challan data and the Sending Branch are remembered in the path's flow.
+        """
         page = self.out_challan_page
         page.navigate_here()
+        page.verify_business_day_open()
         page.click_create()
-        page.fill_challan_form(build_challan_data())
+        challan_data = build_challan_data(scenario=self.scenario)
+        self.flow(path)["challan_data"] = challan_data
+        self.flow(path)["sending_branch"] = page.read_sending_branch()
+        page.fill_challan_form(challan_data)
         if button == "draft":
             page.draft()
         else:
@@ -66,7 +85,7 @@ class SingleChallanFlow(FlowStages):
 
     def do_drafted(self, path: str) -> None:
         """Create the challan and save it with Draft."""
-        challan_no = self.create_challan("draft")
+        challan_no = self.create_challan("draft", path)
         self.out_challan_page.verify_row_status(challan_no, "DRAFT")
         self.flow(path)["challan_no"] = challan_no
 
@@ -81,7 +100,7 @@ class SingleChallanFlow(FlowStages):
             page.submit()
             page.search()
         else:
-            challan_no = self.create_challan("submit")
+            challan_no = self.create_challan("submit", path)
             self.flow(path)["challan_no"] = challan_no
         page.verify_row_status(challan_no, "PENDING")
 
@@ -110,8 +129,8 @@ class SingleChallanFlow(FlowStages):
         page.verify_row_status(challan_no, "APPROVED")
 
     def do_acknowledged(self, path: str) -> None:
-        """Acknowledge the approved challan on Asset Single In-Challan."""
-        page = self.in_challan_page
+        """Acknowledge the approved challan on Asset Single In-Challan, in the receiving user's tab."""
+        page = self.receiving_page()
         challan_no = self.flow(path)["challan_no"]
         page.navigate_here()
         page.filter_by_out_challan_no(challan_no)
@@ -120,3 +139,11 @@ class SingleChallanFlow(FlowStages):
         page.close_popup_if_open()
         page.filter_by_out_challan_no(challan_no)
         page.verify_row_status(challan_no, "ACKNOWLEDGED")
+
+    def open_challan_to_acknowledge(self, path: str) -> None:
+        """Open the approved challan's popup in the receiving user's Single In-Challan list. Stops before Acknowledge is clicked."""
+        page = self.receiving_page()
+        challan_no = self.flow(path)["challan_no"]
+        page.navigate_here()
+        page.filter_by_out_challan_no(challan_no)
+        page.open_popup(challan_no)

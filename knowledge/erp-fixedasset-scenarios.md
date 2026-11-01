@@ -6,7 +6,7 @@
 | Purpose | Fully worked, business-language scenarios (precondition, steps, test data, expected result) for the screens that the automation covers: Registration, Asset Profile and Split, Asset Transaction, Asset Expense and voucher checking, Asset Transfer and Single Challan, Write-off and Sale. **It does not need the automation code to be read or even present.** |
 | Scope limit | **This guide does NOT cover every screen.** It has no scenarios for Setup, Offline Assets Receive and Offline Transfer, Addition from Inventory and Vendor, Depreciation, the 13 Reports, Receivable and Returnable lists, Auction, or the Dashboard. For those, and for the rules behind every screen, use the screen sheets in §16 of `knowledge/erp-fixedasset.md` (its coverage map shows which screens have a worked scenario here). |
 | Companion | `knowledge/erp-fixedasset.md` — the domain knowledge file: business rules, history, and one test-case reference sheet per screen (§16). Start there; use this guide for step wording on the covered screens. |
-| First version | 2026-10-09. Built from the working automation (`test_01` to `test_31`) and its catalogs; nothing was run to write it. |
+| First version | 2026-10-09. Built from the working automation (`test_01` to `test_30`) and its catalogs; nothing was run to write it. |
 
 **Basis tags on every scenario**
 - `VERIFIED (test_xx)` — a working automated test performs exactly this. Steps and messages are real.
@@ -6452,7 +6452,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
 - Expected:
   1. System should show the column headings SL, Shipment No, Edit, Shipment Date, Created By, Creation Date, Approved By, Approval Date, From Branch, Status, Preview.
   2. System should offer exactly these options in 'Shipment Status': -Select Shipment Status-, PENDING, APPROVED, REJECTED.
-- Basis: VERIFIED (test_19)
+- Basis: VERIFIED (test_18)
 - Check also: Read the 'Shipment Status' options again and confirm there is no option DRAFT and no option SENDBACK. Open the drop-down 'Records per page' (below the grid) and confirm it offers 10, 20, 30, 50, 100.
 
 **TRF-P02 — Verify the Create Shipment popup opens with the right defaults**
@@ -6474,7 +6474,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   2. System should show 'Shipment No' = "AUTO".
   3. System should show 'From Branch' = "Head Office [ BDHO ]" (it contains BDHO).
   4. System should show 'Shipment Date' = today's date.
-- Basis: VERIFIED (test_19)
+- Basis: VERIFIED (test_18)
 - Check also: Try to type in 'Shipment No' and in 'Shipment Date'; System should not accept typing (both are read-only). Confirm 'From Branch' offers only "Head Office [ BDHO ]".
 
 **TRF-P03 — Verify Reset clears typed courier details and Close shuts the popup**
@@ -6500,7 +6500,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
 - Expected:
   1. After Reset, System should show the field 'Courier Service Name / Transfer By' empty.
   2. After Close, System should close the popup 'Create Shipment' and show the Asset Shipment list.
-- Basis: VERIFIED (test_19)
+- Basis: VERIFIED (test_18)
 - Check also: After Reset, read 'Courier Number' and 'Driver Name'; they should also be empty (the run only checked the courier name). Confirm 'Shipment No' still shows "AUTO" after Reset.
 
 **TRF-P04 — Verify a shipment can be created with all courier fields filled**
@@ -6536,7 +6536,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   3. System should show a new top row with a new 'Shipment No' (written below as <Shipment No>).
   4. System should show 'Status' = "PENDING" in that row.
   5. System should show no link in the column 'Preview' of that row.
-- Basis: VERIFIED (test_19)
+- Basis: VERIFIED (test_18)
 - Check also: Note the <Shipment No>. Click 'Edit' on the row and confirm the popup 'Update Shipment' shows the six typed values, then click 'Close'.
 
 **TRF-P05 — Verify Edit and Details show the saved shipment values**
@@ -6563,7 +6563,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   3. System should show the popup 'Shipment Details' with the tabs 'Details', 'Transfer Challans', 'Add Serial'.
   4. System should show Status "PENDING" in 'Shipment Details'.
   5. System should show the six saved values in 'Shipment Details'.
-- Basis: VERIFIED (test_19)
+- Basis: VERIFIED (test_18)
 - Check also: In 'Update Shipment' confirm the buttons 'Update', 'Delete' and 'Close' are shown. In 'Shipment Details' confirm the buttons 'Approve' and 'Reject' are shown on the 'Details' tab.
 
 **TRF-P06 — Verify the Create Challan popup defaults**
@@ -6588,7 +6588,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   1. System should show the popup 'Create Challan'.
   2. System should show 'Out Challan No' = "AUTO".
   3. System should show 'Sending Branch' containing "BDHO" (Head Office [BDHO]).
-- Basis: VERIFIED (test_19)
+- Basis: VERIFIED (test_18)
 - Check also: Confirm 'Out Challan Date' is already filled and read-only (it shows the business date, which may differ from today). Confirm the field 'From Department' is disabled until a 'From Project' is chosen.
 
 **TRF-P07 — Verify choosing an asset item fills its classification**
@@ -6616,7 +6616,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   3. System should show 'Measurement Unit' = "Pcs".
   4. System should show 'Group' filled in (value to be confirmed).
   5. System should not accept typing in these four fields (read-only).
-- Basis: VERIFIED (test_19)
+- Basis: VERIFIED (test_18)
 - Check also: Click the button 'Reset' and confirm the four classification fields and 'Asset Item Name' are cleared.
 
 **TRF-P08 — Verify a line can be added and removed in the challan item grid**
@@ -6655,7 +6655,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   2. After Remove, System should show an empty item grid.
   3. After Remove, System should clear 'Asset Item Name' and 'Quantity'.
   4. After the second Add, System should show one line again: "Cabinet Table", Quantity 1.
-- Basis: VERIFIED (test_19)
+- Basis: VERIFIED (test_18)
 - Check also: Read the other item grid columns of the line (Asset Sub Category "Wooden Furniture", Asset Category "Furniture", Measurement Unit "Pcs") and confirm they are filled.
 
 **TRF-P09 — Verify a challan can be saved as Draft**
@@ -6694,7 +6694,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   3. System should show a new challan row with a generated 'Out Challan No.' (written below as <Out Challan No>).
   4. System should show 'Status' = "DRAFT" in that row.
   5. System should show 'All Serial Added' = "No" in that row.
-- Basis: VERIFIED (test_19)
+- Basis: VERIFIED (test_18)
 - Check also: In that row confirm the 'Edit' link is present and the column 'Preview' is empty.
 
 **TRF-P10 — Verify the Challan Details popup shows projects and DRAFT status**
@@ -6720,7 +6720,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   2. System should show 'To Project' = "[060] Progoti".
   3. System should show 'Status' = "DRAFT".
   4. System should show the tabs "Details", "Asset Serials", "Posted Accounts".
-- Basis: VERIFIED (test_19)
+- Basis: VERIFIED (test_18)
 - Check also: Click the tab 'Posted Accounts' and confirm it is empty for a DRAFT challan. Click the tab 'Asset Serials' and confirm no serial is listed.
 
 **TRF-P11 — Verify a serial can be added to a draft challan**
@@ -6759,7 +6759,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   4. System should list <Asset Serial> on the tab 'Asset Serials' of 'Challan Details'.
   5. System should list <Asset Serial> on the tab 'Add Serial' of 'Shipment Details'.
   6. System should show 'All Serial Added' = "Yes" in the challan row.
-- Basis: VERIFIED (test_19)
+- Basis: VERIFIED (test_18)
 - Check also: In the popup 'Add Asset Serial' confirm the checkboxes 'Disposal' and 'Tranfer to maintenance' (spelled so) are shown and unchecked; do not tick them. Confirm the challan 'Status' is still "DRAFT".
 
 **TRF-P12 — Verify the Update Challan popup locks branch, project and date**
@@ -6785,7 +6785,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   3. System should show 'From Project' as read-only.
   4. System should show 'To Project' as read-only.
   5. System should show 'Out Challan Date' as read-only.
-- Basis: VERIFIED (test_19)
+- Basis: VERIFIED (test_18)
 - Check also: Confirm the popup shows the buttons 'Add', 'Update', 'Submit', 'Delete' and 'Close'. Click 'Close' and confirm the challan is still DRAFT.
 
 **TRF-P13 — Verify a DRAFT challan can be deleted**
@@ -6826,7 +6826,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   2. System should show no confirmation box before deleting.
   3. System should not list <Out Challan No 2> any more.
   4. System should still list <Out Challan No 1> with Status "DRAFT".
-- Basis: VERIFIED (test_19)
+- Basis: VERIFIED (test_18)
 
 **TRF-P14 — Verify a draft challan with serial can be submitted**
 - Precondition:
@@ -6852,7 +6852,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   1. System should show the toast message "Challan submitted successfully".
   2. System should close the popup 'Update Challan'.
   3. System should show 'Status' = "PENDING" in the row of <Out Challan No>.
-- Basis: VERIFIED (test_19)
+- Basis: VERIFIED (test_18)
 - Check also: In the same row confirm the link 'Edit' is no longer offered for a PENDING challan (to be confirmed on screen).
 
 **TRF-P15 — Verify a PENDING challan appears in the Challan Approval List**
@@ -6875,7 +6875,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   2. System should show 'Challan Status' = "PENDING".
   3. System should show 'Shipment Number' = <Shipment No>.
   4. System should show 'To Project' = "[060] Progoti".
-- Basis: VERIFIED (test_20)
+- Basis: VERIFIED (test_19)
 - Check also: Confirm the cell 'Preview' of the row is empty (no link while PENDING). Open the filter 'Approval Status' and confirm it offers PENDING, APPROVED, REJECTED, ACKNOWLEDGED, SENDBACK.
 
 **TRF-P16 — Verify a challan can be approved with a comment**
@@ -6908,7 +6908,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   4. System should close the challan popup.
   5. System should show 'Challan Status' = "APPROVED" in the row.
   6. System should show a link in the column 'Preview' of the row.
-- Basis: VERIFIED (test_20)
+- Basis: VERIFIED (test_19)
 - Check also: Read the cells 'Approval By' and 'Approval Date' of the row; both should be filled.
 
 **TRF-P17 — Verify shipment approval gives a two-line toast and gate pass**
@@ -6933,7 +6933,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   2. System should show 'Status' = "APPROVED" in the shipment row.
   3. System should fill 'Approved By' and 'Approval Date' in the row.
   4. System should show a link in the column 'Preview' of the row.
-- Basis: VERIFIED (test_20)
+- Basis: VERIFIED (test_19)
 - Check also: Open Shipment Details again and confirm 'Status' = "APPROVED"; the tab 'Transfer Challans' should list <Out Challan No> with an 'In Challan No' filled.
 
 **TRF-P18 — Verify the challan shows in Shipment In-Challan after shipment approval**
@@ -6955,7 +6955,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   2. System should show 'Challan Status' = "APPROVED".
   3. System should show 'In Challan No' filled (format like IC-...).
   4. System should show no link in the column 'Preview'.
-- Basis: VERIFIED (test_21)
+- Basis: VERIFIED (test_20)
 - Check also: Confirm the cells 'In Challan Date' and 'Acknowledged By' are empty.
 
 **TRF-P19 — Verify Acknowledge changes the challan to ACKNOWLEDGED**
@@ -6981,7 +6981,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   3. System should fill 'In Challan Date' and 'Acknowledged By' in the row.
   4. System should show a link in the column 'Preview' of the row.
   5. The success toast was not captured in the run, so do not expect a fixed text; if a toast appears, record its exact text (to be confirmed).
-- Basis: VERIFIED (test_21)
+- Basis: VERIFIED (test_20)
 
 **TRF-P20 — Verify an acknowledged challan appears in Gate Pass Generation and Preview opens a PDF**
 - Precondition:
@@ -7003,7 +7003,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   1. System should list one row for <Out Challan No> with 'Status' = "ACKNOWLEDGED" and 'In Challan Number' filled.
   2. System should open a new browser tab showing a PDF report that loads without error.
   3. The PDF contents were not read in the run (to be confirmed).
-- Basis: VERIFIED (test_22) for the row; the Preview check exists but is switched off in the suite, so treat as OBSERVED (catalog).
+- Basis: VERIFIED (test_21) for the row; the Preview check exists but is switched off in the suite, so treat as OBSERVED (catalog).
 - Check also: Read the gate pass PDF and compare items (Cabinet Table, Quantity 1), From Project "[015] Microfinance (Dabi)", To Project "[060] Progoti" and the shipment with the challan.
 
 **SCH-P01 — Verify a single challan can be created and submitted**
@@ -7045,7 +7045,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   4. After Submit, System should close the popup and show no toast message.
   5. The top row in the grid should have a new Out Challan Number, 'Status' "PENDING", and no 'Edit' link.
   6. The challan popup should show 'From Project' "[015] Microfinance (Dabi)", 'To Project' "[060] Progoti", 'Status' "PENDING".
-- Basis: VERIFIED (test_23)
+- Basis: VERIFIED (test_22)
 - Check also: In the popup read the field 'Out Challan No' and check it equals <Out Challan No.>. Click the tab 'Asset Serials' and check the serial grid is empty, because no serial has been added yet.
 
 **SCH-P02 — Verify a single challan Draft path: Draft, Edit, Submit**
@@ -7087,7 +7087,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   3. The Edit Challan popup should offer the buttons 'Update', 'Submit' and 'Delete'.
   4. After Submit, System should close the popup and show no toast message.
   5. After Submit, the row should show 'Status' "PENDING" and no 'Edit' link.
-- Basis: VERIFIED (test_23)
+- Basis: VERIFIED (test_22)
 - Check also: Open the challan by clicking <Out Challan No.> after Submit and read the field 'Status' in the popup; it should be "PENDING". Click the tab 'Asset Serials' and check the serial grid is empty.
 
 **SCH-P03 — Verify a serial can be added to a PENDING single challan**
@@ -7117,7 +7117,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   2. After Save, System should show the toast "Asset serial added successfully" (note the lowercase "successfully", unlike the shipment message "Asset serial added Successfuly").
   3. System should close the Add Asset Serial popup.
   4. The tab 'Asset Serials' of the challan should list exactly one row with 'Asset Serial' equal to <Asset Serial>.
-- Basis: VERIFIED (test_23)
+- Basis: VERIFIED (test_22)
 - Check also: Repeat the same steps on a second PENDING challan of the other creation path (Submit directly versus Draft then Submit) with its own fresh asset; the result should be the same. After adding, click the tab 'Details' and check the 'Status' is still "PENDING".
 
 **SCH-P04 — Verify a single challan is approved with a two-line toast and gate pass**
@@ -7145,7 +7145,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   3. System should show one toast with two lines: "Challan approved successfully." and "Gate pass generated successfully".
   4. After approval, the row should show 'Status' "APPROVED" and a 'Preview' link.
   5. The row should show an In Challan Number in the column 'In Challan Number' and the column 'Approved By' should be filled.
-- Basis: VERIFIED (test_24)
+- Basis: VERIFIED (test_23)
 - Check also: Open the challan again from this list and check that the buttons 'Approve', 'Reject' and 'Sendback' are no longer all offered for an APPROVED challan (exact behaviour to be confirmed).
 
 **SCH-P05 — Verify a single challan is acknowledged**
@@ -7171,7 +7171,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   2. The popup should offer only the button 'Acknowledge'.
   3. After Acknowledge, the row should show 'Status' "ACKNOWLEDGED" and a 'Preview' link. The column 'Acknowledged By' should be filled.
   4. The success toast was not captured in the verified run, so check the status in the list (toast text to be confirmed).
-- Basis: VERIFIED (test_25)
+- Basis: VERIFIED (test_24)
 - Check also: Repeat with a second APPROVED challan that was created through Draft then Edit then Submit; the result should be the same.
 
 **SCH-P06 — Verify the acknowledged single challan appears in Gate Pass Generation**
@@ -7191,7 +7191,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
 - Expected:
   1. The row should show 'Status' "ACKNOWLEDGED" (for both creation paths).
   2. The Preview should open a new tab that loads the gate pass as a PDF without error. The PDF contents were read once for one challan only.
-- Basis: VERIFIED (test_26) for the row; Preview check switched off in the suite.
+- Basis: VERIFIED (test_25) for the row; Preview check switched off in the suite.
 - Check also: Open the PDF and compare the challan number, the projects "[015] Microfinance (Dabi)" and "[060] Progoti", and the item Cabinet Table with the challan data. Check whether the list also shows challans in 'Status' APPROVED (the catalog says the list shows APPROVED and ACKNOWLEDGED rows).
 
 #### Negative
@@ -7215,7 +7215,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
 - Expected:
   1. System should show the toast message "Please add at least one challan".
   2. System should keep the shipment 'Status' = "PENDING".
-- Basis: VERIFIED (test_19)
+- Basis: VERIFIED (test_18)
 
 **TRF-N02 — Verify shipment approval is refused while its challan is only DRAFT**
 - Precondition:
@@ -7237,7 +7237,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
 - Expected:
   1. System should show the toast message "Approve at least one challan".
   2. System should keep the shipment 'Status' = "PENDING".
-- Basis: VERIFIED (test_19)
+- Basis: VERIFIED (test_18)
 
 **TRF-N03 — Verify adding a challan line without From Project is refused**
 - Precondition:
@@ -7264,7 +7264,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
 - Expected:
   1. System should show the toast message "Please select from project".
   2. System should add no line to the item grid.
-- Basis: VERIFIED (test_19)
+- Basis: VERIFIED (test_18)
 
 **TRF-N04 — Verify adding a challan line without To Project is refused**
 - Precondition:
@@ -7295,7 +7295,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
 - Expected:
   1. System should show the toast message "Please select to project".
   2. System should add no line to the item grid.
-- Basis: VERIFIED (test_19)
+- Basis: VERIFIED (test_18)
 
 **TRF-N05 — Verify Draft is refused when the challan has no item line**
 - Precondition:
@@ -7324,7 +7324,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
 - Expected:
   1. System should show the toast message "No Items in Challan to perform operation".
   2. System should create no challan (the list stays empty).
-- Basis: VERIFIED (test_19)
+- Basis: VERIFIED (test_18)
 
 **TRF-N06 — Verify Draft fails for an unmapped To Project**
 - Precondition:
@@ -7602,7 +7602,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
 - Expected:
   1. The row should show 'Status' "PENDING".
   2. The row should have no 'Edit' link.
-- Basis: VERIFIED (test_23)
+- Basis: VERIFIED (test_22)
 - Check also: Create a new challan with the button 'Draft' and check that its row shows an 'Edit' link; then compare with the PENDING row above.
 
 **SCH-N05 — Verify single challan Acknowledge by a user who is not allowed**
@@ -7812,7 +7812,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   2. After Add, the Add Asset Serial popup should show one serial row.
   3. After Save, System should show the toast "Asset serial added successfully".
   4. The tab 'Asset Serials' should list <Asset Serial>.
-- Basis: VERIFIED (test_23)
+- Basis: VERIFIED (test_22)
 - Check also: Open the challan before step 14 and click the tab 'Asset Serials'; the grid should be empty. After step 18 the 'Status' in the popup should still be "PENDING".
 
 **SCH-E02 — Verify approval of a single challan with no serial (derived)**
@@ -7894,7 +7894,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   1. Before shipment approval, System should not list <Out Challan No> in Asset Shipment In-Challan (no row).
   2. After shipment approval, System should list <Out Challan No> with 'Challan Status' = "APPROVED".
   3. After shipment approval, System should show 'In Challan No' filled.
-- Basis: VERIFIED (test_21 and flow doc for "appears only after")
+- Basis: VERIFIED (test_20 and flow doc for "appears only after")
 
 **TRF-B02 — Verify the Shipment In-Challan status filter offers only APPROVED and ACKNOWLEDGED**
 - Precondition:
@@ -7929,7 +7929,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   1. For the PENDING shipment, System should show no link in the column 'Preview'.
   2. For the APPROVED shipment, System should show a link in the column 'Preview'.
   3. Opening the link was not tested; its content is to be confirmed.
-- Basis: VERIFIED (test_20) for the link; content NOT checked.
+- Basis: VERIFIED (test_19) for the link; content NOT checked.
 
 **TRF-B04 — Verify the full shipment chain end to end**
 - Precondition:
@@ -8012,7 +8012,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   6. After step 40, System should show the toast lines "Shipment approved successfully" and "Gate pass generated successfully"; after step 41 the shipment 'Status' = "APPROVED".
   7. After step 46, System should show 'Challan Status' = "ACKNOWLEDGED".
   8. After step 49, System should list <Out Challan No> with 'Status' = "ACKNOWLEDGED".
-- Basis: VERIFIED (test_19, 20, 21, 22)
+- Basis: VERIFIED (test_18, 20, 21, 22)
 
 **TRF-B05 — Verify a shipment cannot be created in the last 3 days of the month (DERIVED, open question)**
 - Precondition:
@@ -8135,7 +8135,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   1. System should show one toast with two lines: "Challan approved successfully." and "Gate pass generated successfully".
   2. After approval, the row should show 'Status' "APPROVED" and a 'Preview' link.
   3. After Acknowledge, the Gate Pass Generation row should show 'Status' "ACKNOWLEDGED".
-- Basis: VERIFIED (test_24, 25, 26)
+- Basis: VERIFIED (test_23, 25, 26)
 - Check also: On Asset Single In-Challan, before step 10, read the row: 'Status' "APPROVED" with the column 'In Challan Number' filled and no 'Preview' link. After step 11 the row should show 'Status' "ACKNOWLEDGED" and a 'Preview' link.
 
 **SCH-B02 — Verify single challan vouchers and receivable/returnable behaviour (DERIVED, open question)**
@@ -8269,7 +8269,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   1. System should show the toast "Asset profile status updated successfully."
   2. System should show the column 'Utilization Status' of the row as DAMAGE after the new search (it showed IN_USE before).
   3. The asset should now be eligible for write-off.
-- Basis: VERIFIED (test_27)
+- Basis: VERIFIED (test_26)
 - Check also: In the grid read the cell under the column 'Assign Status' of the same row. System should still show UNASSIGNED.
 
 **WOF-P02 — Verify a DAMAGE asset is found and its details fill in on the Asset Write-off screen**
@@ -8307,7 +8307,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   4. System should show 'Utilization Status' as DAMAGE.
   5. System should fill 'Written Down Value' (25000 for the test assets).
   6. The field 'Utilization Status' should be read-only (it cannot be changed).
-- Basis: VERIFIED (test_27)
+- Basis: VERIFIED (test_26)
 - Check also: Read the field 'Branch' and the field 'Department'. System should show 'Branch' pre-filled with the user's branch and 'Department' disabled.
 
 **WOF-P03 — Verify Add to Grid on Asset Write-off adds a row without a toast**
@@ -8342,7 +8342,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   1. System should add exactly one row to the grid.
   2. The row should show the Asset Serial <Asset Serial>, Asset Item Name Cabinet Table, Utilization Status DAMAGE and Note/Remarks "write off".
   3. No toast message should appear after clicking 'Add to Grid'.
-- Basis: VERIFIED (test_27)
+- Basis: VERIFIED (test_26)
 - Check also: Read the grid column headings. System should show: SL, Profile ID, Asset Serial, Asset Item Name, Asset Project Id, Project Name, Unit Price(TK.), Addition, Accumulated Depreciation, Written Down Value, Utilization Status, Note/Remarks, Action.
 
 **WOF-P04 — Verify a write-off can be saved as Draft**
@@ -8384,7 +8384,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   2. The grid should show "No data available in table" and the drop-down 'Project' should be cleared (-Select Project-).
   3. The Write-off List should show the new <Write Off ID> in the top row with 'Status' = DRAFT.
   4. That row should have an 'Edit' link.
-- Basis: VERIFIED (test_27)
+- Basis: VERIFIED (test_26)
 - Check also: Go back to 'Asset Write-off', choose Project '[015] Microfinance (Dabi)', click 'Asset Serial', type <Asset Serial>. System should show "No matches found" because the asset is now in a pending process.
 
 **WOF-P05 — Verify a write-off can be Submitted directly from the form**
@@ -8425,7 +8425,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   2. The grid should show "No data available in table".
   3. The Write-off List should show <Write Off ID> with 'Status' = PENDING.
   4. That row should have no 'Edit' link.
-- Basis: VERIFIED (test_27)
+- Basis: VERIFIED (test_26)
 - Check also: Go to 'Asset Write-off', choose Project '[015] Microfinance (Dabi)', click 'Asset Serial', type <Asset Serial>. System should show "No matches found" (the asset cannot be written off again).
 
 **WOF-P06 — Verify a Draft write-off can be edited from the list and Submitted**
@@ -8472,7 +8472,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   2. After Submit the system should show the toast "Asset write-off submitted successfully".
   3. The grid should show "No data available in table".
   4. The Write-off List should show <Write Off ID> with 'Status' = PENDING.
-- Basis: VERIFIED (test_28)
+- Basis: VERIFIED (test_27)
 - Check also: In the PENDING row of <Write Off ID> look at the 'Edit' column. System should show no 'Edit' link.
 
 **WOF-P07 — Verify a PENDING write-off can be approved**
@@ -8516,7 +8516,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   1. System should show a two-line toast: "Asset write-off approved successfully." and "Journal voucher submitted successfully!".
   2. The row of <Write Off ID> should show 'Status' = APPROVED.
   3. The cells 'Approved By' and 'Approval Date' of that row should be filled.
-- Basis: VERIFIED (test_29)
+- Basis: VERIFIED (test_28)
 - Check also: Open 'Asset Write-off List', filter 'Status' = APPROVED, click 'Search'. System should show <Write Off ID> as APPROVED there too.
 
 **SAL-P01 — Verify an IN_USE asset is found on the Asset Sale screen with its Written Down Value**
@@ -8547,7 +8547,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   3. System should show 'Utilization Status' = IN_USE.
   4. System should show a value in 'Written Down Value' (25000 for the test assets).
   5. System should show no Cash/Bank (Receive Type) choice on the form.
-- Basis: VERIFIED (test_30)
+- Basis: VERIFIED (test_29)
 - Check also: Click the field 'Utilization Status' and try to change it; System should not allow the change because the field is read-only.
 
 **SAL-P02 — Verify a sale at a profit shows a positive Profit/Loss in the grid**
@@ -8582,7 +8582,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   2. System should show 'Sale Value' = 30000 in the grid row (Written Down Value + 5000).
   3. System should show 'Profit/Loss' = 5000.00 in the grid row.
   4. System should show no toast message after 'Add to Grid'.
-- Basis: VERIFIED (test_30)
+- Basis: VERIFIED (test_29)
 - Check also: Read the grid headings; System should show the two sale-only columns 'Sale Value' and 'Profit/Loss' in addition to the write-off style columns (SL, Profile ID, Asset Serial, Asset Item Name, Asset Project Id, Asset Project Name, Unit Price, Addition, Accumulated Depreciation, Written Down Value, Note/Remarks, Action).
 
 **SAL-P03 — Verify a sale at a loss shows a negative Profit/Loss in the grid**
@@ -8616,7 +8616,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   1. System should add one row to the grid for <Asset Serial>.
   2. System should show 'Sale Value' = 20000 in the grid row.
   3. System should show 'Profit/Loss' = -5000.00 in the grid row.
-- Basis: VERIFIED (test_30)
+- Basis: VERIFIED (test_29)
 - Check also: Take a second asset whose Written Down Value is different (read it first) and type Written Down Value - 5000 as Sale Value; System should show 'Profit/Loss' = -5000.00 again, which proves the figure is calculated from the Written Down Value and not fixed.
 
 **SAL-P04 — Verify a sale can be saved as Draft (profit and loss)**
@@ -8658,7 +8658,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   2. System should show "No data available in table" in the grid below the form after the save.
   3. System should show the newest row of the Asset Sale List with 'Disposal Sale ID' = <Disposal Sale ID> and 'Status' = DRAFT.
   4. System should show an 'Edit' link on that DRAFT row.
-- Basis: VERIFIED (test_30)
+- Basis: VERIFIED (test_29)
 - Check also: Repeat all steps with a Laptop asset and Sale Value = <Written Down Value> - 5000 (20000 for 25000); System should show the same toast and a new top row with Status DRAFT.
 
 **SAL-P05 — Verify a sale can be Submitted directly (profit and loss)**
@@ -8700,7 +8700,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   2. System should show "No data available in table" in the grid below the form.
   3. System should show the newest row of the Asset Sale List with 'Disposal Sale ID' = <Disposal Sale ID> and 'Status' = PENDING.
   4. System should show no 'Edit' link on that PENDING row.
-- Basis: VERIFIED (test_30)
+- Basis: VERIFIED (test_29)
 - Check also: Repeat all steps with a Laptop asset and Sale Value = <Written Down Value> - 5000 (20000 for 25000); System should show the same toast and a new top row with Status PENDING.
 
 **SAL-P06 — Verify a Draft sale can be edited from the Sale List and Submitted**
@@ -8733,7 +8733,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   2. System should show the toast "Asset sale submitted successfully".
   3. System should show "No data available in table" in the grid after Submit.
   4. System should show the row <Disposal Sale ID> with 'Status' = PENDING in the Asset Sale List.
-- Basis: VERIFIED (test_31)
+- Basis: VERIFIED (test_30)
 - Check also: Open the Asset Sale List with Status 'PENDING' and look at the row; System should show no 'Edit' link on it.
 
 **SAL-P07 — Verify PENDING sales can be approved with the select-all checkbox**
@@ -8763,7 +8763,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   2. System should show a two-line toast. Line 1: "Asset disposal sale approved successfully." Line 2: "Journal and Credit voucher submitted successfully!"
   3. System should show all four sales with 'Status' = APPROVED.
   4. System should fill 'Approved By' and 'Approval Date' on all four rows.
-- Basis: VERIFIED (test_31)
+- Basis: VERIFIED (test_30)
 - Check also: Open the Asset Sale List with Status 'APPROVED' and look at the four rows; System should show 'APPROVED' there as well. Warning: select-all also approves PENDING sales of other users on a shared system.
 
 **SAL-P08 — Verify a single PENDING sale can be approved with its own row checkbox**
@@ -8830,7 +8830,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
 - Expected:
   1. In step 5 system should show "No matches found" and no result for the IN_USE asset.
   2. After the asset is set to DAMAGE, system should list the asset in step 17 (result text starts with <Asset Serial>).
-- Basis: VERIFIED (test_27; catalog note that IN_USE assets are not listed)
+- Basis: VERIFIED (test_26; catalog note that IN_USE assets are not listed)
 - Check also: Click the result in step 17. System should fill 'Utilization Status' with DAMAGE.
 
 **WOF-N02 — Verify fewer than 3 characters in Asset Serial gives a hint**
@@ -9164,7 +9164,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   3. System should show no 'Edit' link on any PENDING row of the Asset Sale List.
   4. System should show no 'Edit' link on any APPROVED row of the Asset Sale List.
   5. System should show an 'Edit' link on the DRAFT rows of the Asset Sale List (Edit appears only on DRAFT rows).
-- Basis: VERIFIED (test_27, test_28, catalogs)
+- Basis: VERIFIED (test_26, test_27, catalogs)
 - Check also: Open the Asset Write-off Approval List and the Asset Sale Approval List (menu 'Asset Disposal'), choose Status 'PENDING', click 'Search'; System should show no 'Edit' column at all and a checkbox column instead.
 
 **SAL-N07 — Verify a user without the approval permission cannot approve a sale**
@@ -9474,7 +9474,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   3. After step 23 system should show the two-line toast "Asset write-off approved successfully." and "Journal voucher submitted successfully!".
   4. In step 24 the row should show 'Status' = APPROVED.
   5. After approval (step 27) the asset should not be offered again: system should show "No matches found".
-- Basis: VERIFIED (test_27, test_28, test_29)
+- Basis: VERIFIED (test_26, test_27, test_28)
 - Check also: In step 24 the cells 'Approved By' and 'Approval Date' must be filled.
 
 **WOF-B02 — Verify why DAMAGE must be set first**
@@ -9510,7 +9510,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   1. In step 5 system should show "No matches found" (the asset is IN_USE).
   2. In step 13 system should show the toast "Asset profile status updated successfully."
   3. In step 17 system should list the asset (result text starts with <Asset Serial>). Write-off lists only assets that are not IN_USE.
-- Basis: VERIFIED (test_27)
+- Basis: VERIFIED (test_26)
 - Check also: Open the filter 'Asset Utilization Status:' on the Asset Serial Global List and read its options (SPLIT, IN_USE, DAMAGE, STOLEN, BURNED, DONATED, OFFLINE_TRANSFER, UNDER_REPAIR). Whether other non-IN_USE statuses also make the asset eligible for write-off is to be confirmed.
 
 **WOF-B03 — Verify select-all on the Write-off Approval List approves other users' PENDING rows (warning)**
@@ -9538,7 +9538,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   1. System should approve every PENDING row shown, including rows created by other users: both <Write Off ID 1> and <Write Off ID 2> show 'Status' = APPROVED.
   2. System should show the toast "Asset write-off approved successfully." and "Journal voucher submitted successfully!" (the same two-line toast as a single approval; to be confirmed for a bulk approval).
   3. Warn the team before running this on a shared system. Tick individual rows when only your own records should be approved.
-- Basis: DERIVED (not yet run for write-off; the same select-all was verified on the Sale Approval List, test_31)
+- Basis: DERIVED (not yet run for write-off; the same select-all was verified on the Sale Approval List, test_30)
 - Check also: Before step 5 look at the rows with status APPROVED or DRAFT in the grid (filter 'Status' without a value). System should show a checkbox only on PENDING rows.
 
 **WOF-B04 — Verify Reject and Send Back on the Write-off Details popup (open question)**
@@ -9615,7 +9615,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   2. System should show the toast "Asset sale submitted successfully" after Submit, and the list row should show 'Status' = PENDING.
   3. System should show the two-line toast on Approve. Line 1: "Asset disposal sale approved successfully." Line 2: "Journal and Credit voucher submitted successfully!"
   4. System should show 'Status' = APPROVED with 'Approved By' and 'Approval Date' filled.
-- Basis: VERIFIED (test_30, test_31)
+- Basis: VERIFIED (test_29, test_30)
 - Check also: Repeat the whole flow with a Laptop asset and 'Sale Value' = <Written Down Value> - 5000 (20000 for 25000); System should show the same messages and statuses.
 
 **SAL-B02 — Verify the full sale life on the Submit path**
@@ -9658,7 +9658,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
   2. System should show the list row <Disposal Sale ID> with 'Status' = PENDING and no 'Edit' link.
   3. System should show the two-line toast on Approve. Line 1: "Asset disposal sale approved successfully." Line 2: "Journal and Credit voucher submitted successfully!"
   4. System should show 'Status' = APPROVED for the row <Disposal Sale ID>.
-- Basis: VERIFIED (test_30, test_31)
+- Basis: VERIFIED (test_29, test_30)
 - Check also: Repeat with a Laptop asset and 'Sale Value' = <Written Down Value> - 5000; System should show the same results. At no point should an 'Edit' link appear on the row.
 
 **SAL-B03 — Verify Profit/Loss in the grid matches Sale Value minus Written Down Value**
@@ -9695,7 +9695,7 @@ Standard challan test data: From Project "[015] Microfinance (Dabi)"; Receiving 
 - Expected:
   1. System should show 'Profit/Loss' = 5000.00 for 'Sale Value' above the Written Down Value.
   2. System should show 'Profit/Loss' = -5000.00 for 'Sale Value' below the Written Down Value.
-- Basis: VERIFIED (test_30)
+- Basis: VERIFIED (test_29)
 - Check also: Run the same two sale values on an asset of type Laptop; System should show 5000.00 and -5000.00 again, so the sign rule applies to every asset type tested (Building and Laptop).
 
 **SAL-B04 — Verify an approved sold asset cannot be used again anywhere**

@@ -35,6 +35,30 @@ ITEM_NAME = PROFILE_NAMES_BY_ITEM["furniture"][0]
 SLOT_BY_PATH = {"draft": "write_off_a", "submit": "write_off_b"}
 
 
+def write_off_one_asset(global_list_page, write_off_page, list_page, approval_page, serial: str, project: str) -> str:
+    """
+    Write off one given asset from start to end, outside the asset pool: set it to DAMAGE,
+    submit the write-off and approve it. Returns the Write Off ID. Used to make an inactive
+    extended asset (CR FAHOV2-643), e.g.:
+        write_off_one_asset(..., "BBDASR00227760-3", "[015] Microfinance (Dabi)")
+    """
+    global_list_page.mark_asset_damaged(serial, STATUS_NOTE)
+    write_off_page.navigate_here()
+    write_off_page.select_project(project)
+    write_off_page.select_asset(serial, serial)
+    write_off_page.enter_note(WRITE_OFF_NOTE)
+    write_off_page.add_to_grid()
+    write_off_page.submit_and_verify()
+    list_page.navigate_here()
+    list_page.filter_by_status("PENDING")
+    write_off_id = list_page.get_newest_write_off_id()
+    approval_page.navigate_here()
+    approval_page.filter_by_status("PENDING")
+    approval_page.select_write_off(write_off_id)
+    approval_page.approve_selected_and_verify()
+    return write_off_id
+
+
 class WriteOffFlow(FlowStages):
     """Does the missing stages of an Asset Write-off and remembers what it made."""
 

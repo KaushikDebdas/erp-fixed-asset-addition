@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Page class | `pages/asset_write_off_page.py` → `AssetWriteOffPage` (the DAMAGE step uses `AssetSerialGlobalListPage.find_unassigned_in_use_asset` and `mark_asset_damaged`); tests in `tests/test_27_asset_write_off.py` |
+| Page class | `pages/asset_write_off_page.py` → `AssetWriteOffPage` (the DAMAGE step uses `AssetSerialGlobalListPage.find_unassigned_in_use_asset` and `mark_asset_damaged`); tests in `tests/test_26_asset_write_off.py` |
 | Module / menu path | Fixed Asset >> Asset Disposal >> Asset Write-off (the link is spelled with a hyphen) |
 | Entry URL | `https://erpstaging.brac.net/nodef/fixedasset#!faAssetWriteOff/show` (reach via menu click) |
 | Role needed | ERP External User (tested with `abushoaib.asik`, branch Head Office [ BDHO ]) |

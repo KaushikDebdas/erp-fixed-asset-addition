@@ -32,7 +32,7 @@ from test_data.toast_messages import (
     SHIPMENT_APPROVED_TOAST,
     SHIPMENT_CREATED_TOAST,
 )
-from test_data.asset_shipment_data import build_challan_data, build_shipment_data
+from test_data.asset_shipment_data import SAME_BRANCH_DIFFERENT_PROJECT, build_challan_data, build_shipment_data
 
 # The pool slot (test_data/asset_slots.py) of the asset that is transferred
 TRANSFER_SLOT = "transfer_a"
@@ -53,11 +53,15 @@ class TransferHelper:
     """Does and remembers the stages of one Asset Shipment for the tests."""
 
     def __init__(self, assets, shipment_page, challan_page,
-                 challan_approval_page, in_challan_page, remembered: dict):
+                 challan_approval_page, in_challan_page, remembered: dict,
+                 scenario: str = SAME_BRANCH_DIFFERENT_PROJECT, receiving_in_challan_page=None):
         """
         `assets` is the asset pool: it gives the approved asset whose serial is transferred.
         The page objects all work on the browser tab of the logged-in user.
         `remembered` is the dictionary shared by the whole test run.
+        `scenario` says where the shipment goes (see test_data/asset_shipment_data.py).
+        `receiving_in_challan_page` is the In-Challan page in the tab of the receiving-branch
+        user; leave it out when the sender receives (the same branch).
         """
         self.assets = assets
         self.shipment_page = shipment_page
@@ -65,6 +69,14 @@ class TransferHelper:
         self.challan_approval_page = challan_approval_page
         self.in_challan_page = in_challan_page
         self.remembered = remembered
+        self.scenario = scenario
+        self.receiving_in_challan_page = receiving_in_challan_page
+
+    def receiving_page(self):
+        """Return the In-Challan page of the user who receives: the receiving-branch user's tab when there is one, else the sender's own."""
+        if self.receiving_in_challan_page is not None:
+            return self.receiving_in_challan_page
+        return self.in_challan_page
 
     def flow(self) -> dict:
         """Return the remembered flow dictionary, creating an empty one the first time."""
@@ -177,7 +189,10 @@ class TransferHelper:
         """Create a Draft challan inside the shipment, and remember its Out Challan No."""
         self.open_challan_tab()
         self.challan_page.click_create_challan()
-        self.fill_challan_form(build_challan_data())
+        self.flow()["sending_branch"] = self.challan_page.read_challan_popup_defaults()["sending_branch"]
+        challan_data = build_challan_data(scenario=self.scenario)
+        self.flow()["challan_data"] = challan_data
+        self.fill_challan_form(challan_data)
         toast = self.challan_page.draft_and_get_toast()
         self.challan_page.verify_toast(toast, CHALLAN_DRAFTED_TOAST)
         self.flow()["challan_no"] = self.challan_page.get_newest_challan_no()
@@ -187,7 +202,7 @@ class TransferHelper:
         self.open_challan_tab()
         numbers_before = self.challan_page.read_challan_numbers()
         self.challan_page.click_create_challan()
-        self.fill_challan_form(build_challan_data())
+        self.fill_challan_form(build_challan_data(scenario=self.scenario))
         toast = self.challan_page.draft_and_get_toast()
         self.challan_page.verify_toast(toast, CHALLAN_DRAFTED_TOAST)
         return self.challan_page.find_new_challan_no(numbers_before)
@@ -231,18 +246,28 @@ class TransferHelper:
         self.shipment_page.verify_toast(
             toast, SHIPMENT_APPROVED_TOAST
         )
-        self.in_challan_page.navigate_here()
-        self.in_challan_page.filter_by_out_challan_no(self.flow()["challan_no"])
-        row = self.in_challan_page.read_row(self.flow()["challan_no"])
+        receiving_page = self.receiving_page()
+        receiving_page.navigate_here()
+        receiving_page.filter_by_out_challan_no(self.flow()["challan_no"])
+        row = receiving_page.read_row(self.flow()["challan_no"])
         self.flow()["in_challan_no"] = row["In Challan No"]
 
     def acknowledge(self) -> None:
         """Acknowledge the challan on Asset Shipment-In Challan and check it is ACKNOWLEDGED."""
         challan_no = self.flow()["challan_no"]
-        self.in_challan_page.navigate_here()
-        self.in_challan_page.filter_by_out_challan_no(challan_no)
-        self.in_challan_page.open_popup(challan_no)
-        self.in_challan_page.acknowledge()
-        self.in_challan_page.close_popup_if_open()
-        self.in_challan_page.filter_by_out_challan_no(challan_no)
-        self.in_challan_page.verify_row_status(challan_no, "ACKNOWLEDGED")
+        receiving_page = self.receiving_page()
+        receiving_page.navigate_here()
+        receiving_page.filter_by_out_challan_no(challan_no)
+        receiving_page.open_popup(challan_no)
+        receiving_page.acknowledge()
+        receiving_page.close_popup_if_open()
+        receiving_page.filter_by_out_challan_no(challan_no)
+        receiving_page.verify_row_status(challan_no, "ACKNOWLEDGED")
+
+    def open_challan_to_acknowledge(self) -> None:
+        """Open the approved challan's popup in the receiving user's In-Challan list. Stops before Acknowledge is clicked."""
+        challan_no = self.flow()["challan_no"]
+        receiving_page = self.receiving_page()
+        receiving_page.navigate_here()
+        receiving_page.filter_by_out_challan_no(challan_no)
+        receiving_page.open_popup(challan_no)

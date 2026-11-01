@@ -5,5 +5,4 @@ allure-pytest
 python-dotenv
 openpyxl
 pandas
-pypdf
 rich

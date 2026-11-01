@@ -8,9 +8,11 @@ Used by the Asset Shipment end-to-end flow
 (projects/fixedasset/e2e-flows/asset-transfer-shipment.md, steps 24 and 25).
 Locators come from automation/element_catalog/asset_shipment_in_challan.md.
 """
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import expect
 
 from pages.base_page import BasePage
+from utils.helpers import challan_row_problems
 from utils.logger import action_logger, assertion_logger
 
 # Name of the menu link under Fixed Asset > Asset Transfer
@@ -160,6 +162,32 @@ class ShipmentInChallanPage(BasePage):
         self.click(self.acknowledge_button, "Acknowledge button")
         expect(self.modal_loader.first).to_be_hidden(timeout=POPUP_TIMEOUT)
 
+    def acknowledge_and_get_message(self) -> str:
+        """
+        Click Acknowledge in the popup, wait until the loading overlay is gone and return the message
+        the ERP showed (an empty text when no message was seen). The caller searches again and checks
+        the row with `verify_acknowledged`.
+        """
+        self.click(self.acknowledge_button, "Acknowledge button")
+        message = self.get_toast_text_or_empty()
+        expect(self.modal_loader.first).to_be_hidden(timeout=POPUP_TIMEOUT)
+        return message
+
+    def verify_acknowledged(self, out_challan_no: str, erp_message: str) -> None:
+        """
+        Confirm Acknowledge worked the way it does inside one branch: the row shows ACKNOWLEDGED and
+        a Preview link. The failure names the status found and the message the ERP showed.
+        """
+        status = self.read_row(out_challan_no).get("Challan Status", "")
+        assertion_logger.info(f"Verifying challan {out_challan_no} was acknowledged")
+        if status != "ACKNOWLEDGED":
+            raise AssertionError(
+                f"Acknowledge did not work: challan {out_challan_no} has status '{status}' instead of "
+                f"'ACKNOWLEDGED'. The message the ERP showed: '{erp_message}'."
+            )
+        if not self.row_has_preview_link(out_challan_no):
+            raise AssertionError(f"Challan {out_challan_no} is ACKNOWLEDGED but its row has no Preview link.")
+
     def close_popup(self) -> None:
         """Close the challan popup."""
         self.click(self.popup_close_button, "Challan popup Close button")
@@ -167,8 +195,14 @@ class ShipmentInChallanPage(BasePage):
 
     def close_popup_if_open(self) -> None:
         """Close the challan popup when it is still open (after Acknowledge it may already have closed)."""
-        if self.popup.is_visible():
-            self.close_popup()
+        if not self.popup.is_visible():
+            return
+        # The ERP closes the popup by itself shortly after Acknowledge, so a short wait is enough
+        try:
+            self.popup_close_button.click(timeout=3000)
+        except PlaywrightTimeoutError:
+            action_logger.info("Challan popup closed by itself after Acknowledge")
+        expect(self.popup).to_be_hidden(timeout=POPUP_TIMEOUT)
 
     # ------------------------------------------------------------------
     # Checks: each one raises AssertionError saying what was expected and found
@@ -182,6 +216,19 @@ class ShipmentInChallanPage(BasePage):
             raise AssertionError(
                 f"Expected challan {out_challan_no} to have status '{expected_status}' but found '{found}'."
             )
+
+    def verify_row_matches_challan(self, out_challan_no: str, challan_data: dict, sending_branch: str) -> None:
+        """
+        Confirm the challan's row shows what the challan was created with: status
+        APPROVED, an In Challan No, the From and To Project, the Sending Branch
+        (`sending_branch` is the text the Create Challan popup showed) and the
+        Receiving Branch (`challan_data["receiving_branch"]`). Names every difference in one message.
+        """
+        row = self.read_row(out_challan_no)
+        assertion_logger.info(f"Verifying the In-Challan row of {out_challan_no} against the challan that was created")
+        problems = challan_row_problems(row, challan_data, sending_branch, "Challan Status", "In Challan No")
+        if problems:
+            raise AssertionError(f"The In-Challan row of {out_challan_no} differs from the challan: {problems}")
 
     def verify_in_challan_no_filled(self, out_challan_no: str) -> None:
         """Confirm the grid row of this Out Challan No already shows an In Challan No."""

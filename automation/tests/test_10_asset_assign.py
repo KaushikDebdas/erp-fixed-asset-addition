@@ -28,12 +28,10 @@ import pytest
 from test_data.asset_transaction_data import (
     ASSIGN,
     ASSIGNED,
-    ASSIGNEE_NAME,
     ASSIGNEE_PIN,
     FORM_READ_ONLY_FIELDS,
     FURNITURE_FORM_DETAILS,
     UNASSIGNED,
-    USER_BRANCH,
     build_form_expectation,
 )
 from test_data.toast_messages import (
@@ -83,8 +81,10 @@ def test_assign_serial_search_fills_asset_details(page, assign_page, transaction
 @pytest.mark.regression
 def test_assign_add_to_grid_required_message_and_employee(page, assign_page, transactions, take_screenshot):
     """Asset Assign: Add to Grid fills the Asset List, Draft needs an employee, and the Employee PIN search fills the employee and branch."""
-    # Step 1: select the unassigned asset and add it to the grid
+    # Step 1: read the employee's name and the user's branch, then select the unassigned asset and add it to the grid
     serial = transactions.ensure_unassigned()
+    assignee_name = transactions.get_assignee_name()
+    branch = transactions.get_user_branch()
     assign_page.navigate_here()
     assign_page.select_asset_by_serial(serial)
     assign_page.add_to_grid()
@@ -102,8 +102,8 @@ def test_assign_add_to_grid_required_message_and_employee(page, assign_page, tra
     # Step 4: search the employee PIN; the employee's PIN and name fill in, and Branch Name is the user's branch
     assign_page.select_employee(ASSIGNEE_PIN)
     take_screenshot("employee selected")
-    assign_page.verify_employee_selected(ASSIGNEE_PIN, ASSIGNEE_NAME)
-    assign_page.verify_branch(USER_BRANCH)
+    assign_page.verify_employee_selected(ASSIGNEE_PIN, assignee_name)
+    assign_page.verify_branch(branch)
 
 
 # ---------------------------------------------------------------------------
@@ -120,12 +120,14 @@ def test_assign_full_flow_draft_submit_approve(
     """Asset Assign: Draft, Submit from the Transaction List, Approve, and the asset becomes ASSIGNED."""
     # Step 1: get the unassigned asset, fill the form and save it as a Draft
     serial = transactions.ensure_unassigned()
+    assignee_name = transactions.get_assignee_name()
+    branch = transactions.get_user_branch()
     assign_page.navigate_here()
     transaction_date = assign_page.fill_form(serial, ASSIGNEE_PIN, NOTE)
     take_screenshot("assign form filled")
     assign_page.draft_and_verify_toast(ASSIGN_DRAFT_TOAST)
     take_screenshot("assign draft saved")
-    expected = build_expected(ASSIGNEE_PIN, ASSIGNEE_NAME, NOTE, transaction_date)
+    expected = build_expected(ASSIGNEE_PIN, assignee_name, NOTE, transaction_date, branch=branch)
 
     # Step 2: Transaction List: check the Draft, open Edit, and Submit
     submit_draft_from_list(
@@ -142,7 +144,7 @@ def test_assign_full_flow_draft_submit_approve(
     asset_serial_global_list_page.verify_assign_status(serial, ASSIGNED)
     asset_serial_global_list_page.open_asset_popup(serial)
     asset_serial_global_list_page.verify_popup_fields(
-        {"employeePin": ASSIGNEE_PIN, "assignedEmployee": ASSIGNEE_NAME}
+        {"employeePin": ASSIGNEE_PIN, "assignedEmployee": assignee_name}
     )
     take_screenshot("asset is assigned")
     asset_serial_global_list_page.close_popup()
@@ -158,6 +160,7 @@ def test_assign_submit_only_flow(page, transactions, asset_serial_global_list_pa
     """Asset Assign: an asset submitted straight from the form (no Draft) and approved becomes ASSIGNED."""
     # Step 1: get the second usage asset, unassigned
     serial = transactions.ensure_unassigned(USAGE_B)
+    assignee_name = transactions.get_assignee_name()
 
     # Step 2: Submit straight from the Asset Assign form and Approve (the messages of both are checked)
     transactions.assign(serial)
@@ -168,7 +171,7 @@ def test_assign_submit_only_flow(page, transactions, asset_serial_global_list_pa
     asset_serial_global_list_page.verify_assign_status(serial, ASSIGNED)
     asset_serial_global_list_page.open_asset_popup(serial)
     asset_serial_global_list_page.verify_popup_fields(
-        {"employeePin": ASSIGNEE_PIN, "assignedEmployee": ASSIGNEE_NAME}
+        {"employeePin": ASSIGNEE_PIN, "assignedEmployee": assignee_name}
     )
     take_screenshot("asset is assigned")
     asset_serial_global_list_page.close_popup()

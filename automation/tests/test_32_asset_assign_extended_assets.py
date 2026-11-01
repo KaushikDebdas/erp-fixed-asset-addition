@@ -1,5 +1,5 @@
 """
-test_33_asset_assign_extended_assets.py: the Asset Assign screen and the
+test_32_asset_assign_extended_assets.py: the Asset Assign screen and the
 transaction screens that follow it, for a parent asset that has extended
 assets (CR FAHOV2-643, feature F02 Asset Assign, with F05 Transaction List,
 F06 Transaction Approval List and F07 Asset Assign Acknowledgement).
@@ -26,11 +26,11 @@ group together:
        a new extended asset added to the assigned parent is assigned automatically
 
 To run part of the file:
-    pytest tests/test_33_asset_assign_extended_assets.py -k "not_found or suggests"
+    pytest tests/test_32_asset_assign_extended_assets.py -k "not_found or suggests"
 """
 import pytest
 
-from test_data.asset_transaction_data import ASSIGN, ASSIGNEE_NAME, ASSIGNEE_PIN
+from test_data.asset_transaction_data import ASSIGN, ASSIGNEE_PIN
 from test_data.toast_messages import (
     ACKNOWLEDGE_TOAST,
     ASSIGN_DRAFT_TOAST,
@@ -44,9 +44,9 @@ NOTE = "AUTOMATION_TEST assign parent with extended asset"
 
 
 @pytest.fixture
-def page(assign_user_logged_in_page, request):
+def page(assignee_logged_in_page, request):
     """Every test in this file reuses the one tab that logged in once, as the Asset Assign user."""
-    yield from trace_one_test(assign_user_logged_in_page, request)
+    yield from trace_one_test(assignee_logged_in_page, request)
 
 
 # ---------------------------------------------------------------------------
@@ -279,8 +279,10 @@ def test_assign_draft_submit_approve_assigns_all_active(
     # Step 1: the expected values of the Draft made by the previous test
     pair = parent_with_inactive_extended
     assign_page.navigate_here()
+    assign_page.select_employee(ASSIGNEE_PIN)
+    assignee_name = assign_page.get_employee_name()
     transaction_date = assign_page.get_transaction_date().replace("-", "/")
-    expected = build_expected(ASSIGNEE_PIN, ASSIGNEE_NAME, NOTE, transaction_date)
+    expected = build_expected(ASSIGNEE_PIN, assignee_name, NOTE, transaction_date)
 
     # Step 2: Submit the Draft from the Transaction List, then Approve it
     submit_draft_from_list(transaction_list_page, assign_page, ASSIGN, pair["parent"], expected, ASSIGN_SUBMIT_TOAST, take_screenshot)
@@ -289,7 +291,7 @@ def test_assign_draft_submit_approve_assigns_all_active(
     # Step 3: the parent and its active extended assets are ASSIGNED; the disposed one is not listed
     asset_serial_global_list_page.navigate_here()
     asset_serial_global_list_page.verify_all_assigned([pair["parent"]] + pair["active"])
-    asset_serial_global_list_page.search_by_exact_serial(pair["inactive"])
+    asset_serial_global_list_page.search_by_serial(pair["inactive"])
     asset_serial_global_list_page.verify_serial_not_listed(pair["inactive"])
 
 

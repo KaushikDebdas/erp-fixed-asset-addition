@@ -34,7 +34,7 @@ projects/fixedasset/
 ## One-time setup (before first use)
 Claude Code needs two things that are easy to miss:
 1. **The `.claude/` folder** at the project root — `agents/` (the 7 agents
-   registered as subagents), `skills/` (the 9 skills, one `<name>/SKILL.md`
+   registered as subagents), `skills/` (the 8 skills, one `<name>/SKILL.md`
    each) and `settings.json` (permissions). Without it, Claude Code will not
    discover the agents or skills on its own.
 2. **The Playwright MCP server** configured in `.mcp.json` at the project
@@ -78,7 +78,7 @@ these up on first run.
   → your review/correction, in place
   → you upload to Zephyr (independent)
   → separately: point at Yes-marked rows, or describe a flow, or write an
-    e2e-flows/ journey → UI Explorer → temporary mapping →
+    e2e-flows/ journey → UI Explorer → element catalog →
     Automation Engineer → well-commented Playwright test(s)
   → Test Reporter agent → pytest run → dated report in automation/reports/
 ```

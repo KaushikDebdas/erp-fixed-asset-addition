@@ -1,5 +1,5 @@
 """
-test_34_asset_internal_movement_extended_assets.py: the Asset Internal Movement
+test_33_asset_internal_movement_extended_assets.py: the Asset Internal Movement
 screen and the Transaction Approval List for a parent asset that has an
 extended asset (CR FAHOV2-643, feature F04 Asset Internal Movement, with F06
 Transaction Approval List).
@@ -9,7 +9,7 @@ HOFA and HOFIN (`parent_with_extended`), then ASSIGNED to the test employee and
 acknowledged (`assigned_parent_with_extended`), because an asset with an
 acknowledgement pending is not offered in Asset Internal Movement. Both
 fixtures do only the steps that are missing, so this file runs alone or after
-test_33. Built from automation/element_catalog/asset_internal_movement.md and
+test_32. Built from automation/element_catalog/asset_internal_movement.md and
 the live check of 2026-10-10.
 
 The screens are used by the Asset Assign user (ASSIGN_USER_USERNAME and
@@ -24,7 +24,7 @@ asset, so run them together:
        Approve (both assets show the new location)
 
 To run part of the file:
-    pytest tests/test_34_asset_internal_movement_extended_assets.py -k "not_found or suggests"
+    pytest tests/test_33_asset_internal_movement_extended_assets.py -k "not_found or suggests"
 """
 import pytest
 

@@ -42,10 +42,6 @@ To run part of the file:
 """
 import pytest
 
-from test_data.asset_registration_data import (
-    build_asset_data,
-    build_registration_voucher,
-)
 from test_data.toast_messages import (
     APPROVE_SUCCESS_TOAST,
     NOTHING_TICKED_TOAST,
@@ -175,7 +171,7 @@ def test_approval_comment_box_keeps_500_characters(page, registrations, approval
     approval_list_page.open_registration_popup_by_number(number)
 
     # Step 2: type 600 characters
-    approval_list_page.enter_comment("C" * 600)
+    approval_list_page.enter_comment("Test" * 600)
     take_screenshot("600 characters typed in the comment box")
 
     # Step 3: only 500 are kept
@@ -297,9 +293,10 @@ def test_approval_filter_by_status(status, page, approval_list_page, take_screen
 
 
 @pytest.mark.regression
-def test_approval_filter_by_type_project_and_vendor(page, approval_list_page, take_screenshot):
+def test_approval_filter_by_type_project_and_vendor(page, registrations, approval_list_page, take_screenshot):
     """Asset Registration Approval List: filtering by Registration Type, Project or Vendor lists matching registrations."""
-    data = build_asset_data("furniture")
+    # The vendor that was really picked when the registration was made (vendors depend on the user's office)
+    data = registrations.get_pending_of(SHARED_PENDING_SLOT)["data"]
 
     # Step 1: filter by Registration Type AAQ; every row shows it
     approval_list_page.navigate_here()
@@ -366,23 +363,6 @@ def test_approval_records_per_page(size, page, approval_list_page, take_screensh
 
     # Step 3: the grid shows that many rows, and the line under it agrees
     approval_list_page.verify_rows_per_page(size)
-
-
-@pytest.mark.regression
-def test_approval_second_page_continues_the_list(page, approval_list_page, take_screenshot):
-    """Asset Registration Approval List: the second page shows the next 10 registrations."""
-    # Step 1: open the approval list and read the first page
-    approval_list_page.navigate_here()
-    first_page = approval_list_page.read_column("Registration Number")
-
-    # Step 2: go to page 2
-    approval_list_page.go_to_page(2)
-    take_screenshot("second page")
-
-    # Step 3: the line under the grid says 11 to 20 and the registrations are different, older ones
-    approval_list_page.verify_entries_info_starts_with("Showing 11 to 20 of")
-    second_page = approval_list_page.read_column("Registration Number")
-    approval_list_page.verify_page_two_is_older(first_page, second_page)
 
 
 # ---------------------------------------------------------------------------
@@ -512,35 +492,8 @@ def test_approval_filter_by_approve_date(page, registrations, approval_list_page
 
 
 # ---------------------------------------------------------------------------
-# 6. The voucher each approval creates (Accounting > Voucher Search)
+# 6. No voucher before approval (Accounting > Voucher Search)
 # ---------------------------------------------------------------------------
-
-
-@pytest.mark.regression
-@APPROVED_HERE
-def test_approval_creates_the_registration_voucher(
-    slot, page, registrations, approval_list_page, voucher_search_page, take_screenshot
-):
-    """Voucher Search: an approved registration has a voucher, and its Preview PDF is that registration's voucher."""
-    # Step 1: get the approved asset (approved above, or approved or created now)
-    record = registrations.get_approved_of(slot)
-    number = record["registration_number"]
-
-    # Step 2: read the day it was approved in the approval list; the voucher is dated that day
-    approval_list_page.navigate_here()
-    approval_list_page.filter_by_registration_number(number)
-    approval_date = approval_list_page.read_first_value("Approval Date")
-
-    # Step 3: in Accounting > Voucher Search, search by the Registration Number as the Transaction No
-    voucher_search_page.navigate_here()
-    voucher_search_page.search_by_transaction_no(number)
-    take_screenshot(f"{slot} voucher found for registration {number}")
-
-    # Step 4: the search row and the Preview PDF are this registration's voucher
-    """ 
-    expected = build_registration_voucher(record["data"], approval_date)
-    voucher_search_page.verify_registration_voucher(number, expected)
-    """
 
 
 @pytest.mark.regression

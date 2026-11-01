@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Page class | `pages/asset_write_off_list_page.py` → `AssetWriteOffListPage` (Edit opens the form in `AssetWriteOffPage`); test `tests/test_28_asset_write_off_list.py`, step reused from `utils/write_off_flow.py` |
+| Page class | `pages/asset_write_off_list_page.py` → `AssetWriteOffListPage` (Edit opens the form in `AssetWriteOffPage`); test `tests/test_27_asset_write_off_list.py`, step reused from `utils/write_off_flow.py` |
 | Module / menu path | Fixed Asset >> Asset Disposal >> Asset Write-off List |
 | Entry URL | `https://erpstaging.brac.net/nodef/fixedasset#!faAssetWriteOff/showEditWriteOffScheduleList` (reach via menu click) |
 | Role needed | ERP External User (tested with `abushoaib.asik`) |

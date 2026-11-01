@@ -16,6 +16,7 @@ expenses test_16 approved, or approves one when it runs alone.
 import pytest
 
 from test_data.asset_expense_data import ACCOUNTS, INVENTORY
+from utils.expense_flow import verify_asset_expenditure
 from utils.run_context import trace_one_test
 
 
@@ -63,9 +64,10 @@ def test_approval_list_columns_and_status_values(page, expense_approval_page, ta
 @pytest.mark.regression
 @pytest.mark.parametrize("source", [INVENTORY, ACCOUNTS])
 def test_approval_creates_the_expense_voucher(
-    source, page, expenses, expense_approval_page, voucher_search_page, take_screenshot
+    source, page, expenses, expense_approval_page, voucher_search_page,
+    asset_serial_global_list_page, take_screenshot
 ):
-    """Voucher Search: an approved expense has a voucher, and its Preview PDF is that expense's voucher."""
+    """An approved expense has a voucher (Voucher Search) and shows in the asset's Expenditure tab (Asset Serial Global List)."""
     # Step 1: get the approved expense (approved in test_16, or approved now)
     record = expenses.get_approved_expense(source)
     expense_id = record["expense_id"]
@@ -85,3 +87,6 @@ def test_approval_creates_the_expense_voucher(
 
     # Step 4: the voucher is listed
     assert voucher_search_page.is_voucher_listed(expense_id), f"No voucher was found for {expense_id}."
+
+    # Step 5: the asset's Expenditure tab (Asset Serial Global List) shows the approved expense
+    verify_asset_expenditure(asset_serial_global_list_page, expense_id, record["expected"], take_screenshot)

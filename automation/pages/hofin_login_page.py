@@ -43,7 +43,14 @@ class HofinLoginPage(BasePage):
         End the session: open the user menu at the top right and click Log Out; the
         sign-in form is then shown. Call it when a flow no longer needs the user.
         """
-        self.click(self.user_menu_button, "user menu")
+        # Close any dialog that covers the user menu, then open the menu
+        self.page.keyboard.press("Escape")
+        try:
+            self.click(self.user_menu_button, "user menu")
+        except Exception:
+            self.page.keyboard.press("Escape")
+            self.page.reload(wait_until="domcontentloaded")
+            self.click(self.user_menu_button, "user menu")
         self.click(self.log_out_item, "Log Out item")
         self.login_button.wait_for(state="visible", timeout=HOFIN_LOAD_TIMEOUT)
 

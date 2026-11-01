@@ -22,13 +22,8 @@ CREDIT_ACCOUNT = {
     ACCOUNTS: "Supplier Payable-Opex[2101010301-05]",
 }
 
-# Vendor/Supplier/Lessor Name, required for both sources
-VENDOR_SEARCH = "ACE IT"
-VENDOR_OPTION = "ACE IT[P008937]"
-
-# Expense amount in Taka, as it appears on the screens and on the voucher
+# Expense amount in Taka, as it appears on the screens
 EXPENSE_AMOUNT = "5000"
-EXPENSE_AMOUNT_ON_VOUCHER = "5,000.00"
 
 
 def new_expense_ref() -> str:
@@ -38,10 +33,3 @@ def new_expense_ref() -> str:
 # The saved Furniture asset every Asset Expense test uses (see utils/expense_helper.py)
 EXPENSE_ASSET_ITEM = "furniture"
 EXPENSE_ASSET_SUB_TYPE = "spot"
-
-# The voucher lines expected after approval: (account code, head of accounts)
-VOUCHER_DEBIT = ("5108010101-07", "Other Maintenance Expenses")
-VOUCHER_CREDIT = {
-    INVENTORY: ("1107010401-02", "Other Inventory"),
-    ACCOUNTS: ("2101010301-05", "Supplier Payable-Opex"),
-}

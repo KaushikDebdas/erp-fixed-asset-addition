@@ -10,7 +10,36 @@ How to use it:
     shipment = build_shipment_data()
     challan = build_challan_data()
 """
+from config.settings import ACK_SHIPMENT_ERP_DEFAULT_BRANCH
 from utils.helpers import unique_name
+
+# The scenarios of a transfer (which branch it goes to and how its projects relate)
+SAME_BRANCH_DIFFERENT_PROJECT = "same_branch_different_project"
+OTHER_BRANCH_SAME_PROJECT = "other_branch_same_project"
+OTHER_BRANCH_DIFFERENT_PROJECT = "other_branch_different_project"
+
+# The OTHER_BRANCH scenarios go to the default branch of the shipment acknowledgement user
+# (ACK_SHIPMENT_ERP_* in .env)
+
+# From Project is the project of the transferred asset. The To Project must be mapped for the
+# receiving branch, or Draft is refused with "Area code not found".
+SCENARIO_PROJECTS = {
+    SAME_BRANCH_DIFFERENT_PROJECT: {
+        "from_project": "[015] Microfinance (Dabi)",
+        "to_project_search": "Progoti",
+        "to_project": "[060] Progoti",
+    },
+    OTHER_BRANCH_SAME_PROJECT: {
+        "from_project": "[015] Microfinance (Dabi)",
+        "to_project_search": "Microfinance",
+        "to_project": "[015] Microfinance (Dabi)",
+    },
+    OTHER_BRANCH_DIFFERENT_PROJECT: {
+        "from_project": "[015] Microfinance (Dabi)",
+        "to_project_search": "Progoti",
+        "to_project": "[060] Progoti",
+    },
+}
 
 
 def build_shipment_data() -> dict:
@@ -30,21 +59,25 @@ def build_shipment_data() -> dict:
     }
 
 
-def build_challan_data(quantity: int = 1) -> dict:
+def build_challan_data(quantity: int = 1, scenario: str = SAME_BRANCH_DIFFERENT_PROJECT) -> dict:
     """
-    Return values for the Create Challan popup: a transfer inside Head Office
-    from project [015] to project [060] Progoti, of one Cabinet Table.
+    Return values for the Create Challan popup: one Cabinet Table, with the
+    projects of the scenario (SCENARIO_PROJECTS).
 
-    The To Project is [060] Progoti because other projects (for example
-    [C04] Administratiion) are not mapped and Draft is refused with
-    "Area code not found".
+    The receiving branch is "" for SAME_BRANCH_DIFFERENT_PROJECT, which means the sending branch (the
+    popup shows it). For the other scenarios it is the default branch of the shipment
+    acknowledgement user (ACK_SHIPMENT_ERP_DEFAULT_BRANCH in .env).
     """
+    projects = SCENARIO_PROJECTS[scenario]
+    receiving_branch = ""
+    if scenario != SAME_BRANCH_DIFFERENT_PROJECT:
+        receiving_branch = ACK_SHIPMENT_ERP_DEFAULT_BRANCH or ""
     return {
-        "from_project": "[015] Microfinance (Dabi)",
-        "receiving_branch_search": "Head",
-        "receiving_branch": "Head Office",
-        "to_project_search": "Progoti",
-        "to_project": "[060] Progoti",
+        "scenario": scenario,
+        "from_project": projects["from_project"],
+        "receiving_branch": receiving_branch,
+        "to_project_search": projects["to_project_search"],
+        "to_project": projects["to_project"],
         "item_search": "Cabinet",
         "item_name": "Cabinet Table",
         "quantity": quantity,

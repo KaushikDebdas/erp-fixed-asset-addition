@@ -27,10 +27,8 @@ import pytest
 
 from test_data.asset_transaction_data import (
     ASSIGNED,
-    ASSIGNEE_NAME,
     ASSIGNEE_PIN,
     FURNITURE_FORM_DETAILS,
-    MOVE_BUILDING,
     TRANSFER,
 )
 from test_data.toast_messages import (
@@ -60,8 +58,9 @@ def test_internal_movement_serial_search_shows_assigned_asset(
     page, internal_movement_page, transactions, take_screenshot
 ):
     """Asset Internal Movement: selecting the assigned asset shows its details and current assignee."""
-    # Step 1: get the asset, assigned
+    # Step 1: get the asset, assigned, and read the assignee's name
     serial = transactions.ensure_assigned()
+    assignee_name = transactions.get_assignee_name()
 
     # Step 2: open Asset Internal Movement, type the serial, search, and pick the suggestion
     internal_movement_page.navigate_here()
@@ -73,7 +72,7 @@ def test_internal_movement_serial_search_shows_assigned_asset(
         "assetName": FURNITURE_FORM_DETAILS["assetName"],
         "previousAssignStatus": ASSIGNED,
         "assignedEmployeePinNo": ASSIGNEE_PIN,
-        "assignedEmployeeName": ASSIGNEE_NAME,
+        "assignedEmployeeName": assignee_name,
     }
     internal_movement_page.verify_form_shows(serial, expected)
 
@@ -115,13 +114,16 @@ def test_internal_movement_full_flow_draft_submit_approve(
     """Asset Internal Movement: Draft, Submit from the Transaction List, Approve, and the asset shows its new location."""
     # Step 1: get the assigned asset, fill the form and save it as a Draft
     serial = transactions.ensure_assigned()
+    assignee_name = transactions.get_assignee_name()
+    branch = transactions.get_user_branch()
     internal_movement_page.navigate_here()
-    transaction_date = internal_movement_page.fill_form(serial, ASSIGNEE_PIN, NOTE, MOVE_BUILDING)
+    transaction_date = internal_movement_page.fill_form(serial, ASSIGNEE_PIN, NOTE, choose_building=True)
+    building = internal_movement_page.get_building()
     floor = internal_movement_page.get_floor()
     take_screenshot("internal movement form filled")
     internal_movement_page.draft_and_verify_toast(MOVEMENT_DRAFT_TOAST)
     take_screenshot("internal movement draft saved")
-    expected = build_expected(ASSIGNEE_PIN, ASSIGNEE_NAME, NOTE, transaction_date, MOVE_BUILDING, floor)
+    expected = build_expected(ASSIGNEE_PIN, assignee_name, NOTE, transaction_date, building, floor, branch)
 
     # Step 2: Transaction List: check the Draft, open Edit, and Submit
     submit_draft_from_list(
@@ -137,7 +139,7 @@ def test_internal_movement_full_flow_draft_submit_approve(
     asset_serial_global_list_page.search_by_serial(serial)
     asset_serial_global_list_page.verify_assign_status(serial, ASSIGNED)
     asset_serial_global_list_page.open_asset_popup(serial)
-    asset_serial_global_list_page.verify_popup_fields({"buildingName": MOVE_BUILDING, "floorNo": floor})
+    asset_serial_global_list_page.verify_popup_fields({"buildingName": building, "floorNo": floor})
     take_screenshot("asset shows its new location")
     asset_serial_global_list_page.close_popup()
 
@@ -154,13 +156,13 @@ def test_internal_movement_submit_only_flow(page, transactions, asset_serial_glo
     serial = transactions.ensure_assigned(USAGE_B)
 
     # Step 2: Submit straight from the Asset Internal Movement form and Approve (the messages of both are checked)
-    transactions.move(serial)
+    building = transactions.move(serial)
 
     # Step 3: the asset is still ASSIGNED and its profile shows the new building
     asset_serial_global_list_page.navigate_here()
     asset_serial_global_list_page.search_by_serial(serial)
     asset_serial_global_list_page.verify_assign_status(serial, ASSIGNED)
     asset_serial_global_list_page.open_asset_popup(serial)
-    asset_serial_global_list_page.verify_popup_fields({"buildingName": MOVE_BUILDING})
+    asset_serial_global_list_page.verify_popup_fields({"buildingName": building})
     take_screenshot("asset shows its new building")
     asset_serial_global_list_page.close_popup()

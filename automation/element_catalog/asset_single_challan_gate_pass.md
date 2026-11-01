@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Page class | `pages/single_gate_pass_page.py` → `SingleGatePassPage` (inherits `GatePassPage`, see `asset_gate_pass_generation.md`); tests in `tests/test_26_asset_gate_pass_generation_challan.py` |
+| Page class | `pages/single_gate_pass_page.py` → `SingleGatePassPage` (inherits `GatePassPage`, see `asset_gate_pass_generation.md`); tests in `tests/test_25_asset_gate_pass_generation_challan.py` |
 | Module / menu path | Fixed Asset >> Single Challan >> Gate Pass Generation (same link name as under Asset Transfer) |
 | Entry URL | `https://erpstaging.brac.net/nodef/fixedasset#!faAssetSingleChallan/showGatepassGenerateList` |
 | Last explored | 2026-10-08 |

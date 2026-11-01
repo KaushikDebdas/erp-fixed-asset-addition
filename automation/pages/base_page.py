@@ -18,7 +18,9 @@ different pages need it. Page-specific actions belong in that page's class.
 from urllib.parse import urlsplit
 
 from playwright.sync_api import Locator, Page, expect
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
+from utils.helpers import find_one_text, search_word_of
 from utils.logger import action_logger, assertion_logger
 
 # Maximum time to wait for a grid to show its new rows after a Search (milliseconds)
@@ -27,14 +29,24 @@ GRID_RELOAD_TIMEOUT = 15000
 # Maximum time to wait for a suggestion list or a calendar to open (milliseconds)
 POPUP_OPEN_TIMEOUT = 8000
 
+# Maximum time to wait for a menu link to show before reporting that the user has no right to it (milliseconds)
+MENU_LINK_TIMEOUT = 10000
+
+# Maximum time to wait for the Accounting Date box in the top right corner (milliseconds)
+BUSINESS_DAY_TIMEOUT = 10000
+
+# Maximum time to wait for the loader to show after an action (milliseconds). The loader
+# shows a few tens of milliseconds after the click, so the wait starts by waiting for it.
+LOADER_APPEAR_TIMEOUT = 1000
+
 # Number of times a search button / calendar icon is used to open its list
 OPEN_LIST_ATTEMPTS = 3
 
 # Path of the Fixed Asset module on the ERP site
 FIXED_ASSET_PATH = "/nodef/fixedasset"
 
-# Spaces shown in front of an extended asset's serial in every list (CR FAHOV2-643)
-EXTENDED_SERIAL_INDENT = " " * 4
+# Text the ERP puts before the serial of an extended asset in an asset list (CR FAHOV2-643: four spaces)
+EXTENDED_SERIAL_INDENT = "\xa0" * 4
 
 
 class BasePage:
@@ -76,32 +88,6 @@ class BasePage:
         action_logger.info(f"Type into: {element_name}")
         element.fill(text)
 
-    def type_with_keys(self, element: Locator, text: str, element_name: str) -> None:
-        """
-        Type into a text box one key at a time, like a person does. Some boxes
-        only react to real key presses (a total is calculated from the amount
-        typed, a suggestion list opens), and `type_text` does not trigger them.
-        The box is cleared first. Like `type_text`, the text is not logged.
-        """
-        action_logger.info(f"Type with keys into: {element_name}")
-        element.clear()
-        element.press_sequentially(text)
-
-    def choose_from_ng_select(self, box_input: Locator, search_text: str, option_name: str) -> None:
-        """
-        Choose a value in a search drop-down box of the finance application
-        (an ng-select box): click the box input `box_input`, type `search_text`
-        (leave it empty when the list opens by itself), then click the option
-        named exactly `option_name`.
-        """
-        action_logger.info(f"Choose in drop-down: {option_name}")
-        box_input.click()
-        if search_text != "":
-            box_input.press_sequentially(search_text)
-        option = self.page.get_by_role("option", name=option_name, exact=True)
-        option.wait_for(state="visible")
-        option.click()
-
     def get_text(self, element: Locator, element_name: str) -> str:
         """Return the visible text of an element."""
         action_logger.info(f"Read text of: {element_name}")
@@ -138,6 +124,57 @@ class BasePage:
             action_logger.info(f"Not shown yet: {element_name}")
             return False
 
+    def read_business_day(self) -> str:
+        """
+        Return the text of the Accounting Date box in the top right corner of the
+        Fixed Asset module, for example "Accounting Date : 20-09-2026 [DAY CLOSED]".
+        Fails with a clear message when the box does not show.
+        """
+        box = self.page.locator("#sessionBusinessDateReload")
+        assert self.is_shown_within(box, "Accounting Date box", BUSINESS_DAY_TIMEOUT), (
+            "The Accounting Date box (top right corner) is not shown, so the business day cannot be checked."
+        )
+        return " ".join(box.inner_text().split())
+
+    def verify_business_day_open(self) -> None:
+        """
+        Stop with a clear reason when the Accounting Date is marked [DAY CLOSED].
+        Call it before steps that register or approve something: on a closed day the
+        ERP refuses the approval ("Business day not open for Fixed Asset."), so
+        checking first avoids doing all the earlier steps for nothing.
+        """
+        from utils.login_session import user_of
+
+        day_text = self.read_business_day()
+        action_logger.info(f"Business day: {day_text}")
+        if "CLOSED" in day_text.upper():
+            username = user_of(self.page)[0]
+            reason = (
+                f"The business day is closed for user {username}: '{day_text}'. "
+                f"Open the day for this office, or sign in to an office whose day is open."
+            )
+            assertion_logger.error(reason)
+            raise AssertionError(reason)
+        assertion_logger.info(f"Business day is open: {day_text}")
+
+    def click_menu_link(self, link: Locator, link_name: str) -> None:
+        """
+        Click a menu link of the Fixed Asset module. When the link is not on the
+        menu, the signed-in user has no menu right for it: stop with a message that
+        names the user and the menu, instead of a plain timeout.
+        """
+        if not self.is_shown_within(link, f"{link_name} menu link", MENU_LINK_TIMEOUT):
+            from utils.login_session import user_of
+
+            username = user_of(self.page)[0]
+            reason = (
+                f"User {username} has no access to the menu '{link_name}': the link is not on the menu. "
+                f"Ask for the menu right, or sign in with a user who has it."
+            )
+            assertion_logger.error(reason)
+            raise AssertionError(reason)
+        self.click(link, f"{link_name} menu link")
+
     def open_fixed_asset_module(self) -> None:
         """
         Open the Fixed Asset module from the ERP home page that shows after
@@ -167,13 +204,16 @@ class BasePage:
         return username_field.is_visible()
 
     def sign_in_again(self) -> None:
-        """Sign in again with the test user, after the ERP ended the session."""
-        from config.settings import TEST_PASSWORD, TEST_USERNAME
+        """Sign in again, after the ERP ended the session, as the user this tab was signed in as."""
         from pages.login_page import LoginPage
+        from utils.login_session import user_of
 
         action_logger.info("The session ended; signing in again")
+        username, password, branch = user_of(self.page)
         login_page = LoginPage(self.page)
-        login_page.login(TEST_USERNAME, TEST_PASSWORD)
+        login_page.login(username, password)
+        login_page.verify_logged_in(username)
+        login_page.select_office_if_asked(branch)
         login_page.close_popup_if_present()
 
     def open_registration_submenu(self, link_name: str) -> None:
@@ -198,8 +238,7 @@ class BasePage:
         registration_menu = self.page.get_by_text("Registration", exact=True).first
         self.click(registration_menu, "Registration menu")
         link = self.page.get_by_role("link", name=link_name)
-        self.wait_until_visible(link, f"{link_name} menu link")
-        self.click(link, f"{link_name} menu link")
+        self.click_menu_link(link, link_name)
         self.wait_for_page_load()
 
     def open_asset_profile_submenu(self, link_name: str) -> None:
@@ -213,8 +252,7 @@ class BasePage:
         asset_profile_menu = self.page.get_by_text("Asset Profile", exact=True).first
         self.click(asset_profile_menu, "Asset Profile menu")
         link = self.page.get_by_role("link", name=link_name, exact=True)
-        self.wait_until_visible(link, f"{link_name} menu link")
-        self.click(link, f"{link_name} menu link")
+        self.click_menu_link(link, link_name)
         self.wait_for_page_load()
 
     def open_asset_transaction_submenu(self, link_name: str) -> None:
@@ -228,8 +266,7 @@ class BasePage:
         asset_transaction_menu = self.page.get_by_text("Asset Transaction", exact=True).first
         self.click(asset_transaction_menu, "Asset Transaction menu")
         link = self.page.get_by_role("link", name=link_name, exact=True)
-        self.wait_until_visible(link, f"{link_name} menu link")
-        self.click(link, f"{link_name} menu link")
+        self.click_menu_link(link, link_name)
         self.wait_for_page_load()
 
     def open_asset_transfer_submenu(self, link_name: str) -> None:
@@ -242,8 +279,7 @@ class BasePage:
         asset_transfer_menu = self.page.get_by_text("Asset Transfer", exact=True).first
         self.click(asset_transfer_menu, "Asset Transfer menu")
         link = self.page.get_by_role("link", name=link_name, exact=True)
-        self.wait_until_visible(link, f"{link_name} menu link")
-        self.click(link, f"{link_name} menu link")
+        self.click_menu_link(link, link_name)
         self.wait_for_page_load()
 
     def open_asset_expenditure_submenu(self, link_name: str) -> None:
@@ -257,8 +293,7 @@ class BasePage:
         expenditure_menu = self.page.get_by_text("Asset Expenditure", exact=True).first
         self.click(expenditure_menu, "Asset Expenditure menu")
         link = self.page.get_by_role("link", name=link_name, exact=True)
-        self.wait_until_visible(link, f"{link_name} menu link")
-        self.click(link, f"{link_name} menu link")
+        self.click_menu_link(link, link_name)
         self.wait_for_page_load()
 
     def open_single_challan_submenu(self, link_name: str) -> None:
@@ -272,9 +307,50 @@ class BasePage:
         single_challan_menu = self.page.get_by_text("Single Challan", exact=True).first
         self.click(single_challan_menu, "Single Challan menu")
         link = self.page.get_by_role("link", name=link_name, exact=True)
-        self.wait_until_visible(link, f"{link_name} menu link")
-        self.click(link, f"{link_name} menu link")
+        self.click_menu_link(link, link_name)
         self.wait_for_page_load()
+
+    def open_select2(self, container_css: str, what: str, search_text: str):
+        """
+        Open a select2 box and type `search_text` in its search field: click the box `container_css`
+        until its drop-down shows the search field and the text is typed, at most
+        OPEN_LIST_ATTEMPTS times. Returns the search field. Stops with a message when the
+        drop-down never stays open. `what` names the box in the log and the message.
+        """
+        search_field = self.page.locator(".select2-drop-active:visible input.select2-input")
+        for attempt in range(OPEN_LIST_ATTEMPTS):
+            self.click(self.page.locator(f"{container_css} a.select2-choice"), f"{what} box")
+            if not self.is_shown_within(search_field, "drop-down search field", POPUP_OPEN_TIMEOUT):
+                continue
+            try:
+                action_logger.info("Type into: drop-down search field")
+                search_field.fill(search_text, timeout=POPUP_OPEN_TIMEOUT)
+                return search_field
+            except PlaywrightTimeoutError:
+                action_logger.info(f"The drop-down of {what} closed before the text was typed")
+        raise AssertionError(f"The drop-down of {what} did not stay open after {OPEN_LIST_ATTEMPTS} clicks.")
+
+    def choose_office_from_select2(self, container_css: str, text: str, what: str) -> None:
+        """
+        Choose a branch in a select2 box. `text` can be written in any style that identifies
+        one branch (spaces, hyphens and leading zeros are ignored), e.g. '[BO-0233] Chagalnaiya'.
+        Stops with a message listing the matching entries when none or several match.
+        `what` names the box in the log and in that message, e.g. "Receiving Branch".
+        """
+        action_logger.info(f"Choose {what}: {text}")
+        for attempt in range(OPEN_LIST_ATTEMPTS):
+            self.open_select2(container_css, what, search_word_of(text))
+            labels = self.page.locator(".select2-drop-active:visible .select2-result-label")
+            if not self.is_shown_within(labels.first, f"{what} list"):
+                continue
+            chosen = find_one_text([name.strip() for name in labels.all_inner_texts()], text, what)
+            try:
+                labels.filter(has_text=chosen).first.click(timeout=POPUP_OPEN_TIMEOUT)
+                action_logger.info(f"Click: {what} {chosen}")
+                return
+            except PlaywrightTimeoutError:
+                action_logger.info(f"{what} {chosen} could not be clicked; opening the drop-down again")
+        raise AssertionError(f"{what} '{text}' could not be chosen after {OPEN_LIST_ATTEMPTS} attempts.")
 
     def choose_from_select2(self, container_css: str, search_text: str, option_text: str) -> None:
         """
@@ -285,14 +361,84 @@ class BasePage:
         used, so this is the one way these boxes are filled.
         """
         action_logger.info(f"Choose in drop-down {container_css}: {option_text}")
-        box = self.page.locator(container_css)
-        self.click(box.locator("a.select2-choice"), f"{container_css} box")
-        search_field = self.page.locator(".select2-drop-active:visible input.select2-input")
-        self.wait_until_visible(search_field, "drop-down search field")
-        self.type_text(search_field, search_text, "drop-down search field")
-        option = self.page.locator(".select2-drop-active:visible .select2-result-label", has_text=option_text).first
-        self.wait_until_visible(option, f"drop-down result {option_text}")
-        self.click(option, f"drop-down result {option_text}")
+        for attempt in range(OPEN_LIST_ATTEMPTS):
+            self.open_select2(container_css, container_css, search_text)
+            option = self.page.locator(".select2-drop-active:visible .select2-result-label", has_text=option_text).first
+            if not self.is_shown_within(option, f"drop-down result {option_text}"):
+                continue
+            try:
+                option.click(timeout=POPUP_OPEN_TIMEOUT)
+                action_logger.info(f"Click: drop-down result {option_text}")
+                return
+            except PlaywrightTimeoutError:
+                action_logger.info(f"Drop-down result {option_text} could not be clicked; opening the drop-down again")
+        raise AssertionError(f"'{option_text}' could not be chosen in {container_css} after {OPEN_LIST_ATTEMPTS} attempts.")
+
+    def verify_extended_rows_below_parent(self, table: Locator, parent: str, extended_serials: list, where: str) -> None:
+        """
+        Confirm an asset list shows `extended_serials` directly below the row of `parent`, in
+        that order and no other extended asset of it: each with an empty SL cell, its serial
+        indented by four spaces and no button. In these lists the SL is the first shown cell
+        and the Asset Serial the second. `where` names the list in the failure text.
+        """
+        assertion_logger.info(f"Verifying the extended assets of {parent} in the {where}")
+        rows = table.locator("tbody tr")
+        serials = [rows.nth(i).locator("td:visible").nth(1).inner_text().strip() for i in range(rows.count())]
+        assert parent in serials, f"The {where} does not list {parent}. Serials listed: {serials}"
+        first = serials.index(parent) + 1
+        after_parent = [serial for serial in serials[first:] if serial.startswith(parent + "-")]
+        assert after_parent == extended_serials and serials[first:first + len(extended_serials)] == extended_serials, (
+            f"The {where} should list {extended_serials} directly below {parent}. Serials listed: {serials}"
+        )
+        problems = []
+        for position in range(first, first + len(extended_serials)):
+            row = rows.nth(position)
+            cells = row.locator("td:visible").all_inner_texts()
+            if cells[0].strip() != "":
+                problems.append(f"{serials[position]} has SL '{cells[0].strip()}'")
+            if not cells[1].startswith(EXTENDED_SERIAL_INDENT):
+                problems.append(f"{serials[position]} is not indented by four spaces: {cells[1]!r}")
+            if row.locator("button").count() > 0:
+                problems.append(f"{serials[position]} has a button")
+        assert not problems, f"The extended assets in the {where} are not shown as expected: {problems}"
+
+    def type_with_keys(self, element: Locator, text: str, element_name: str) -> None:
+        """
+        Clear a text box and type into it key by key, so the page's own key
+        handlers run (the HOFIN forms ignore a value that is only set).
+        The text is not logged, only the field name.
+        """
+        action_logger.info(f"Type into: {element_name}")
+        element.click()
+        element.press("Control+A")
+        element.press("Backspace")
+        element.press_sequentially(text)
+
+    def choose_from_ng_select(self, input_box: Locator, search_text: str, option_text: str) -> None:
+        """
+        Choose a value in a search drop-down box (an ng-select box of HOFIN):
+        click `input_box` (the box's text input), type `search_text` when it is
+        not empty, then click the option whose text contains `option_text`.
+        Example:
+            self.choose_from_ng_select(self.vendor_input, "SU0006", "SU000634 -3DEVs")
+        """
+        action_logger.info(f"Choose in drop-down: {option_text}")
+        option = self.page.get_by_role("option", name=option_text).first
+        for attempt in range(OPEN_LIST_ATTEMPTS):
+            input_box.click()
+            if search_text != "":
+                input_box.press("Control+A")
+                input_box.press("Backspace")
+                input_box.press_sequentially(search_text)
+            if not self.is_shown_within(option, f"drop-down option {option_text}"):
+                continue
+            try:
+                option.click(timeout=POPUP_OPEN_TIMEOUT)
+                action_logger.info(f"Click: drop-down option {option_text}")
+                return
+            except PlaywrightTimeoutError:
+                action_logger.info(f"Drop-down option {option_text} could not be clicked; opening the drop-down again")
+        raise AssertionError(f"'{option_text}' could not be chosen in the drop-down after {OPEN_LIST_ATTEMPTS} attempts.")
 
     def open_asset_disposal_submenu(self, link_name: str) -> None:
         """
@@ -304,8 +450,7 @@ class BasePage:
         disposal_menu = self.page.get_by_text("Asset Disposal", exact=True).first
         self.click(disposal_menu, "Asset Disposal menu")
         link = self.page.get_by_role("link", name=link_name, exact=True)
-        self.wait_until_visible(link, f"{link_name} menu link")
-        self.click(link, f"{link_name} menu link")
+        self.click_menu_link(link, link_name)
         self.wait_for_page_load()
 
     def wait_for_table_to_reload(self, table: Locator) -> None:
@@ -324,11 +469,18 @@ class BasePage:
     def wait_for_loader_to_finish(self) -> None:
         """
         Wait until the full-screen loading overlay (`.modalLoader`) that shows
-        for a moment after a Search is gone. It is not shown when nothing is
-        loading, so this returns at once in that case.
+        for a moment after a Search is gone. The overlay appears a few tens of
+        milliseconds after the click, so this first waits up to LOADER_APPEAR_TIMEOUT
+        for it to show, then for it to go. When it never shows, nothing was loading
+        and this returns.
         """
         action_logger.info("Wait until: the loader has finished")
-        self.page.locator(".modalLoader").first.wait_for(state="hidden")
+        loader = self.page.locator(".modalLoader").first
+        try:
+            loader.wait_for(state="visible", timeout=LOADER_APPEAR_TIMEOUT)
+        except PlaywrightTimeoutError:
+            return
+        loader.wait_for(state="hidden")
 
     def scroll_into_view(self, element: Locator, element_name: str) -> None:
         """
@@ -378,8 +530,11 @@ class BasePage:
         """
         Wait until the grid shows either a row containing `text` or the
         "No data available in table" message, so a check made right after a
-        Search never reads the previous result. It then scrolls that row into view.
+        Search never reads the previous result. The loader that shows after Search
+        must be gone first: until then the grid still holds the previous result,
+        which can already contain a row with `text`. It then scrolls that row into view.
         """
+        self.wait_for_loader_to_finish()
         row = table.locator("tbody tr", has_text=text)
         no_data = table.locator("tbody tr", has_text="No data available in table")
         row.or_(no_data).first.wait_for(state="visible")
@@ -479,48 +634,6 @@ class BasePage:
             if actual != wanted:
                 problems.append(f"{heading}: expected '{wanted}' but found '{actual}'")
         assert not problems, f"The row of {row_text} is not as expected: {problems}"
-
-    def read_serial_cells(self, rows: Locator) -> list:
-        """
-        Return one {"sl": ..., "serial": ...} for each row of a grid: the SL number
-        and the Asset Serial as shown (the spaces in front of an extended asset's
-        serial are kept; the screen writes them as non-breaking spaces, which are
-        returned as ordinary spaces). They are the first two visible cells of a row.
-        """
-        found = []
-        for index in range(rows.count()):
-            cells = rows.nth(index).locator("td:visible")
-            serial_text = cells.nth(1).inner_text().replace("\xa0", " ")
-            found.append({"sl": cells.nth(0).inner_text().strip(), "serial": serial_text})
-        return found
-
-    def verify_extended_rows_below_parent(self, rows: Locator, parent_serial: str, extended_serials: list) -> None:
-        """
-        Confirm a grid lists the parent asset with its SL number, and directly
-        below it each extended asset in `extended_serials` with no SL number and
-        its serial indented by 4 spaces. Names every difference.
-        """
-        assertion_logger.info(f"Verifying {extended_serials} are listed below {parent_serial}")
-        found = self.read_serial_cells(rows)
-        serials = [row["serial"].strip() for row in found]
-        assert parent_serial in serials, f"Expected the parent {parent_serial} in the grid but it lists {serials}."
-        parent_index = serials.index(parent_serial)
-        problems = []
-        if found[parent_index]["sl"] == "":
-            problems.append(f"the parent {parent_serial} has no SL number")
-        for position, extended_serial in enumerate(extended_serials):
-            row_index = parent_index + 1 + position
-            if row_index >= len(found):
-                problems.append(f"{extended_serial} is not listed directly below the parent")
-                continue
-            if found[row_index]["serial"] != EXTENDED_SERIAL_INDENT + extended_serial:
-                problems.append(
-                    f"row below the parent shows '{found[row_index]['serial']}' instead of "
-                    f"'{EXTENDED_SERIAL_INDENT}{extended_serial}' (the serial with 4 spaces in front)"
-                )
-            if found[row_index]["sl"] != "":
-                problems.append(f"{extended_serial} has an SL number '{found[row_index]['sl']}'")
-        assert not problems, f"The grid does not list the extended assets of {parent_serial} as expected: {problems}"
 
     def close_popup_if_present(self, timeout: int = 3000) -> None:
         """

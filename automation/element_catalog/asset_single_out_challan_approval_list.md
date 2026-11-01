@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Page class | `pages/single_out_challan_approval_list_page.py` → `SingleOutChallanApprovalListPage` (inherits `SingleChallanListPage`); tests in `tests/test_24_asset_single_out_challan_approval_list.py` |
+| Page class | `pages/single_out_challan_approval_list_page.py` → `SingleOutChallanApprovalListPage` (inherits `SingleChallanListPage`); tests in `tests/test_23_asset_single_out_challan_approval_list.py` |
 | Module / menu path | Fixed Asset >> Single Challan >> Asset Single Out Challan Approval List |
 | Entry URL | `https://erpstaging.brac.net/nodef/fixedasset#!faAssetSingleChallan/showApproverList` |
 | Last explored | 2026-10-08 |

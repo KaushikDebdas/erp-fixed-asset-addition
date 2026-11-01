@@ -11,7 +11,6 @@ Un Assign, Internal Movement) goes through after its Draft is saved.
     employee_pin, employee_name, note, transaction_date (dd/mm/yyyy), and
     optionally building and floor.
 """
-from test_data.asset_transaction_data import USER_BRANCH
 from test_data.toast_messages import TRANSACTION_APPROVE_TOAST
 from utils.logger import assertion_logger
 
@@ -19,14 +18,15 @@ from utils.logger import assertion_logger
 
 def build_expected(
     employee_pin: str, employee_name: str, note: str, transaction_date: str,
-    building: str = "", floor: str = ""
+    building: str = "", floor: str = "", branch: str = ""
 ) -> dict:
     """
     Return the `expected` dictionary the checks below compare with. Give
-    `building` and `floor` only for an Internal Movement.
+    `building` and `floor` only for an Internal Movement, and `branch` (the
+    logged-in user's Branch Name) to have the Edit form's branch checked.
 
     Example:
-        expected = build_expected(ASSIGNEE_PIN, ASSIGNEE_NAME, NOTE, transaction_date)
+        expected = build_expected(ASSIGNEE_PIN, assignee_name, NOTE, transaction_date, branch=branch)
     """
     expected = {
         "employee_pin": employee_pin,
@@ -34,6 +34,8 @@ def build_expected(
         "note": note,
         "transaction_date": transaction_date,
     }
+    if branch != "":
+        expected["branch"] = branch
     if building != "":
         expected["building"] = building
         expected["floor"] = floor
@@ -91,8 +93,11 @@ def submit_draft_from_list(
     assert found_note == expected["note"], (
         f"Expected Remarks '{expected['note']}' on the Edit form but found '{found_note}'."
     )
-    found_branch = form_page.get_branch_name()
-    assert found_branch == USER_BRANCH, f"Expected Branch Name '{USER_BRANCH}' on the Edit form but found '{found_branch}'."
+    if "branch" in expected:
+        found_branch = form_page.get_branch_name()
+        assert found_branch == expected["branch"], (
+            f"Expected Branch Name '{expected['branch']}' on the Edit form but found '{found_branch}'."
+        )
 
     toast = form_page.submit_and_get_toast()
     take_screenshot(f"{transaction_type} submitted")

@@ -31,6 +31,11 @@ tracking columns this framework adds on top.
   scenarios (precondition, steps, test data, expected result) to copy the
   step wording from. It does NOT cover every screen. Scenarios tagged DERIVED
   have exact messages "to be confirmed"; keep that wording.
+  The file is very large (about 9,800 lines): never read it whole. Run Grep
+  with the pattern `^### ` on it to get the line number of each area heading,
+  then Read only the area for the CR's screen (offset and limit). Read another
+  area only if the CR touches it. Read the whole file only for cross-cutting
+  work such as first onboarding.
 - `projects/<project>/business_knowledge/` (reviewed output of the
   Business Analyst agent)
 - `projects/<project>/domain-docs/` — if a module-specific Instructions

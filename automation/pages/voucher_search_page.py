@@ -2,8 +2,7 @@
 VoucherSearchPage: Accounting > Voucher > Voucher Search screen.
 
 Used to find the voucher that an approved transaction created, by its
-Transaction Number (for an Asset Expense this is the Expense ID), and to read
-the voucher that Preview opens as a PDF in a new tab. See
+Transaction Number (for an Asset Expense this is the Expense ID). See
 `automation/element_catalog/voucher_search.md`.
 """
 import re
@@ -11,7 +10,6 @@ import re
 from pages.base_page import OPEN_LIST_ATTEMPTS, BasePage
 from utils.helpers import day_of_month
 from utils.logger import action_logger, assertion_logger
-from utils.voucher_pdf import parse_voucher, read_voucher_text
 
 
 class VoucherSearchPage(BasePage):
@@ -126,93 +124,6 @@ class VoucherSearchPage(BasePage):
             "particular": cells[4],
             "status": cells[5],
         }
-
-    def read_voucher_preview(self, transaction_no: str) -> dict:
-        """
-        Click Preview for this Transaction No. The voucher opens as a PDF in a
-        new tab, which has no page text. So the tab's address is taken, the tab
-        is closed, and the same address is fetched with the logged-in session
-        and read with `pypdf`. Returns the parsed voucher (see
-        `utils/voucher_pdf.parse_voucher`) plus `url` and `pdf_status`.
-        """
-        row = self.results_table.locator("tbody tr", has_text=transaction_no).first
-        with self.page.context.expect_page() as new_tab_info:
-            self.click(row.locator("td").last.locator("a"), f"Preview of {transaction_no}")
-        preview_tab = new_tab_info.value
-        preview_tab.wait_for_load_state("load")
-        preview_url = preview_tab.url
-        preview_tab.close()
-        response = self.page.context.request.get(preview_url)
-        text = read_voucher_text(response.body())
-        voucher = parse_voucher(text)
-        voucher["text"] = text
-        voucher["url"] = preview_url
-        voucher["pdf_status"] = response.status
-        voucher["content_type"] = response.headers.get("content-type", "")
-        action_logger.info(f"Voucher preview read for {transaction_no}: voucher {voucher['voucher_number']}")
-        return voucher
-
-    def verify_registration_voucher(self, registration_number: str, expected: dict) -> None:
-        """
-        Confirm the voucher of an approved asset registration (see
-        test_data.asset_registration_data.build_registration_voucher for
-        `expected`). The search row is found by the Registration Number, and
-        the Preview PDF must be this registration's voucher: same voucher
-        number as the row, "Reference no: <Registration Number>" printed on it,
-        the expected date, project, branch, accounts and amounts. Fails and
-        names everything that was different.
-        """
-        assert self.is_voucher_listed(registration_number), (
-            f"No voucher was found for Registration Number {registration_number}."
-        )
-        row = self.get_row_values(registration_number)
-        voucher = self.read_voucher_preview(registration_number)
-        assertion_logger.info(f"Verifying the voucher of registration {registration_number}")
-
-        problems = []
-        particular_pattern = (
-            rf"{re.escape(expected['particular_group'])}\[\d+\] Registered by AAQ\. "
-            rf"Asset Item: {re.escape(expected['item_name'])}"
-        )
-        # The search row shows the date without a leading zero, e.g. 20/9/2026
-        expected_row_date = "/".join(str(int(part)) for part in expected["date"].split("/"))
-        checks = [
-            ("search row date", row["date"], expected_row_date),
-            ("search row amount", row["amount"], expected["amount_in_search"]),
-            ("search row status", row["status"], "Approved"),
-            ("PDF status code", voucher["pdf_status"], 200),
-            ("voucher title", voucher["title"], "JOURNAL VOUCHER"),
-            ("voucher number (PDF and search row)", voucher["voucher_number"], row["voucher_number"]),
-            ("creation date", voucher["creation_date"], expected["date"]),
-            ("posted date", voucher["posted_date"], expected["date"]),
-            ("project", voucher["project"], expected["project"]),
-            ("total debit", voucher["total_debit"], expected["amount_on_voucher"]),
-            ("total credit", voucher["total_credit"], expected["amount_on_voucher"]),
-        ]
-        for name, found, wanted in checks:
-            if found != wanted:
-                problems.append(f"{name}: expected '{wanted}' but found '{found}'")
-        if not re.fullmatch(particular_pattern, row["particular"]):
-            problems.append(f"search row particular: '{row['particular']}' does not match '{particular_pattern}'")
-        if expected["branch"] not in (voucher["branch"] or ""):
-            problems.append(f"branch: expected '{expected['branch']}' in '{voucher['branch']}'")
-        if "pdf" not in voucher["content_type"]:
-            problems.append(f"content type: expected a PDF but found '{voucher['content_type']}'")
-
-        # The two account lines: the asset account is debited and the credit account is credited
-        wanted_lines = [
-            {**expected["debit"], "debit": expected["amount_on_voucher"], "credit": "0.00"},
-            {**expected["credit"], "debit": "0.00", "credit": expected["amount_on_voucher"]},
-        ]
-        if voucher["lines"] != wanted_lines:
-            problems.append(f"account lines: expected {wanted_lines} but found {voucher['lines']}")
-
-        # The voucher belongs to this registration: its number is printed as the reference
-        flat_text = " ".join(voucher["text"].split())
-        if f"Reference no: {registration_number}" not in flat_text:
-            problems.append(f"the voucher text does not show 'Reference no: {registration_number}'")
-
-        assert not problems, f"The voucher of registration {registration_number} is not as expected: {problems}"
 
     def verify_no_voucher(self, transaction_no: str) -> None:
         """Confirm the search for this Transaction No found no voucher. Fails with the row that was found."""

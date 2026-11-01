@@ -23,3 +23,12 @@
 - `BasePage.close_popup_if_present(timeout=3000)` encapsulates this: waits up to 3s for `#modals.active`, clicks the overlay `#overlay.active` at its top-left corner, then waits for the popup to be hidden; if the popup never shows it logs and returns without error.
 - **System bug, verified 2026-10-05:** the popup box is fixed at the centre of the window and can be taller than the window. At 1366x768 it is 838 px high and starts at y = -35, so the × button (y = -20) is above the visible area and a normal click on it times out. At 800x600 and 480x700 the box is smaller and the × is on screen. Clicking outside the popup box closes it at every size tried (1366x768, 1920x1080, 800x600, 480x700), so the automation uses the overlay click instead of the × button.
 - No dedicated `dashboard_page.py` exists yet (deleted along with the rest of the Addons-specific automation). This catalog entry exists purely to document the popup; add the dashboard's other elements here once a `DashboardPage` class is written.
+
+## Accounting Date and business day (2026-10-14)
+| # | Element | What it is for | Locator (Playwright) | Status |
+|---|---|---|---|---|
+| 1 | Accounting Date box (top right corner of My Dashboard and of every Fixed Asset page) | Shows `Accounting Date : dd-mm-yyyy [DAY OPEN]` or `[DAY CLOSED]` | `page.locator("#sessionBusinessDateReload")` | VERIFIED |
+| 2 | The status link (`[DAY CLOSED]`) | Opens the business date screen of Accounting (`/nodef/accounting#!accBusinessDate/show`) | `page.locator("#sessionBusinessDateReload").get_by_role("link")` | VERIFIED (not clicked) |
+
+- On a closed day, approving and acknowledging are refused with `Business day not open for Fixed Asset.`; create and submit still work. The status differs between offices. `BasePage.verify_business_day_open()` stops a test early with the user and the box text.
+- The dashboard also shows the Office Selection result: users with more than one office pick the office first (`login_page.md`).

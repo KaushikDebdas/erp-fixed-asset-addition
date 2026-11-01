@@ -14,6 +14,7 @@ scoped to the popup that holds it.
 
 Facts used here come from automation/element_catalog/asset_shipment.md.
 """
+from config.settings import DEFAULT_BRANCH
 from playwright.sync_api import expect
 
 from pages.asset_shipment_page import (
@@ -183,8 +184,15 @@ class ShipmentChallanPage(BasePage):
         self.choose_from_dropdown("#s2id_fromProject", project_text, project_text)
 
     def choose_receiving_branch(self, text: str) -> None:
-        """Choose the Receiving Branch, e.g. '[HO - BDHO] Head Office'."""
-        self.choose_from_dropdown("#s2id_toOffice", text, text)
+        """
+        Choose the Receiving Branch. `text` can be written in any style that
+        identifies one branch (spaces, hyphens and leading zeros are ignored), e.g.
+        '[BO-0233] Chagalnaiya' or '6981'. An empty `text` means the Sending Branch
+        shown in the popup (a transfer inside the same branch), unless DEFAULT_BRANCH in .env names it.
+        """
+        if text == "":
+            text = DEFAULT_BRANCH or read_field_value(self.sending_branch_field)
+        self.choose_office_from_select2("#s2id_toOffice", text, "Receiving Branch")
 
     def choose_to_project(self, text: str) -> None:
         """Choose the To Project, e.g. '[060] Progoti'."""

@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Page class | `pages/asset_sale_approval_list_page.py` → `AssetSaleApprovalListPage` (inherits `AssetWriteOffApprovalListPage`); test `tests/test_31_asset_sale_approval_list.py` |
+| Page class | `pages/asset_sale_approval_list_page.py` → `AssetSaleApprovalListPage` (inherits `AssetWriteOffApprovalListPage`); test `tests/test_30_asset_sale_approval_list.py` |
 | Module / menu path | Fixed Asset >> Asset Disposal >> Asset Sale Approval List |
 | Entry URL | `https://erpstaging.brac.net/nodef/fixedasset#!faAssetDisposalSale/showDisposalSaleScheduleList` |
 | Role needed | a user with the disposal approval permission (tested with `00015370`, who created and approved) |

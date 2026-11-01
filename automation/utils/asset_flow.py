@@ -60,6 +60,7 @@ def assign_and_approve(assign_page, approval_list_page, serial: str, employee_pi
     straight from the Asset Assign form and approves from the Approval List.
     """
     assign_page.navigate_here()
+    assign_page.verify_business_day_open()
     assign_page.select_asset_by_serial(serial)
     assign_page.add_to_grid()
     assign_page.select_employee(employee_pin)
@@ -80,6 +81,7 @@ def unassign_and_approve(unassign_page, approval_list_page, serial: str, handove
     prepare test data: it submits straight from the Asset Un Assign form.
     """
     unassign_page.navigate_here()
+    unassign_page.verify_business_day_open()
     unassign_page.select_asset_by_serial(serial)
     unassign_page.add_to_grid()
     unassign_page.select_employee(handover_search)
@@ -93,46 +95,20 @@ def unassign_and_approve(unassign_page, approval_list_page, serial: str, handove
     action_logger.info(f"Asset {serial} is now unassigned")
 
 
-def write_off_and_approve(
-    global_list_page, write_off_page, write_off_list_page, write_off_approval_page, serial: str, project: str
-) -> None:
-    """
-    Write off an unassigned asset and approve the write-off, so the asset is
-    disposed and no longer listed. A write-off only accepts an asset whose
-    Utilization Status is not IN_USE, so the asset is set to DAMAGE first. Used to
-    prepare test data (for example an extended asset that must become inactive).
-    """
-    global_list_page.mark_asset_damaged(serial, "AUTOMATION_TEST damaged for write off")
-    write_off_page.navigate_here()
-    write_off_page.select_project(project)
-    write_off_page.select_asset(serial, serial)
-    write_off_page.enter_note("write off")
-    write_off_page.add_to_grid()
-    write_off_page.submit_and_verify()
-
-    write_off_list_page.navigate_here()
-    write_off_list_page.filter_by_status("PENDING")
-    write_off_id = write_off_list_page.get_newest_write_off_id()
-    write_off_approval_page.navigate_here()
-    write_off_approval_page.filter_by_status("PENDING")
-    write_off_approval_page.select_write_off(write_off_id)
-    write_off_approval_page.approve_selected_and_verify()
-    action_logger.info(f"Asset {serial} is written off (write-off {write_off_id})")
-
-
 def move_and_approve(
-    movement_page, approval_list_page, serial: str, employee_pin: str, building: str, note: str
-) -> None:
+    movement_page, approval_list_page, serial: str, employee_pin: str, note: str
+) -> str:
     """
-    Move an assigned asset to a building (and its first floor) and approve the
-    movement. Used to prepare test data: it submits straight from the Asset
-    Internal Movement form.
+    Move an assigned asset to the first building (and its first floor) the form offers and
+    approve the movement. Returns the building's name. Used to prepare test data: it submits
+    straight from the Asset Internal Movement form.
     """
     movement_page.navigate_here()
+    movement_page.verify_business_day_open()
     movement_page.select_asset_by_serial(serial)
     movement_page.add_to_grid()
     movement_page.select_employee(employee_pin)
-    movement_page.select_building_and_first_floor(building)
+    building = movement_page.select_building_and_first_floor()
     movement_page.enter_note(note)
     toast = movement_page.submit_and_get_toast()
     movement_page.verify_toast_text(
@@ -143,3 +119,4 @@ def move_and_approve(
     toast = approval_list_page.approve_transaction_for_serial("TRANSFER", serial)
     approval_list_page.verify_toast_text(toast, TRANSACTION_APPROVE_TOAST, "Approve of the TRANSFER transaction")
     action_logger.info(f"Asset {serial} is now moved to {building}")
+    return building

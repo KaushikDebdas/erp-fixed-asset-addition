@@ -1,6 +1,6 @@
 """
 HofinAssetFlow: the stages of an asset registration or asset addition that
-starts in HOFIN, for the tests in tests/test_32_asset_registration_addition_hofin.py.
+starts in HOFIN, for the tests in tests/test_31_asset_registration_addition_hofin.py.
 
 The journey has three roles, each with its own login and its own browser
 context (a session is never shared between roles):
@@ -198,6 +198,7 @@ class HofinAssetFlow:
         login_page.page.goto(HOFA_URL)
         login_page.wait_for_login_page()
         login_page.login(username, password)
+        login_page.verify_logged_in(username)
         login_page.close_popup_if_present()
 
     def open_role_page(self) -> tuple:

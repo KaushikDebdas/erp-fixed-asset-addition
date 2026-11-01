@@ -17,7 +17,7 @@ To run part of the file:
 """
 import pytest
 
-from config.settings import TEST_USERNAME
+from config.settings import ERP_USERNAME
 from test_data.asset_transaction_data import ASSIGN, TRANSFER, UNASSIGN
 from utils.run_context import trace_one_test
 
@@ -82,7 +82,7 @@ def test_transaction_list_created_by_defaults_to_logged_in_user(page, transactio
     take_screenshot("created by prefilled")
 
     # Step 2: the Created By filter holds the user that logged in
-    transaction_list_page.verify_created_by_filter_contains(TEST_USERNAME)
+    transaction_list_page.verify_created_by_filter_contains(ERP_USERNAME)
 
 
 # ---------------------------------------------------------------------------

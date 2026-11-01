@@ -103,7 +103,7 @@ Addition" checkbox).
 
 ---
 ## Automation status (2026-10-10)
-- Automated in `automation/tests/test_32_asset_registration_addition_hofin.py` (2 tests, run in order) with `utils/hofin_flow.py`; both passed against hofin42 / env42 on 2026-10-10.
+- Automated in `automation/tests/test_31_asset_registration_addition_hofin.py` (2 tests, run in order) with `utils/hofin_flow.py`; both passed against hofin42 / env42 on 2026-10-10.
 - Section A Step 4 now reads the newest parent asset (item "Sofa Set") from the Asset Serial Global List. Section B then checks the new `<parent>-1` row, its Parent Asset field and the parent's Addition History tab.
 - URLs and logins: `HOFA_URL`, `HOFIN_URL` and the three logins are read from `.env` (see `.env.example`). The note above about a single `application_url` is closed: `project_config.yaml` has `hofa_url` and `hofin_url`; HOFA is the Fixed Asset application used by every Fixed Asset test.
 - The approver (kazi.mm@brac.net in the manual) is a different login from the creator; one browser window per role.

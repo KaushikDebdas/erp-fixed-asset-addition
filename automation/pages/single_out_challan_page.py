@@ -9,6 +9,7 @@ See `automation/element_catalog/asset_single_out_challan.md`.
 """
 from playwright.sync_api import expect
 
+from config.settings import DEFAULT_BRANCH
 from pages.single_challan_list_page import POPUP_TIMEOUT, SingleChallanListPage
 from test_data.toast_messages import SINGLE_CHALLAN_SERIAL_ADDED_TOAST
 from utils.logger import action_logger
@@ -53,6 +54,21 @@ class SingleOutChallanPage(SingleChallanListPage):
         self.click(self.create_button, "Create button")
         self.wait_until_visible(self.challan_number_field, "Create Challan popup")
 
+    def read_sending_branch(self) -> str:
+        """Return the Sending Branch the open Create Challan popup shows, e.g. 'Chagalnaiya [ 0233 ]'."""
+        return self.sending_branch_chosen.inner_text().strip()
+
+    def choose_receiving_branch(self, text: str) -> None:
+        """
+        Choose the Receiving Branch. `text` can be written in any style that identifies one
+        branch (spaces, hyphens and leading zeros are ignored). An empty `text` means the
+        user's own branch (a challan inside the same branch): DEFAULT_BRANCH from .env, or the
+        Sending Branch shown in the popup when DEFAULT_BRANCH is empty.
+        """
+        if text == "":
+            text = DEFAULT_BRANCH or self.read_sending_branch()
+        self.choose_office_from_select2("#s2id_destinationBranch", text, "Receiving Branch")
+
     def fill_challan_form(self, data: dict) -> None:
         """
         Fill the Create Challan popup from `data` (see build_challan_data in
@@ -60,7 +76,7 @@ class SingleOutChallanPage(SingleChallanListPage):
         The Sending Branch is already the user's branch.
         """
         self.choose_from_select2("#s2id_fromProject", data["from_project"], data["from_project"])
-        self.choose_from_select2("#s2id_destinationBranch", data["receiving_branch_search"], data["receiving_branch"])
+        self.choose_receiving_branch(data["receiving_branch"])
         self.choose_from_select2("#s2id_destinationProject", data["to_project_search"], data["to_project"])
         self.choose_from_select2("#s2id_asset", data["item_search"], data["item_name"])
         self.type_text(self.quantity_field, str(data["quantity"]), "Quantity")

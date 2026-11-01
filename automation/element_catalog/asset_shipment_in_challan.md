@@ -19,3 +19,17 @@
 - After clicking Acknowledge the row shows Status **ACKNOWLEDGED**, In Challan Date (`20/09/2026`), Acknowledged By (the user) and a **Preview** link (`printChallan(594,827)`). **The success toast was not captured** (nothing appeared in `.toast-message` for 7 seconds) and the popup stayed open. NEEDS CHECK on the next challan: the exact acknowledgement message.
 
 Not explored: acknowledgement by a user of a different receiving branch, the Preview report, filters and paging.
+
+## Receiving-branch user (explored 2026-10-14, user 126060 at `[BO - 0233] Chagalnaiya`)
+Screenshot: `evidence/shipment_in_challan_receiving_user.png`.
+- The user has the menus Asset Shipment, Asset Shipment Challan Approval List, **Asset Shipment In-Challan**, Gate Pass Generation, the Single Challan screens, Asset Receivable List and Asset Returnable List.
+- The In-Challan list is limited to the user's own office: it showed one row, `OC-BBDSHP00000034-644` / `IC-BBDSHP00000034-BBDICH00000123`, Sending Branch `[HO - BDHO] Head Office`, Receiving Branch `[BO - 0233] Chagalnaiya`, From Project and To Project both `[015] Microfinance (Dabi)`, created and approved by employee 15370, Challan Status **APPROVED** (not yet acknowledged). So a cross-branch challan with the same project reaches the receiving branch's list once the shipment is approved.
+- The Sending Branch filter `#fromOffice` is a text box, not a dropdown.
+- Accounting day for this user's office: `Accounting Date : 20-09-2026 [DAY CLOSED]`. Acknowledging while the day is closed was NOT tried (the row was left untouched).
+- Not yet seen: the acknowledgement by this user, and whether the sending branch's user can acknowledge a cross-branch challan.
+
+## Acknowledge by the receiving branch's user (2026-10-15)
+- Tests: `test_20_asset_shipment_in_challan.py`, `test_different_branch_{same,different}_project_receiving_user_acknowledges_the_challan`; the receiving user is `ACK_SHIPMENT_ERP_*` in `.env` (user 126060 at `[BO - 0233] Chagalnaiya`).
+- Result: the click on **Acknowledge** was refused with the toast **`Business day not open for Fixed Asset.`**; the row stayed APPROVED (challans `OC-BBDSHP00000047-660`, `OC-BBDSHP00000048-661`). The Accounting Date of that office showed `[DAY CLOSED]`.
+- The Accounting Date box is `#sessionBusinessDateReload` (see `dashboard_page.md`).
+- NOT YET SEEN: the acknowledgement of a branch-to-branch challan on an open day (message, ACKNOWLEDGED, Preview link, vouchers).

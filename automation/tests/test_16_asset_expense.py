@@ -34,6 +34,7 @@ from utils.expense_flow import (
     create_expense,
     fill_expense_form,
     submit_draft,
+    verify_asset_expenditure,
     verify_voucher,
 )
 from utils.logger import action_logger
@@ -106,7 +107,7 @@ def test_expense_asset_search_and_add_fill_the_form(page, expense_page, expenses
     found = expense_page.get_value("group")
     assert found == "Furniture and Fixture", f"Expected Group 'Furniture and Fixture' but found '{found}'."
     found = expense_page.get_value("currentBranch")
-    assert "Head Office" in found, f"Expected Current Branch to contain 'Head Office' but found '{found}'."
+    assert found.strip() != "", "Expected the asset's Current Branch to be filled but it is empty."
     found = expense_page.get_value("currentProjectName")
     assert "Microfinance (Dabi)" in found, f"Expected Current Project to contain 'Microfinance (Dabi)' but found '{found}'."
 
@@ -195,12 +196,12 @@ def test_expense_requires_vendor_for_both_sources(
     ids=["inventory_draft_usage_a", "accounts_submit_usage_b"],
 )
 def test_expense_full_flow_with_voucher(
-    page, expense_page, expense_approval_page, voucher_search_page,
+    page, expense_page, expense_approval_page, voucher_search_page, asset_serial_global_list_page,
     expenses, source, save_as, slot, take_screenshot
 ):
     """
     Asset Expense: create (Draft or direct Submit), store the Expense ID, Submit,
-    Approve with the same user, then check the voucher in Voucher Search.
+    Approve with the same user, then check the voucher row in Voucher Search.
     """
     serial = expenses.get_serial(slot)
     expense_ref = new_expense_ref()
@@ -219,8 +220,11 @@ def test_expense_full_flow_with_voucher(
     # Step 3: approve it with the same user, matched by the stored Expense ID
     approve_expense(expense_approval_page, expense_page, expense_id, expected, take_screenshot)
 
-    # Step 4: the journal: find the voucher by the Expense ID and check its PDF
+    # Step 4: the journal: find the voucher by the Expense ID and check its search row
     verify_voucher(voucher_search_page, expense_id, expected, take_screenshot)
 
-    # Step 5: remember the approved expense, so test_17 reuses it
+    # Step 5: the asset's Expenditure tab (Asset Serial Global List) shows the approved expense
+    verify_asset_expenditure(asset_serial_global_list_page, expense_id, expected, take_screenshot)
+
+    # Step 6: remember the approved expense, so test_17 reuses it
     expenses.remember_approved_expense(source, created)

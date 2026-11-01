@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Page class | `pages/asset_sale_page.py` → `AssetSalePage` (inherits `AssetWriteOffPage`); tests in `tests/test_30_asset_sale.py`, step in `utils/sale_flow.py` |
+| Page class | `pages/asset_sale_page.py` → `AssetSalePage` (inherits `AssetWriteOffPage`); tests in `tests/test_29_asset_sale.py`, step in `utils/sale_flow.py` |
 | Module / menu path | Fixed Asset >> Asset Disposal >> Asset Sale |
 | Entry URL | `https://erpstaging.brac.net/nodef/fixedasset#!faAssetDisposalSale/show` (reach via menu click) |
 | Role needed | a user with the disposal permission (explored and tested with `00015370`) |

@@ -5,7 +5,7 @@
 | Page class | `pages/asset_assign_acknowledgement_page.py` → `AssetAssignAcknowledgementPage` (works in the logged-in user's tab, who is also the assigned employee); tests in `tests/test_11_asset_assign_acknowledgement.py` (slot usage_a, acknowledgement made pending by `utils/transaction_helper.py`) |
 | Module / menu path | Fixed Asset >> Asset Transaction >> Asset Assign Acknowledgement |
 | Entry URL | `https://erpstaging.brac.net/nodef/fixedasset#!faAssetTransaction/showAcknowledgementList` (reach via menu click) |
-| Role needed | **The assigned employee**, a different login from the user who creates the assignment. Tested with the second user from `.env` (`ASSIGN_USER_USERNAME`, `ASSIGN_USER_PASSWORD`, read from `config/settings.py`), who is employee `00015370` (Sachindra Nath Ghosh). |
+| Role needed | **The assigned employee**, a different login from the user who creates the assignment. Tested with the second user from `.env` (`ASSIGN_ERP_USERNAME`, `ASSIGN_ERP_PASSWORD`, read from `config/settings.py`), who is employee `00015370` (Sachindra Nath Ghosh). |
 | Last explored | 2026-10-04 (acknowledgement of one test asset was actually performed) |
 | Screenshot | `evidence/asset_assign_ack_initial.png`, `asset_assign_ack_details.png`, `asset_assign_ack_details_target.png`, `asset_assign_ack_after_ack.png` |
 
@@ -31,3 +31,7 @@
 - After acknowledgement the transaction **still shows `APPROVED`** in the Transaction List and Transaction Approval List; the `ACKNOWLEDGED` status filter exists but returned no rows. The asset's Asset Profile (Asset Serial Global List) is unchanged by acknowledgement (Assign Status `ASSIGNED`, Assigned Date empty before and after).
 - In a pending row the visible cells are: checkbox (0), SL, Transaction Type, Project, Branch, Assigned Employee (5), Assigned By, Approval Date, Details. In My Assigned Asset the Asset Serial is the second visible cell.
 - A POST to `faAssetTransaction/showAcknowledgementList` follows the click (the grids reload).
+
+## Who can acknowledge, and menu rights (2026-10-14)
+- The user who assigns can also approve. Only the employee the asset is assigned to can acknowledge, signed in with his or her own login (second tab `assignee_logged_in_page`, settings `ASSIGN_ERP_*`). The employee's PIN is the login name without leading zeros made 8 digits long (`15370` is `00015370`, shown in the page title `My Dashboard (00015370)`).
+- User `126060` (Chagalnaiya) has Asset Assign, Asset Un Assign, Asset Internal Movement, Transaction List and Transaction Approval List but **no `Asset Assign Acknowledgement` menu link**; the test stops with "User 126060 has no access to the menu 'Asset Assign Acknowledgement'".

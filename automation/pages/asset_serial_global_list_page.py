@@ -10,14 +10,28 @@ asset's details, seven tabs, and four "Change" buttons. See
 Nothing here saves a change: the Update buttons are only clicked with a
 missing value, to read the validation message.
 """
+import re
+
 from pages.base_page import BasePage
 from test_data.toast_messages import STATUS_UPDATED_TOAST
 from utils.logger import action_logger, assertion_logger
 
-# Position of a cell in a result row (0-based; a hidden ID column comes first)
-ASSET_SERIAL_COLUMN_INDEX = 2
-ASSIGN_STATUS_COLUMN_INDEX = 9
-UTILIZATION_STATUS_COLUMN_INDEX = 10
+# Heading of each result column that is read. The cells are found by these headings, because
+# some offices have a Department column in the grid and some do not, which moves the columns.
+SERIAL_HEADING = "Asset Serial"
+ITEM_NAME_HEADING = "Asset Item Name"
+SUB_CATEGORY_HEADING = "Sub Category"
+CATEGORY_HEADING = "Category Name"
+GROUP_HEADING = "Group Name"
+PROJECT_HEADING = "Project Name"
+ASSIGN_STATUS_HEADING = "Assign Status"
+UTILIZATION_STATUS_HEADING = "Utilization Status"
+
+# Popup fields that describe an asset's assignment: status, employee PIN and name, building, floor, room
+ASSIGNMENT_FIELDS = ["assignUnassignStatus", "employeePin", "assignedEmployee", "buildingName", "floorNo", "roomNo"]
+
+# An extended asset's serial is its parent's serial plus "-1", "-2", ...
+EXTENDED_SERIAL_SUFFIX = re.compile(r"-\d+$")
 
 # Tab name -> the id of the tab's content pane
 TAB_PANES = {
@@ -26,6 +40,7 @@ TAB_PANES = {
     "Revaluation History": "#tab_rev_history",
     "Transaction History": "#tab_transfer_history",
     "Expenditure": "#tab_expenditure",
+    "Addition History": "#tab_addition_history",
     "Disposal Info": "#tab_disposal_info",
     "Attachment": "#tab_attachment",
 }
@@ -36,8 +51,10 @@ class AssetSerialGlobalListPage(BasePage):
 
     def __init__(self, page):
         super().__init__(page)
-        # Filters (inside the filter form: the popup has fields with the same ids)
-        self.asset_serial_filter = page.locator("#assetFilterForm #assetSerial")
+        # Filters
+        # The popup also has an #assetSerial field, which stays on the page after the popup closes,
+        # so the filter box is found by its name, which only the filter box has
+        self.asset_serial_filter = page.locator('input[name="assetSerial"]')
         self.utilization_status_filter = page.locator("#status")
         self.assign_status_filter = page.locator("#assetAssignStatus")
         # Runs the filter
@@ -64,8 +81,6 @@ class AssetSerialGlobalListPage(BasePage):
         self.status_update_button = page.locator("#updateAssetBtn")
         self.new_item_specification_field = page.locator("#newItemSpecification")
         self.item_update_button = page.locator("#updateItemSpecification")
-        # Grid of the "Addition History" tab (a parent asset's popup only)
-        self.addition_history_table = self.popup.locator("#assetAdditionHistoryList")
 
     # ---- search -----------------------------------------------------------
 
@@ -80,19 +95,6 @@ class AssetSerialGlobalListPage(BasePage):
         self.click(self.search_button, "Search button")
         self.wait_for_row_or_no_data(self.results_table, serial)
 
-    def search_by_exact_serial(self, serial: str) -> None:
-        """
-        Filter by Asset Serial and wait until the grid has really reloaded, so the
-        rows read afterwards belong to this search. The search is an exact match: it
-        returns only that serial, never its extended assets. Prefer it to
-        `search_by_serial` whenever the serial is the start of other serials (a parent
-        and its extended assets).
-        """
-        self.type_text(self.asset_serial_filter, serial, "Asset Serial filter")
-        with self.page.expect_response("**faAssetProfile/getList**"):
-            self.click(self.search_button, "Search button")
-        self.wait_for_table_to_reload(self.results_table)
-
     def filter_by_utilization_status(self, status: str) -> None:
         """Pick an Asset Utilization Status in the filter (does not search yet)."""
         action_logger.info(f"Filter: Asset Utilization Status -> {status}")
@@ -103,35 +105,57 @@ class AssetSerialGlobalListPage(BasePage):
         action_logger.info(f"Filter: Assign Status -> {status}")
         self.assign_status_filter.select_option(status)
 
+    def _row_of(self, serial: str):
+        """
+        Return the result row whose Asset Serial link is exactly `serial`. Searching a parent
+        also lists its extended assets ('<serial>-1', ...), so a row is never matched by text alone.
+        """
+        serial_link = self.page.get_by_role("link", name=serial, exact=True)
+        return self.results_table.locator("tbody tr").filter(has=serial_link)
+
     def is_serial_listed(self, serial: str) -> bool:
         """Return True if a result row for this Asset Serial is shown."""
-        return self.results_table.locator("tbody tr", has_text=serial).count() > 0
+        return self._row_of(serial).count() > 0
 
-    def _row_cell(self, serial: str, column_index: int) -> str:
-        row = self.results_table.locator("tbody tr", has_text=serial)
-        return row.locator("td").nth(column_index).inner_text().strip()
+    def _read_row_by_heading(self, serial: str) -> dict:
+        """
+        Return the cells of the row for this serial as {column heading: text}. The headings and the
+        cells are both read with the hidden ID column included, so they line up one to one.
+        """
+        headings = [h.strip() for h in self.results_table.locator("thead th").all_text_contents()]
+        row = self._row_of(serial).first
+        cells = [c.strip() for c in row.locator("td").all_text_contents()]
+        assert len(headings) == len(cells), (
+            f"The Global List has {len(headings)} column headings {headings} but the row of {serial} has {len(cells)} cells."
+        )
+        return dict(zip(headings, cells))
+
+    def _row_cell(self, serial: str, heading: str) -> str:
+        """Return the text of one cell of the row for this serial, found by its column heading."""
+        row = self._read_row_by_heading(serial)
+        assert heading in row, f"The Global List has no '{heading}' column. Its columns: {list(row)}"
+        return row[heading]
 
     def get_utilization_status(self, serial: str) -> str:
         """Return the Utilization Status shown in the row for this serial."""
-        return self._row_cell(serial, UTILIZATION_STATUS_COLUMN_INDEX)
+        return self._row_cell(serial, UTILIZATION_STATUS_HEADING)
 
     def get_assign_status(self, serial: str) -> str:
         """Return the Assign Status shown in the row for this serial."""
-        return self._row_cell(serial, ASSIGN_STATUS_COLUMN_INDEX)
+        return self._row_cell(serial, ASSIGN_STATUS_HEADING)
 
     def get_row_values(self, serial: str) -> dict:
         """Return the cells of the row for this serial: item, sub category, category, group, project, assign and utilization status."""
-        row = self.results_table.locator("tbody tr", has_text=serial)
-        cells = [c.strip() for c in row.first.locator("td").all_inner_texts()]
+        row = self._read_row_by_heading(serial)
         return {
-            "serial": cells[ASSET_SERIAL_COLUMN_INDEX],
-            "item_name": cells[ASSET_SERIAL_COLUMN_INDEX + 1],
-            "sub_category": cells[ASSET_SERIAL_COLUMN_INDEX + 2],
-            "category": cells[ASSET_SERIAL_COLUMN_INDEX + 3],
-            "group": cells[ASSET_SERIAL_COLUMN_INDEX + 4],
-            "project_in_grid": cells[ASSET_SERIAL_COLUMN_INDEX + 5],
-            "assign_status": cells[ASSIGN_STATUS_COLUMN_INDEX],
-            "utilization_status": cells[UTILIZATION_STATUS_COLUMN_INDEX],
+            "serial": row[SERIAL_HEADING],
+            "item_name": row[ITEM_NAME_HEADING],
+            "sub_category": row[SUB_CATEGORY_HEADING],
+            "category": row[CATEGORY_HEADING],
+            "group": row[GROUP_HEADING],
+            "project_in_grid": row[PROJECT_HEADING],
+            "assign_status": row[ASSIGN_STATUS_HEADING],
+            "utilization_status": row[UTILIZATION_STATUS_HEADING],
         }
 
     def verify_row_shows(self, serial: str, expected: dict) -> None:
@@ -182,33 +206,6 @@ class AssetSerialGlobalListPage(BasePage):
             if found != wanted:
                 problems.append(f"{field_id}: expected '{wanted}' but found '{found}'")
         assert not problems, f"The popup is not as expected: {problems}"
-
-    def verify_moved_together(self, parent_serial: str, extended_serial: str, building: str) -> None:
-        """
-        After an Internal Movement of the parent: confirm the popups of the parent
-        and of its extended asset show the new Building and the same Floor. Each
-        asset is searched, its popup opened and closed again.
-        """
-        assertion_logger.info(f"Verifying {parent_serial} and {extended_serial} moved together")
-        locations = {}
-        for serial in (parent_serial, extended_serial):
-            self.search_by_exact_serial(serial)
-            self.open_asset_popup(serial)
-            locations[serial] = (self.get_popup_value("buildingName"), self.get_popup_value("floorNo"))
-            self.close_popup()
-        parent_building, parent_floor = locations[parent_serial]
-        assert parent_building == building, f"Expected the parent {parent_serial} in building '{building}' but it shows '{parent_building}'."
-        assert parent_floor != "", f"Expected the parent {parent_serial} to show a floor but the Floor Number is empty."
-        assert locations[extended_serial] == (parent_building, parent_floor), (
-            f"Expected the extended asset to be at {(parent_building, parent_floor)} like its parent "
-            f"but it shows {locations[extended_serial]}."
-        )
-
-    def verify_all_assigned(self, serials: list) -> None:
-        """Confirm every serial in `serials` shows the Assign Status ASSIGNED (each is searched with its exact serial)."""
-        for serial in serials:
-            self.search_by_exact_serial(serial)
-            self.verify_assign_status(serial, "ASSIGNED")
 
     def verify_serial_not_listed(self, serial: str) -> None:
         """Confirm no result row shows this Asset Serial (call after searching it)."""
@@ -271,131 +268,146 @@ class AssetSerialGlobalListPage(BasePage):
         self.wait_until_visible(pane, f"{tab_name} tab content")
         return pane.inner_text()
 
+    def get_expenditure_row(self, expense_ref: str) -> dict:
+        """
+        Open the Expenditure tab of the open popup and return the row whose Reference Number is
+        `expense_ref` as {column heading: text}. Stops with the rows shown when there is no such row.
+        """
+        self.get_tab_text("Expenditure")
+        grid = self.popup.locator("#assetExpenditureList")
+        headings = [h.strip() for h in grid.locator("thead th").all_text_contents()]
+        rows = []
+        for row in grid.locator("tbody tr").all():
+            cells = [c.strip() for c in row.locator("td").all_text_contents()]
+            rows.append(dict(zip(headings, cells)))
+        for row in rows:
+            if row.get("Reference Number") == expense_ref:
+                return row
+        assert False, f"The Expenditure tab has no row with Reference Number '{expense_ref}'. Its rows: {rows}"
+
     def close_popup(self) -> None:
         """Close the Asset Profile Details popup."""
         self.click(self.popup_close_button, "Close button of Asset Profile Details popup")
 
-    # ---- parent and extended assets (CR FAHOV2-643) -------------------------------
+    # ---- parent assets and extended assets --------------------------------
 
     def read_newest_parent_serial(self, item_name: str) -> str:
         """
-        Return the serial of the newest parent asset with this item name. Call
-        it right after `navigate_here`: the unfiltered list shows the newest
-        asset first. Rows of extended assets (serial with "-1", "-2", ...) are
-        skipped, because only a parent asset can take an addition.
+        Return the Asset Serial of the newest PARENT asset of this item. Call it on
+        the Global List before any search: the list shows the newest asset first, and
+        an extended asset is told apart by its serial, "<parent serial>-1", "-2", ...
+        Stops with the serials shown when the first page has no such parent asset.
         """
-        self.wait_for_table_to_reload(self.results_table)
-        rows = self.results_table.locator("tbody tr")
-        for index in range(rows.count()):
-            cells = [c.strip() for c in rows.nth(index).locator("td").all_inner_texts()]
-            serial = cells[ASSET_SERIAL_COLUMN_INDEX]
-            name = cells[ASSET_SERIAL_COLUMN_INDEX + 1]
-            if "-" not in serial and name == item_name:
-                action_logger.info(f"Newest parent asset with item {item_name}: {serial}")
-                return serial
-        raise AssertionError(f"No parent asset with item name '{item_name}' is listed on the first page.")
+        self.wait_for_loader_to_finish()
+        headings = [h.strip() for h in self.results_table.locator("thead th").all_text_contents()]
+        serial_column = headings.index(SERIAL_HEADING)
+        item_column = headings.index(ITEM_NAME_HEADING)
+        shown = []
+        for row in self.results_table.locator("tbody tr").all():
+            cells = [c.strip() for c in row.locator("td").all_text_contents()]
+            shown.append(cells[serial_column])
+            if cells[item_column] == item_name and not EXTENDED_SERIAL_SUFFIX.search(cells[serial_column]):
+                action_logger.info(f"Newest parent asset of {item_name}: {cells[serial_column]}")
+                return cells[serial_column]
+        assert False, f"The first page of the Global List has no parent asset of '{item_name}'. Serials shown: {shown}"
+
+    def read_addition_history_rows(self) -> list:
+        """
+        Open the Addition History tab of the open popup and return its rows as a list of
+        {column heading: text}. Only a parent asset has this tab.
+        """
+        self.get_tab_text("Addition History")
+        grid = self.popup.locator("#assetAdditionHistoryList")
+        headings = [h.strip() for h in grid.locator("thead th").all_text_contents()]
+        rows = []
+        for row in grid.locator("tbody tr").all():
+            cells = [c.strip() for c in row.locator("td").all_text_contents()]
+            rows.append(dict(zip(headings, cells)))
+        return rows
+
+    def read_addition_history_serials(self, parent_serial: str) -> list:
+        """Search the parent asset, open its popup and return the serials listed in its Addition History tab."""
+        self.search_by_serial(parent_serial)
+        self.open_asset_popup(parent_serial)
+        rows = self.read_addition_history_rows()
+        self.close_popup()
+        self.popup.wait_for(state="hidden")
+        return [row[SERIAL_HEADING] for row in rows]
 
     def verify_extended_asset_popup(self, extended_serial: str, parent_serial: str) -> None:
         """
-        Open the popup of an extended asset and confirm its "Parent Asset" field
-        shows the parent serial and that it has no "Addition History" tab (only a
-        parent asset has that tab). The popup is closed afterwards.
+        Open the popup of an extended asset (already searched) and confirm it names its
+        parent asset in the Parent Asset field and has no Addition History tab. Closes the popup.
         """
         assertion_logger.info(f"Verifying the popup of extended asset {extended_serial}")
         self.open_asset_popup(extended_serial)
-        shown_parent = self.get_popup_value("parentAssetSerial")
+        found_parent = self.get_popup_value("parentAssetSerial")
         tab_names = self.get_tab_names()
         self.close_popup()
-        assert shown_parent == parent_serial, (
-            f"The Parent Asset of {extended_serial} should be {parent_serial} but shows '{shown_parent}'."
+        self.popup.wait_for(state="hidden")
+        assert found_parent == parent_serial, (
+            f"Expected the Parent Asset of {extended_serial} to be {parent_serial} but found '{found_parent}'."
         )
         assert "Addition History" not in tab_names, (
             f"The extended asset {extended_serial} should have no Addition History tab but its tabs are {tab_names}."
         )
 
-    def read_addition_history_serials(self, parent_serial: str) -> list:
-        """
-        Search a parent asset, open its popup and its "Addition History" tab, and
-        return the serial of every extended asset the tab lists. The popup is closed
-        afterwards.
-        """
-        self.search_by_exact_serial(parent_serial)
-        self.open_asset_popup(parent_serial)
-        tab_link = self.popup.locator("a[data-toggle=tab]", has_text="Addition History")
-        self.click(tab_link, "Addition History tab")
-        self.wait_until_visible(self.addition_history_table, "Addition History grid")
-        rows = self.addition_history_table.locator("tbody tr").filter(has_not_text="No data available")
-        self.wait_until_visible(rows.first, "Addition History row")
-        serials = [row["serial"].strip() for row in self.read_serial_cells(rows)]
-        self.close_popup()
-        return serials
+    def verify_all_assigned(self, serials: list) -> None:
+        """Search each serial and confirm its Assign Status is ASSIGNED. Names every serial that is not."""
+        problems = []
+        for serial in serials:
+            self.search_by_serial(serial)
+            found = self.get_assign_status(serial) if self.is_serial_listed(serial) else "not listed"
+            if found != "ASSIGNED":
+                problems.append(f"{serial}: {found}")
+        assert not problems, f"Expected {serials} to be ASSIGNED but: {problems}"
 
-    def read_assignment_of(self, serial: str) -> dict:
-        """
-        Search an asset (exact serial), open its popup and return its assignment as
-        {"status", "employee", "building", "floor", "room"}. The popup is closed afterwards.
-        """
-        self.search_by_exact_serial(serial)
+    def read_assignment(self, serial: str) -> dict:
+        """Search the serial, open its popup and return its assignment: status, employee PIN and name, building, floor, room."""
+        self.search_by_serial(serial)
         self.open_asset_popup(serial)
-        assignment = {
-            "status": self.get_popup_value("assignUnassignStatus"),
-            "employee": self.get_popup_value("assignedEmployee"),
-            "building": self.get_popup_value("buildingName"),
-            "floor": self.get_popup_value("floorNo"),
-            "room": self.get_popup_value("roomNo"),
-        }
+        assignment = {}
+        for field_id in ASSIGNMENT_FIELDS:
+            assignment[field_id] = self.get_popup_value(field_id)
         self.close_popup()
+        self.popup.wait_for(state="hidden")
         return assignment
 
     def verify_same_assignment_as_parent(self, parent_serial: str, extended_serial: str) -> None:
         """
-        Confirm an extended asset added to an assigned parent was assigned
-        automatically: it is ASSIGNED to the same employee, in the same building,
-        floor and room as its parent (CR FAHOV2-643, F02).
+        Confirm the extended asset is ASSIGNED to the same employee, building, floor and
+        room as its parent (read from both popups). Names every difference.
         """
         assertion_logger.info(f"Verifying {extended_serial} has the assignment of {parent_serial}")
-        parent = self.read_assignment_of(parent_serial)
-        extended = self.read_assignment_of(extended_serial)
-        assert parent["status"] == "ASSIGNED" and parent["employee"] != "", (
-            f"Expected the parent {parent_serial} to be ASSIGNED to an employee but it shows {parent}."
-        )
-        assert extended == parent, (
-            f"Expected the new extended asset {extended_serial} to have its parent's assignment {parent} "
-            f"but it shows {extended}."
-        )
-
-    def read_addition_history_row(self, serial: str) -> dict:
-        """
-        Open the "Addition History" tab of the popup and return the row of this
-        extended asset as {column heading: text}. Only a parent asset has the tab.
-        """
-        tab_link = self.popup.locator("a[data-toggle=tab]", has_text="Addition History")
-        self.click(tab_link, "Addition History tab")
-        self.wait_until_visible(self.addition_history_table, "Addition History grid")
-        self.wait_until_visible(
-            self.addition_history_table.locator("tbody tr", has_text=serial), f"history row of {serial}"
-        )
-        return self.read_row_values(self.addition_history_table, serial)
+        parent = self.read_assignment(parent_serial)
+        extended = self.read_assignment(extended_serial)
+        assert parent["assignUnassignStatus"] == "ASSIGNED", f"The parent {parent_serial} is not ASSIGNED: {parent}"
+        problems = []
+        for field_id in ASSIGNMENT_FIELDS:
+            if extended[field_id] != parent[field_id]:
+                problems.append(f"{field_id}: parent '{parent[field_id]}', extended '{extended[field_id]}'")
+        assert not problems, f"{extended_serial} is not assigned like its parent {parent_serial}: {problems}"
 
     def verify_parent_addition_history(self, parent_serial: str, extended_serial: str, expected: dict) -> None:
         """
-        Open the popup of a parent asset and confirm its "Addition History" tab
-        lists the extended asset with the values in `expected` ({column heading:
-        text}, for example {"Addition Amount": "25000"}). The popup is closed afterwards.
+        Open the popup of a parent asset (already searched) and confirm its Addition History
+        has a row for `extended_serial` with the values in `expected` ({column heading: text}).
+        Names every difference. Closes the popup.
         """
         assertion_logger.info(f"Verifying the Addition History of {parent_serial}")
         self.open_asset_popup(parent_serial)
-        tab_names = self.get_tab_names()
-        assert "Addition History" in tab_names, (
-            f"The parent asset {parent_serial} should have an Addition History tab but its tabs are {tab_names}."
-        )
-        found = self.read_addition_history_row(extended_serial)
+        rows = self.read_addition_history_rows()
         self.close_popup()
+        self.popup.wait_for(state="hidden")
+        matching = [row for row in rows if row.get(SERIAL_HEADING) == extended_serial]
+        assert matching, (
+            f"The Addition History of {parent_serial} has no row for {extended_serial}. "
+            f"Serials listed: {[row.get(SERIAL_HEADING) for row in rows]}"
+        )
         problems = []
         for heading, wanted in expected.items():
-            actual = found.get(heading, "<column not found>")
-            if actual != wanted:
-                problems.append(f"{heading}: expected '{wanted}' but found '{actual}'")
+            if matching[0].get(heading) != wanted:
+                problems.append(f"{heading}: expected '{wanted}' but found '{matching[0].get(heading)}'")
         assert not problems, f"The Addition History row of {extended_serial} is not as expected: {problems}"
 
     # ---- the Change buttons -----------------------------------------------

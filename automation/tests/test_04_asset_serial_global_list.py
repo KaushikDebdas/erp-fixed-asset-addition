@@ -37,6 +37,7 @@ from test_data.toast_messages import (
     NOTE_TOAST,
     SOURCE_OF_FUND_TOAST,
 )
+from utils.helpers import expected_columns
 from utils.run_context import trace_one_test
 
 # Messages (toasts) the screen shows
@@ -52,6 +53,9 @@ GRID_COLUMNS = [
     "SL", "Asset Serial", "Asset Item Name", "Sub Category", "Category Name",
     "Group Name", "Project Name", "Department", "Assign Status", "Utilization Status",
 ]
+
+# Columns that only appear for offices that have them
+OPTIONAL_COLUMNS = ["Department"]
 
 # The tabs of the popup, in order
 TAB_NAMES = [
@@ -139,7 +143,8 @@ def test_global_list_columns_and_unknown_serial(page, asset_serial_global_list_p
 
     # Step 2: the column headings
     found_headers = asset_serial_global_list_page.get_grid_headers()
-    assert found_headers == GRID_COLUMNS, f"Expected grid columns {GRID_COLUMNS} but found {found_headers}."
+    wanted_headers = expected_columns(GRID_COLUMNS, found_headers, OPTIONAL_COLUMNS)
+    assert found_headers == wanted_headers, f"Expected grid columns {wanted_headers} but found {found_headers}."
 
     # Step 3: a well-formed serial that does not exist is not listed
     asset_serial_global_list_page.search_by_serial("BBDASR99999999")
@@ -156,21 +161,26 @@ def test_global_list_filter_by_utilization_status(
     """Asset Serial Global List: the Utilization Status filter keeps only matching assets."""
     serial = registrations.get_approved_of(SHARED_SLOT)["serial"]
 
-    # Step 1: filter by the status the asset really has (IN_USE); it is listed
+    # Step 1: read the Utilization Status the asset really has, and pick a status it does not have
     asset_serial_global_list_page.navigate_here()
-    asset_serial_global_list_page.filter_by_utilization_status("IN_USE")
     asset_serial_global_list_page.search_by_serial(serial)
-    take_screenshot("filtered by IN_USE")
+    own_status = asset_serial_global_list_page.get_utilization_status(serial)
+    other_status = "DAMAGE" if own_status != "DAMAGE" else "IN_USE"
+
+    # Step 2: filter by its own status; it is listed
+    asset_serial_global_list_page.filter_by_utilization_status(own_status)
+    asset_serial_global_list_page.search_by_serial(serial)
+    take_screenshot(f"filtered by {own_status}")
     assert asset_serial_global_list_page.is_serial_listed(serial), (
-        f"Expected Asset Serial '{serial}' to be listed under Utilization Status IN_USE but it was not."
+        f"Expected Asset Serial '{serial}' to be listed under Utilization Status {own_status} but it was not."
     )
 
-    # Step 2: filter by a status it does not have (DAMAGE); it is not listed
-    asset_serial_global_list_page.filter_by_utilization_status("DAMAGE")
+    # Step 3: filter by the other status; it is not listed
+    asset_serial_global_list_page.filter_by_utilization_status(other_status)
     asset_serial_global_list_page.search_by_serial(serial)
-    take_screenshot("filtered by DAMAGE")
+    take_screenshot(f"filtered by {other_status}")
     assert not asset_serial_global_list_page.is_serial_listed(serial), (
-        f"Expected Asset Serial '{serial}' not to be listed under Utilization Status DAMAGE but it was."
+        f"Expected Asset Serial '{serial}' not to be listed under Utilization Status {other_status} but it was."
     )
 
 
@@ -181,21 +191,26 @@ def test_global_list_filter_by_assign_status(
     """Asset Serial Global List: the Assign Status filter keeps only matching assets."""
     serial = registrations.get_approved_of(SHARED_SLOT)["serial"]
 
-    # Step 1: the asset is UNASSIGNED, so it shows under UNASSIGNED
+    # Step 1: read the Assign Status the asset really has (it may or may not be assigned), and take the other one
     asset_serial_global_list_page.navigate_here()
-    asset_serial_global_list_page.filter_by_assign_status("UNASSIGNED")
     asset_serial_global_list_page.search_by_serial(serial)
-    take_screenshot("filtered by UNASSIGNED")
+    own_status = asset_serial_global_list_page.get_assign_status(serial)
+    other_status = "ASSIGNED" if own_status == "UNASSIGNED" else "UNASSIGNED"
+
+    # Step 2: filter by its own status; it is listed
+    asset_serial_global_list_page.filter_by_assign_status(own_status)
+    asset_serial_global_list_page.search_by_serial(serial)
+    take_screenshot(f"filtered by {own_status}")
     assert asset_serial_global_list_page.is_serial_listed(serial), (
-        f"Expected Asset Serial '{serial}' to be listed under Assign Status UNASSIGNED but it was not."
+        f"Expected Asset Serial '{serial}' to be listed under Assign Status {own_status} but it was not."
     )
 
-    # Step 2: and it does not show under ASSIGNED
-    asset_serial_global_list_page.filter_by_assign_status("ASSIGNED")
+    # Step 3: filter by the other status; it is not listed
+    asset_serial_global_list_page.filter_by_assign_status(other_status)
     asset_serial_global_list_page.search_by_serial(serial)
-    take_screenshot("filtered by ASSIGNED")
+    take_screenshot(f"filtered by {other_status}")
     assert not asset_serial_global_list_page.is_serial_listed(serial), (
-        f"Expected Asset Serial '{serial}' not to be listed under Assign Status ASSIGNED but it was."
+        f"Expected Asset Serial '{serial}' not to be listed under Assign Status {other_status} but it was."
     )
 
 

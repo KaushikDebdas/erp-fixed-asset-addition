@@ -8,7 +8,9 @@ results, the generated HTML report — lives together under:
 The date is the top-level folder (so all of a day's runs sit together);
 the time-stamped subfolder holds everything from that one specific run.
 """
+import hashlib
 import os
+import re
 import shutil
 import subprocess
 from datetime import datetime
@@ -45,6 +47,22 @@ def get_run_dir() -> Path:
     return run_dir
 
 
+def short_folder_name(test_name: str) -> str:
+    """
+    Shortens a long test name so the full file path stays under the Windows
+    limit of 260 characters, wherever the project is placed on the computer.
+    A short name is returned unchanged. A long name is cut and ends with a
+    short code made from the full name, so two long names never clash.
+    """
+    longest_prefix = len(str(get_run_dir() / "screenshots" / "passed")) + 1
+    room_for_name = 250 - longest_prefix - 55
+    max_length = max(40, room_for_name)
+    if len(test_name) <= max_length:
+        return test_name
+    code = hashlib.md5(test_name.encode("utf-8")).hexdigest()[:6]
+    return f"{test_name[:max_length - 7]}_{code}"
+
+
 def screenshot_path(test_name: str, step_no: int, description: str) -> str:
     """
     Builds a numbered screenshot path inside the current run folder.
@@ -58,9 +76,11 @@ def screenshot_path(test_name: str, step_no: int, description: str) -> str:
             03_filter_popup_filled.png
             ...
     """
-    # Make the description safe for a file name: lower case, spaces -> underscores
-    clean_description = description.strip().lower().replace(" ", "_")
-    test_folder = get_run_dir() / "screenshots" / test_name
+    # Make the description safe for a file name: lower case, and every run of other signs
+    # (spaces, "/" in a date, ...) becomes one underscore. The cut to 45 characters comes
+    # last, so the name never ends with a sign that would split the path.
+    clean_description = re.sub(r"[^a-z0-9_-]+", "_", description.strip().lower())[:45].strip("_") or "screenshot"
+    test_folder = get_run_dir() / "screenshots" / short_folder_name(test_name)
     test_folder.mkdir(parents=True, exist_ok=True)
     return str(test_folder / f"{step_no:02d}_{clean_description}.png")
 
@@ -95,12 +115,13 @@ def sort_screenshots_by_result(test_item, failed: bool) -> None:
     """
     test_name = getattr(test_item, "report_name", test_item.name)
     screenshots_dir = get_run_dir() / "screenshots"
-    test_folder = screenshots_dir / test_name
+    folder_name = short_folder_name(test_name)
+    test_folder = screenshots_dir / folder_name
     if not test_folder.is_dir():
         return
     result_dir = screenshots_dir / ("failed" if failed else "passed")
     result_dir.mkdir(parents=True, exist_ok=True)
-    shutil.move(str(test_folder), str(result_dir / test_name))
+    shutil.move(str(test_folder), str(result_dir / folder_name))
 
 
 def did_test_fail(test_item) -> bool:
@@ -116,7 +137,7 @@ def download_path(filename: str) -> str:
 def trace_path(test_name: str) -> str:
     """Builds a trace file path inside the current run folder."""
     run_dir = get_run_dir()
-    return str(run_dir / "traces" / f"{test_name}.zip")
+    return str(run_dir / "traces" / f"{short_folder_name(test_name)}.zip")
 
 
 def attach_trace_to_report(trace_file: str) -> None:
@@ -150,9 +171,13 @@ def generate_html_report() -> str | None:
     (for example when the Allure command-line tool is not installed).
     """
     run_dir = get_run_dir()
+    help_text = (
+        f"The raw data is kept in {run_dir / 'allure-results'}; build the report from it as described in "
+        "automation/HOW_TO_RUN.md > The HTML report > If the report was not created."
+    )
     allure_command = shutil.which("allure")
     if allure_command is None:
-        print("\nHTML report NOT created: the 'allure' command was not found (install Allure and Java).")
+        print(f"\nHTML report NOT created: the 'allure' command was not found (install Allure and Java). {help_text}")
         return None
 
     temp_folder = run_dir / "report_temp"
@@ -162,7 +187,7 @@ def generate_html_report() -> str | None:
         text=True,
     )
     if result.returncode != 0:
-        print(f"\nHTML report NOT created. Allure said: {result.stderr.strip() or result.stdout.strip()}")
+        print(f"\nHTML report NOT created. Allure said: {result.stderr.strip() or result.stdout.strip()}\n{help_text}")
         return None
 
     report_file = run_dir / f"Test_Report_{run_dir.parent.name}_{run_dir.name}.html"

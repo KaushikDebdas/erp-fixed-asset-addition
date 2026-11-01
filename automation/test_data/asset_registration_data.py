@@ -102,10 +102,8 @@ def build_asset_data(
         "project": "[015] Microfinance (Dabi)",
         "sub_type": sub_type,
         "remarks": "AUTOMATION_TEST registration note",
-        "vendor": "ACE IT[P008937]",
-        # The View popup shows the vendor's name and number in separate fields
-        "vendor_name": "ACE IT",
-        "vendor_number": "P008937",
+        # The vendor (vendor, vendor_name, vendor_number) is the first one of the list; the
+        # registration form adds it to this data when it picks it
         "asset_item_search": details["search"],
         "asset_item_selected": details["selected"],
         "grid_item_name": details["grid_name"],
@@ -134,57 +132,6 @@ def build_registration_data(
 def build_land_asset_data() -> dict:
     """Return a Land registration with a Measurement, used to prepare splittable assets."""
     return build_asset_data("land")
-
-
-# ---------------------------------------------------------------------------
-# The voucher an approved registration creates (Accounting > Voucher Search)
-# ---------------------------------------------------------------------------
-
-# Per item: (account code, account head on the voucher, group name in the Particular text)
-VOUCHER_DEBIT_BY_ITEM = {
-    "furniture": ("1202010501-01", "Furniture and Fixture", "Furniture and Fixture"),
-    "land": ("1202010101-01", "Land", "Land"),
-    "building": ("1202010201-01", "Building", "Building"),
-    "laptop": ("1202010701-01", "Computer and IT Equipment", "Computer/Laptop"),
-}
-
-# Per sub type: (account code, account head) of the credit line
-VOUCHER_CREDIT_BY_SUB_TYPE = {
-    "spot": ("2101010301-06", "Supplier Payable-Capex"),
-    "gift": ("4202010101-16", "Other Income"),
-}
-
-# Project and branch printed on the voucher
-VOUCHER_PROJECT = "015 - Microfinance (Dabi)"
-VOUCHER_BRANCH = "Head Office"
-
-
-def build_registration_voucher(data: dict, approval_date: str) -> dict:
-    """
-    Return what the voucher of an approved registration must show.
-
-    data:          the registration's values (from build_asset_data)
-    approval_date: the Approval Date of the registration, dd/mm/yyyy; the
-                   voucher is dated that day
-
-    The amount is quantity x unit price. The debit line is the asset account
-    of the item; the credit line depends on the sub type (Spot Purchase:
-    Supplier Payable-Capex, Gift Item: Other Income).
-    """
-    debit_code, debit_head, group_name = VOUCHER_DEBIT_BY_ITEM[data["item"]]
-    credit_code, credit_head = VOUCHER_CREDIT_BY_SUB_TYPE[data["sub_type"]]
-    amount = data["quantity"] * data["unit_price"]
-    return {
-        "date": approval_date,
-        "amount_in_search": f"{amount:,}",
-        "amount_on_voucher": f"{amount:,.2f}",
-        "particular_group": group_name,
-        "item_name": data["grid_item_name"],
-        "project": VOUCHER_PROJECT,
-        "branch": VOUCHER_BRANCH,
-        "debit": {"account_code": debit_code, "head": debit_head},
-        "credit": {"account_code": credit_code, "head": credit_head},
-    }
 
 
 # ---------------------------------------------------------------------------

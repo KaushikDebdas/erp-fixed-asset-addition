@@ -495,21 +495,21 @@ Not (or hardly) UI-verifiable:
 Note: no test case, code or CHANGELOG change was made. Next step: human review of section 12.
 
 
-## Live findings 2026-10-10 (HOFIN -> HOFA -> HOFIN run on hofin42/env42, automation test_32)
+## Live findings 2026-10-10 (HOFIN -> HOFA -> HOFIN run on hofin42/env42, automation test_31)
 - [CONFIRMED LIVE] Q4: the parent popup tab is named "Addition History" (not "Asset Addition"). The extended asset popup has a Parent Asset field (`parentAssetSerial`) and no Addition History tab (F01S02).
 - [CONFIRMED LIVE] F01S01: after HOFIN approval a separate asset `<parent>-1` is listed in the Asset Serial Global List, UNASSIGNED / IN_USE; the parent row is unchanged. The HOFIN "Fixed Asset Serial No" search lists the parent serial only.
 - [CONFIRMED LIVE] Addition History columns: SL, Asset Serial (link), Addition Amount, Addition Date, Reference Number (journal voucher number, JV...), Item Name, Acc. Depreciation, WDV, plus Impairment Status and Impairment ID (impairment was removed in CR v1.5 but the columns are still shown: report to the BA).
 - [CONFIRMED LIVE] Workflow: HOFIN submit -> HOFA acknowledge (PENDING -> ACKNOWLEDGED) -> HOFIN approve (APPROVED in both applications). A fixed asset A/C code needs an amount of 20000 or more (may be the capitalization threshold of Q17: to confirm; no failure text seen).
 - [OBSERVED] HOFIN approval screen shows no toast after Approve; the APPROVED row appears after the list is opened again.
 
-## Live findings 2026-10-10 — Asset Assign (F02) and its follow-up screens (automation test_33, 8 passed)
+## Live findings 2026-10-10 — Asset Assign (F02) and its follow-up screens (automation test_32, 8 passed)
 - [CONFIRMED LIVE] Q3 (Assign): an extended serial typed in Asset Assign gives the toast "No asset found" and no suggestion (Requirement text "selected asset not found"; the Acceptance wording "cannot be selected" is not what the screen shows). Shipment, challan, Unassign and Internal Movement not yet checked.
 - [CONFIRMED LIVE] F02: the parent search offers the parent only; Add to Grid lists the extended asset directly below it (4 leading spaces, no SL number, no action button); deleting the parent removes both; Submit and Approve assign both (ASSIGNED in the Global List).
 - [CONFIRMED LIVE] F06 and F07: the Details popups of the Transaction Approval List and of the Asset Assign Acknowledgement list the extended asset below the parent with the same indentation and no SL number.
 - [OBSERVED] The extended asset's row in the Assign list shows the HOFIN bill text in Note/Remarks.
 - [OBSERVED] HOFA answers "You have to select a Asset first" when Acknowledge of a registration request is clicked before its details have loaded.
 
-## Live findings 2026-10-10 — Asset Assign (F02) completed (automation test_33: 16 tests)
+## Live findings 2026-10-10 — Asset Assign (F02) completed (automation test_32: 16 tests)
 - [CONFIRMED LIVE] Inactive extended asset (CR F02 exception): an extended asset that is written off becomes inactive: it disappears from the Asset Serial Global List, cannot be found in Asset Assign ("No asset found") and is not brought in by its parent (Asset List, Draft Details popup).
 - [CONFIRMED LIVE] Q1 (Write-off dropdown): the Asset Serial box of Asset Write-off lists an extended asset on its own when its Utilization Status is not IN_USE; its parent (IN_USE) is not offered. An extended asset is written off independently of its parent (CR F18 requirement version).
 - [CONFIRMED LIVE] F02 auto-assign: an extended asset added to an assigned parent is assigned automatically to the same employee with the parent's Building, Floor and Room (checked on the asset popup). Not checked: whether a separate approved transaction record is created.
