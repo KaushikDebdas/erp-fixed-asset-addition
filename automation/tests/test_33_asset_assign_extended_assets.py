@@ -1,5 +1,5 @@
 """
-test_32_asset_assign_extended_assets.py: the Asset Assign screen and the
+test_33_asset_assign_extended_assets.py: the Asset Assign screen and the
 transaction screens that follow it, for a parent asset that has extended
 assets (CR FAHOV2-643, feature F02 Asset Assign, with F05 Transaction List,
 F06 Transaction Approval List and F07 Asset Assign Acknowledgement).
@@ -8,12 +8,14 @@ Two parent assets are made once per run through HOFIN, HOFA and HOFIN:
     parent_with_extended           a parent with one extended asset (pair A)
     parent_with_inactive_extended  a parent with three extended assets, the third
                                    written off, so it is inactive (pair B)
-The first test of a run that needs a pair makes it (a few minutes). Built from
+The first test of a run that needs a pair makes it (a few minutes) with the HOFIN
+helper (utils/hofin_assets.py), which reads the REAL parent and extended serials
+from the HOFA Global List; no serial is written in this file. Built from
 automation/element_catalog/asset_assign.md and the live checks of 2026-10-10.
 
-The screens are used by the Asset Assign user (ASSIGN_USER_USERNAME and
-ASSIGN_USER_PASSWORD in .env), who is also the employee the assets are assigned
-to (ASSIGNEE_PIN in test_data/asset_transaction_data.py).
+The screens are used in HOFA (HOFA_URL) by the HOFA acknowledger (HOFA_ACK_USERNAME
+and HOFA_ACK_PASSWORD in .env), who is also the employee the assets are assigned to
+and who acknowledges them (HOFA_ACK_EMPLOYEE_PIN in test_data/hofin_asset_data.py).
 
 The tests run top to bottom. Each group below follows one assignment, so run a
 group together:
@@ -22,15 +24,19 @@ group together:
     3. One assignment (pair A): Submit, Approval List popup, Approve (both ASSIGNED),
        Transaction List popup, Acknowledgement popup, Acknowledge
     4. Several and inactive extended assets (pair B): all active extended assets are listed,
-       the disposed one is not; Draft, Submit from the Transaction List, Approve, Acknowledge;
-       a new extended asset added to the assigned parent is assigned automatically
+       the disposed one is not (Asset List, Transaction List, Approval List and Acknowledgement
+       popups); Draft, Submit from the Transaction List, Approve, Acknowledge; a new extended
+       asset added to the assigned parent is assigned automatically, with an approved ASSIGN
+       transaction
 
 To run part of the file:
-    pytest tests/test_32_asset_assign_extended_assets.py -k "not_found or suggests"
+    pytest tests/test_33_asset_assign_extended_assets.py -k "not_found or suggests"
 """
 import pytest
 
-from test_data.asset_transaction_data import ASSIGN, ASSIGNEE_PIN
+from pages.asset_assign_acknowledgement_page import AssetAssignAcknowledgementPage
+from test_data.asset_transaction_data import ASSIGN
+from test_data.hofin_asset_data import HOFA_ACK_EMPLOYEE_PIN
 from test_data.toast_messages import (
     ACKNOWLEDGE_TOAST,
     ASSIGN_DRAFT_TOAST,
@@ -38,15 +44,25 @@ from test_data.toast_messages import (
     TRANSACTION_APPROVE_TOAST,
 )
 from utils.run_context import trace_one_test
-from utils.transaction_flow import approve_and_verify, build_expected, submit_draft_from_list
+from utils.transaction_flow import approve_and_verify, read_expected_assignment, submit_draft_from_list
 
 NOTE = "AUTOMATION_TEST assign parent with extended asset"
 
+# The employee the assets are assigned to: the HOFA acknowledger, the user of this file
+ASSIGNEE_PIN = HOFA_ACK_EMPLOYEE_PIN
+
 
 @pytest.fixture
-def page(assignee_logged_in_page, request):
-    """Every test in this file reuses the one tab that logged in once, as the Asset Assign user."""
-    yield from trace_one_test(assignee_logged_in_page, request)
+def page(hofa_logged_in_page, request):
+    """Every test in this file reuses the one HOFA tab that logged in once, as the HOFA acknowledger."""
+    assert ASSIGNEE_PIN, "HOFA_ACK_USERNAME must be a numeric login name (the employee PIN) to assign assets to it."
+    yield from trace_one_test(hofa_logged_in_page, request)
+
+
+@pytest.fixture
+def acknowledgement_page(page):
+    """Asset Assign Acknowledgement in the same HOFA tab: the HOFA acknowledger is the assigned employee."""
+    return AssetAssignAcknowledgementPage(page)
 
 
 # ---------------------------------------------------------------------------
@@ -271,24 +287,47 @@ def test_assign_draft_shows_active_extended_assets(
 
 
 @pytest.mark.regression
-def test_assign_draft_submit_approve_assigns_all_active(
-    page, assign_page, transaction_list_page, transaction_approval_page, asset_serial_global_list_page,
-    parent_with_inactive_extended, take_screenshot
+def test_assign_draft_submitted_from_transaction_list(
+    page, assign_page, transaction_list_page, parent_with_inactive_extended, take_screenshot
 ):
-    """Asset Assign (CR F02S01): the Draft submitted from the Transaction List and approved assigns the parent and its active extended assets."""
+    """Asset Assign (CR F02S01): the Draft of the parent is submitted from the Transaction List and follows the approval workflow."""
     # Step 1: the expected values of the Draft made by the previous test
     pair = parent_with_inactive_extended
-    assign_page.navigate_here()
-    assign_page.select_employee(ASSIGNEE_PIN)
-    assignee_name = assign_page.get_employee_name()
-    transaction_date = assign_page.get_transaction_date().replace("-", "/")
-    expected = build_expected(ASSIGNEE_PIN, assignee_name, NOTE, transaction_date)
+    expected = read_expected_assignment(assign_page, ASSIGNEE_PIN, NOTE)
 
-    # Step 2: Submit the Draft from the Transaction List, then Approve it
+    # Step 2: Submit the Draft from the Transaction List
     submit_draft_from_list(transaction_list_page, assign_page, ASSIGN, pair["parent"], expected, ASSIGN_SUBMIT_TOAST, take_screenshot)
+
+
+@pytest.mark.regression
+def test_approval_details_list_only_active_extended_assets(
+    page, transaction_approval_page, parent_with_inactive_extended, take_screenshot
+):
+    """Transaction Approval List (CR F06S01): the Details popup lists only the active extended assets below the parent; the disposed one is not shown."""
+    # Step 1: open the Details popup of the pending assignment of the parent
+    pair = parent_with_inactive_extended
+    transaction_approval_page.navigate_here()
+    transaction_approval_page.open_details_of_row_with_serial(pair["parent"], ASSIGN, "PENDING")
+    take_screenshot("approval details popup with active extended assets")
+
+    # Step 2: the active extended assets are below the parent; the disposed one is not listed
+    transaction_approval_page.verify_popup_extended_assets_below_parent(pair["parent"], pair["active"])
+    transaction_approval_page.verify_popup_does_not_list(pair["inactive"])
+    transaction_approval_page.close_popup()
+
+
+@pytest.mark.regression
+def test_approve_assign_assigns_all_active_extended(
+    page, assign_page, transaction_approval_page, asset_serial_global_list_page,
+    parent_with_inactive_extended, take_screenshot
+):
+    """Asset Assign (CR F02S01): approving the submitted assignment assigns the parent and its active extended assets."""
+    # Step 1: Approve the pending assignment from the Transaction Approval List
+    pair = parent_with_inactive_extended
+    expected = read_expected_assignment(assign_page, ASSIGNEE_PIN, NOTE)
     approve_and_verify(transaction_approval_page, ASSIGN, pair["parent"], expected, take_screenshot)
 
-    # Step 3: the parent and its active extended assets are ASSIGNED; the disposed one is not listed
+    # Step 2: the parent and its active extended assets are ASSIGNED; the disposed one is not listed
     asset_serial_global_list_page.navigate_here()
     asset_serial_global_list_page.verify_all_assigned([pair["parent"]] + pair["active"])
     asset_serial_global_list_page.search_by_serial(pair["inactive"])
@@ -299,16 +338,22 @@ def test_assign_draft_submit_approve_assigns_all_active(
 def test_acknowledge_assign_lists_all_active_extended(
     page, acknowledgement_page, parent_with_inactive_extended, take_screenshot
 ):
-    """Asset Assign Acknowledgement (CR F02S01): acknowledging the assignment puts the parent and its active extended assets in My Assigned Asset."""
-    # Step 1: acknowledge the assignment of the parent from its Details popup
+    """Asset Assign Acknowledgement (CR F02S01, F07S01): the Details popup lists only the active extended assets below the parent; acknowledging puts them in My Assigned Asset."""
+    # Step 1: open the Details popup of the assignment waiting for acknowledgement
     pair = parent_with_inactive_extended
     acknowledgement_page.navigate_here()
     acknowledgement_page.open_details_of_row_with_serial(pair["parent"])
+
+    # Step 2: only the active extended assets are listed below the parent (the disposed one is not)
+    acknowledgement_page.verify_popup_extended_assets_below_parent(pair["parent"], pair["active"])
+    take_screenshot("acknowledgement details with active extended assets")
+
+    # Step 3: acknowledge the assignment from the popup
     toast = acknowledgement_page.acknowledge_in_popup_and_get_toast()
     acknowledgement_page.verify_toast_contains(toast, ACKNOWLEDGE_TOAST, "Acknowledge of the assignment")
     take_screenshot("assignment acknowledged")
 
-    # Step 2: the parent and its active extended assets are in My Assigned Asset
+    # Step 4: the parent and its active extended assets are in My Assigned Asset
     acknowledgement_page.verify_my_assets_include([pair["parent"]] + pair["active"])
 
 
@@ -316,7 +361,7 @@ def test_acknowledge_assign_lists_all_active_extended(
 def test_new_extended_asset_of_assigned_parent_is_auto_assigned(
     page, hofin_flow, asset_serial_global_list_page, parent_with_inactive_extended, take_screenshot
 ):
-    """Asset Assign (CR F02S01): an extended asset added to an assigned parent is assigned automatically to the same employee, in the same building, floor and room."""
+    """Asset Assign (CR F02S01): an extended asset added to an assigned parent is assigned automatically to the same employee, in the same building, floor and room, with an approved ASSIGN transaction."""
     # Step 1: the extended assets the parent has before the addition
     pair = parent_with_inactive_extended
     asset_serial_global_list_page.navigate_here()
@@ -334,3 +379,6 @@ def test_new_extended_asset_of_assigned_parent_is_auto_assigned(
     # Step 4: the new extended asset is assigned like its parent, without any assignment made for it
     asset_serial_global_list_page.verify_same_assignment_as_parent(pair["parent"], new_serials[0])
     take_screenshot("new extended asset assigned")
+
+    # Step 5: the system made and approved the ASSIGN transaction of the new extended asset by itself
+    asset_serial_global_list_page.verify_transaction_in_history(new_serials[0], ASSIGN, "APPROVED")

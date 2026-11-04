@@ -59,19 +59,29 @@ def assign_and_approve(assign_page, approval_list_page, serial: str, employee_pi
     the asset ends up ASSIGNED. Used to prepare test data: it submits
     straight from the Asset Assign form and approves from the Approval List.
     """
+    assign_several_and_approve(assign_page, approval_list_page, [serial], employee_pin, note)
+
+
+def assign_several_and_approve(assign_page, approval_list_page, serials: list, employee_pin: str, note: str) -> None:
+    """
+    Assign several unassigned assets to one employee in ONE transaction and approve it.
+    Each serial is selected and added to the Asset List in turn (a parent brings its
+    extended assets with it). The transaction is found in the Approval List by the first serial.
+    """
     assign_page.navigate_here()
     assign_page.verify_business_day_open()
-    assign_page.select_asset_by_serial(serial)
-    assign_page.add_to_grid()
+    for serial in serials:
+        assign_page.select_asset_by_serial(serial)
+        assign_page.add_to_grid()
     assign_page.select_employee(employee_pin)
     assign_page.enter_note(note)
     toast = assign_page.submit_and_get_toast()
     assign_page.verify_toast_text(toast, ASSIGN_SUBMIT_TOAST, "Submit on Asset Assign")
 
     approval_list_page.navigate_here()
-    toast = approval_list_page.approve_transaction_for_serial("ASSIGN", serial)
+    toast = approval_list_page.approve_transaction_for_serial("ASSIGN", serials[0])
     approval_list_page.verify_toast_text(toast, TRANSACTION_APPROVE_TOAST, "Approve of the ASSIGN transaction")
-    action_logger.info(f"Asset {serial} is now assigned to employee {employee_pin}")
+    action_logger.info(f"Assets {serials} are now assigned to employee {employee_pin}")
 
 
 def unassign_and_approve(unassign_page, approval_list_page, serial: str, handover_search: str, note: str) -> None:

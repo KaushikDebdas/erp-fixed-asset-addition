@@ -270,6 +270,66 @@ def hofin_flow(browser, request):
 
 
 @pytest.fixture(scope="session")
+def hofin_asset_records():
+    """
+    The HOFIN assets made during this run, shared by every test file, so each one is
+    registered only once per run. Used by `hofin_assets`; nothing is saved between runs.
+    """
+    return {}
+
+
+@pytest.fixture
+def hofin_assets(hofin_flow, hofin_asset_records):
+    """
+    Registers assets through HOFIN > HOFA > HOFIN and returns their real serials
+    (utils/hofin_assets.py). It works beside the AAQ `registrations` / `assets`:
+        serial = hofin_assets.get_normal_asset()["serial"]
+        pair = hofin_assets.get_parent_with_extended()   # {"parent": ..., "extended": [...]}
+    """
+    from utils.hofin_assets import HofinAssets
+
+    return HofinAssets(hofin_flow, hofin_asset_records)
+
+
+@pytest.fixture
+def hofin_normal_asset(hofin_assets):
+    """The run's normal asset registered in HOFIN (no extended asset): {"serial": ..., "transaction_no": ..., ...}."""
+    return hofin_assets.get_normal_asset()
+
+
+@pytest.fixture
+def hofin_parent_with_extended(hofin_assets):
+    """The run's parent asset registered in HOFIN with two extended assets: {"parent": ..., "extended": [...], ...}."""
+    return hofin_assets.get_parent_with_extended()
+
+
+@pytest.fixture(scope="module")
+def hofa_logged_in_page(browser):
+    """
+    One HOFA tab (HOFA_URL) signed in ONCE as the HOFA acknowledger (HOFA_ACK_USERNAME
+    in .env) and shared by every test in the same file. The Asset Profile screens of
+    HOFIN assets are checked as this user. A test file uses it by overriding `page`.
+    """
+    from config.settings import HOFA_ACK_PASSWORD, HOFA_ACK_USERNAME, HOFA_URL
+
+    assert HOFA_ACK_USERNAME and HOFA_ACK_PASSWORD and HOFA_URL, (
+        "HOFA_URL, HOFA_ACK_USERNAME and HOFA_ACK_PASSWORD must be set in .env (see .env.example)."
+    )
+    context = browser.new_context(no_viewport=True)
+    # Tracing is started so the test file can record one trace chunk per test
+    context.tracing.start(screenshots=True, snapshots=True)
+    page = context.new_page()
+    maximize_window(context, page)
+    page.goto(HOFA_URL)
+    sign_in(page, HOFA_ACK_USERNAME, HOFA_ACK_PASSWORD, "")
+
+    yield page
+
+    context.tracing.stop()
+    context.close()
+
+
+@pytest.fixture(scope="session")
 def extended_asset_pairs():
     """
     The parent assets with extended assets made during this run, shared by every
@@ -280,21 +340,60 @@ def extended_asset_pairs():
 
 
 @pytest.fixture
-def parent_with_extended(hofin_flow, extended_asset_pairs):
+def parent_with_extended(hofin_assets, extended_asset_pairs):
     """
     A new parent asset with one extended asset (CR FAHOV2-643), as
     {"parent": serial, "extended": serial}. The first test of a run that asks for it
     makes it through HOFIN, HOFA and HOFIN (a few minutes); later tests reuse it.
     """
+    if extended_asset_pairs.get("one_extended_error"):
+        pytest.fail(f"The parent asset with an extended asset could not be made earlier in this run: {extended_asset_pairs['one_extended_error']}")
     if "one_extended" not in extended_asset_pairs:
-        parent, extended_serials = hofin_flow.create_parent_with_extended_asset(1)
-        extended_asset_pairs["one_extended"] = {"parent": parent, "extended": extended_serials[0]}
+        try:
+            pair = hofin_assets.register_parent_with_extended(1)
+        except Exception as error:
+            extended_asset_pairs["one_extended_error"] = str(error).splitlines()[0]
+            raise
+        extended_asset_pairs["one_extended"] = {"parent": pair["parent"], "extended": pair["extended"][0]}
     return extended_asset_pairs["one_extended"]
 
 
 @pytest.fixture
+def assigned_parent_with_extended(
+    page, parent_with_extended, assign_page, transaction_approval_page, asset_serial_global_list_page,
+):
+    """
+    The parent asset and its extended asset of `parent_with_extended`, ASSIGNED to the HOFA
+    acknowledger and acknowledged, which is the state Asset Internal Movement needs (an asset
+    with an acknowledgement pending is not offered there). It does only the missing steps:
+    assign and approve when the parent is UNASSIGNED, then acknowledge when an acknowledgement
+    waits. Works in the test file's `page` tab (the HOFA acknowledger). Returns the same
+    dictionary as `parent_with_extended`.
+    """
+    from pages.asset_assign_acknowledgement_page import AssetAssignAcknowledgementPage
+    from test_data.asset_transaction_data import UNASSIGNED
+    from test_data.hofin_asset_data import HOFA_ACK_EMPLOYEE_PIN
+    from test_data.toast_messages import ACKNOWLEDGE_TOAST
+    from utils.asset_flow import assign_and_approve
+
+    parent_serial = parent_with_extended["parent"]
+    status = asset_serial_global_list_page.open_and_read_assign_status(parent_serial)
+    if status == UNASSIGNED:
+        assign_and_approve(
+            assign_page, transaction_approval_page, parent_serial, HOFA_ACK_EMPLOYEE_PIN, "AUTOMATION_TEST setup assign"
+        )
+    acknowledgement_page = AssetAssignAcknowledgementPage(page)
+    acknowledgement_page.navigate_here()
+    # One pass over the pending rows: when the parent's row is found its Details popup stays open
+    if acknowledgement_page.find_pending_row_with_serial(parent_serial) >= 0:
+        toast = acknowledgement_page.acknowledge_in_popup_and_get_toast()
+        acknowledgement_page.verify_toast_contains(toast, ACKNOWLEDGE_TOAST, "Acknowledge in the setup")
+    return parent_with_extended
+
+
+@pytest.fixture
 def parent_with_inactive_extended(
-    hofin_flow, extended_asset_pairs, asset_serial_global_list_page, asset_write_off_page,
+    hofin_assets, extended_asset_pairs, asset_serial_global_list_page, asset_write_off_page,
     asset_write_off_list_page, asset_write_off_approval_list_page,
 ):
     """
@@ -306,7 +405,8 @@ def parent_with_inactive_extended(
     from utils.write_off_flow import write_off_one_asset
 
     if "inactive_extended" not in extended_asset_pairs:
-        parent, extended_serials = hofin_flow.create_parent_with_extended_asset(3)
+        pair = hofin_assets.register_parent_with_extended(3)
+        parent, extended_serials = pair["parent"], pair["extended"]
         write_off_one_asset(
             asset_serial_global_list_page, asset_write_off_page, asset_write_off_list_page,
             asset_write_off_approval_list_page, extended_serials[2], WRITE_OFF_PROJECT,
@@ -315,6 +415,47 @@ def parent_with_inactive_extended(
             "parent": parent, "active": extended_serials[:2], "inactive": extended_serials[2],
         }
     return extended_asset_pairs["inactive_extended"]
+
+
+@pytest.fixture
+def assets_pending_acknowledgement(
+    hofin_assets, extended_asset_pairs, asset_serial_global_list_page, asset_write_off_page,
+    asset_write_off_list_page, asset_write_off_approval_list_page, assign_page, transaction_approval_page,
+):
+    """
+    One approved assignment waiting for acknowledgement (CR FAHOV2-643 F07S01). It holds a new
+    parent asset with three extended assets, the third written off (inactive), and a new normal
+    asset with no extended asset, all assigned in ONE transaction to the HOFA acknowledger:
+        {"parent": serial, "active": [first two], "inactive": third, "normal": serial}
+    Made once per run (about 15 minutes). When making it fails, every later test that asks
+    for it fails at once with the same reason instead of making it again.
+    """
+    from test_data.hofin_asset_data import HOFA_ACK_EMPLOYEE_PIN, WRITE_OFF_PROJECT
+    from utils.asset_flow import assign_several_and_approve
+    from utils.write_off_flow import write_off_one_asset
+
+    key = "pending_acknowledgement"
+    if extended_asset_pairs.get(key + "_error"):
+        pytest.fail(f"The assets for this test could not be made earlier in this run: {extended_asset_pairs[key + '_error']}")
+    if key not in extended_asset_pairs:
+        try:
+            pair = hofin_assets.register_parent_with_extended(3)
+            write_off_one_asset(
+                asset_serial_global_list_page, asset_write_off_page, asset_write_off_list_page,
+                asset_write_off_approval_list_page, pair["extended"][2], WRITE_OFF_PROJECT,
+            )
+            normal = hofin_assets.register_normal_asset()["serial"]
+            assign_several_and_approve(
+                assign_page, transaction_approval_page, [pair["parent"], normal],
+                HOFA_ACK_EMPLOYEE_PIN, "AUTOMATION_TEST assign for acknowledgement",
+            )
+        except Exception as error:
+            extended_asset_pairs[key + "_error"] = str(error).splitlines()[0]
+            raise
+        extended_asset_pairs[key] = {
+            "parent": pair["parent"], "active": pair["extended"][:2], "inactive": pair["extended"][2], "normal": normal,
+        }
+    return extended_asset_pairs[key]
 
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)

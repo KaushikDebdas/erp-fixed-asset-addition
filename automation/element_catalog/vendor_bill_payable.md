@@ -37,7 +37,7 @@
 | 22 | Popup | container | `locator("app-vendor-fixed-asset-modal")` | Angular component, not a `<dialog>` | VERIFIED |
 | 23 | Bill Allocation (popup) | one auto-filled option; narrows the parent list | `#budgetAllocation input` | ng-select | VERIFIED |
 | 24 | Fixed Asset Addition | tick for an addition | `#isFixedAssetAddition` | check box (no label link) | VERIFIED |
-| 25 | Fixed Asset Serial No | parent asset search (shows parent serials only) | `#fixedAssetProfile input`; selected value `#fixedAssetProfile .ng-value-label`; search answer `**listForFixedAssetProfile**search=<serial>&**` | ng-select, server search | VERIFIED |
+| 25 | Fixed Asset Serial No | parent asset search. **2026-11-04: it also offers extended serials** (searching `BBDASR00227787` offered `BBDASR00227787`, `-1`, `-2`; searching `BBDASR00227787-1` offered `BBDASR00227787-1`), against CR F01S01 "parent serials only". Options are read with `get_by_role("option")` (`read_parent_serial_options`) | `#fixedAssetProfile input`; selected value `#fixedAssetProfile .ng-value-label`; search answer `**listForFixedAssetProfile**search=<serial>&**` | ng-select, server search | VERIFIED |
 | 26 | Source Of Fund | fund | `#sourceOfFund input` (first option `USAD`) | ng-select | VERIFIED |
 | 27 | Quantity, Unit Price | amounts (auto-set to 1 when addition is ticked) | `#quantity`, `#unitPrice` | text boxes, need key presses | VERIFIED |
 | 28 | Asset Item Name | item | `#assetItemName input` (type `Sofa`, option `171798695282-Sofa Set`) | ng-select | VERIFIED |
@@ -54,4 +54,6 @@
 - Confirm shows the toast "Transaction drafted!". The success of Submit is checked by the screen changing to `/vendor-bill-payable/view/<id>`; the text "Transaction Submitted Successfully" was not seen in the 2026-10-10 exploration.
 - Submit opens a new HOFA tab on the pending registration (`hoAssetPendingId`); the test does not use it.
 - HOFIN is slow to open the first time (up to a minute).
+- The Item Specification typed here is shown in the HOFA asset popup (`#commonModal #itemSpecification`). `utils/hofin_assets.py` types a unique one (`AUTO-SPEC_<date>_<time>`) to find its own new asset, because other users register Sofa Sets at the same time (2026-11-04: BBDASR00227782 to 227785 in a row).
+- 2026-11-04: Submit of bill VP00054972 (a registration) answered `Sequence of JV does not exist. Please Contact with Administrator.` in the notifier; the next registration a minute later submitted normally.
 - An addition's HOFA row shows a journal voucher number (`JV…`) in the Transaction No. column and the bill number in Payable No.; a registration shows the bill number in Transaction No.

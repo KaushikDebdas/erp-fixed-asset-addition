@@ -50,6 +50,13 @@ FURNITURE_FORM_DETAILS = {
     "projectName": "Microfinance (Dabi)",
 }
 
+# Column headings of the asset list inside the "Asset Transaction Details" popup
+# (Transaction List, Transaction Approval List, Asset Assign Acknowledgement)
+POPUP_ASSET_COLUMNS = [
+    "SL", "Asset Serial", "Asset Item Name", "Sub Category", "Category", "Project Name",
+    "Department Name", "Assign Status", "Assigned Before Approval", "Utilization Status",
+]
+
 # The auto-filled fields of the forms; none of them can be typed in
 FORM_READ_ONLY_FIELDS = [
     "assetName",

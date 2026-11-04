@@ -18,7 +18,7 @@ To run part of the file:
 import pytest
 
 from config.settings import ERP_USERNAME
-from test_data.asset_transaction_data import ASSIGN, TRANSFER, UNASSIGN
+from test_data.asset_transaction_data import ASSIGN, POPUP_ASSET_COLUMNS, TRANSFER, UNASSIGN
 from utils.run_context import trace_one_test
 
 # Column headings of the grid, in order
@@ -31,12 +31,6 @@ GRID_COLUMNS = [
 TYPE_OPTIONS = ["-Select Transaction Type-", ASSIGN, UNASSIGN, TRANSFER]
 STATUS_OPTIONS = [
     "-Select Transaction Status-", "PENDING", "APPROVED", "REJECTED", "DRAFT", "SENDBACK", "ACKNOWLEDGED",
-]
-
-# Column headings of the asset list inside the Details popup
-POPUP_ASSET_COLUMNS = [
-    "SL", "Asset Serial", "Asset Item Name", "Sub Category", "Category", "Project Name",
-    "Department Name", "Assign Status", "Assigned Before Approval", "Utilization Status",
 ]
 
 

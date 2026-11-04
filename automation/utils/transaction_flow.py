@@ -42,6 +42,22 @@ def build_expected(
     return expected
 
 
+def read_expected_assignment(form_page, employee_pin: str, note: str) -> dict:
+    """
+    Open the transaction form, select the employee and return the `expected`
+    dictionary (see build_expected) with the employee's name and today's
+    transaction date as the form shows them. Nothing is saved.
+
+    Example:
+        expected = read_expected_assignment(assign_page, ASSIGNEE_PIN, NOTE)
+    """
+    form_page.navigate_here()
+    form_page.select_employee(employee_pin)
+    employee_name = form_page.get_employee_name()
+    transaction_date = form_page.get_transaction_date().replace("-", "/")
+    return build_expected(employee_pin, employee_name, note, transaction_date)
+
+
 def check_popup_matches(grid_page, transaction_type: str, status: str, expected: dict) -> None:
     """Compare the open Details popup with what was entered on the form."""
     assertion_logger.info(f"Verifying {transaction_type} Details popup shows status {status}")

@@ -34,6 +34,40 @@ ITEM_ROW_WAIT = 20000
 # and the screen to change after Submit (milliseconds)
 SAVE_TIMEOUT = 60000
 
+# Time to wait for the view page after a message was seen (milliseconds)
+VIEW_PAGE_GRACE_TIMEOUT = 3000
+
+# Result of the script below when the bill opened in view mode
+SUBMIT_RESULT_VIEW = "VIEW"
+
+# Runs in the browser until the Submit has a result. Returns "VIEW" when the bill
+# opened in view mode, the text of the first message that is not a success message
+# (a notifier message, a toast or a dialog), or nothing while there is no result yet.
+SUBMIT_RESULT_SCRIPT = """() => {
+    if (location.href.includes('/vendor-bill-payable/view/')) {
+        return 'VIEW';
+    }
+    const notifications = document.querySelectorAll('.notifier__notification');
+    for (const notification of notifications) {
+        const message = notification.querySelector('.notifier__notification-message');
+        const text = (message ? message.innerText : notification.innerText).trim();
+        if (!notification.classList.contains('notifier__notification--success') && text !== '') {
+            return 'Message: ' + text;
+        }
+    }
+    const toasts = document.querySelectorAll('.toast-message');
+    for (const toast of toasts) {
+        if (!toast.closest('.toast-success') && toast.innerText.trim() !== '') {
+            return 'Toast: ' + toast.innerText.trim();
+        }
+    }
+    const dialog = document.querySelector('modal-container');
+    if (dialog && dialog.innerText.trim() !== '') {
+        return 'Dialog: ' + dialog.innerText.trim();
+    }
+    return null;
+}"""
+
 
 class VendorBillPayablePage(BasePage):
     """Page object for the Create Vendor Bill Payable form and its Fixed Asset Details popup."""
@@ -179,7 +213,7 @@ class VendorBillPayablePage(BasePage):
         self.click(self.fixed_asset_details_link, "Fixed Asset Details link")
         self.wait_until_visible(self.popup_bill_allocation_input, "Bill Allocation box of the popup")
 
-    def fill_fixed_asset_details(self, parent_serial: str = "") -> None:
+    def fill_fixed_asset_details(self, parent_serial: str = "", item_specification: str = data.ITEM_SPECIFICATION) -> None:
         """
         Fill the Fixed Asset Details popup and add the item to its list.
 
@@ -187,9 +221,10 @@ class VendorBillPayablePage(BasePage):
         `parent_serial` it is an asset addition: the "Fixed Asset Addition" box
         is ticked and that parent asset is chosen. The Bill Allocation must be
         chosen first, because it narrows the list of parent assets.
+        `item_specification` is typed in the Item Specification field; a unique
+        one lets the new asset be found again in the HOFA Global List.
         """
-        self.click(self.popup_bill_allocation_input, "Bill Allocation box of the popup")
-        self.click(self.page.get_by_role("option").first, "the only Bill Allocation option")
+        self.choose_popup_bill_allocation()
         if parent_serial != "":
             self.choose_parent_asset(parent_serial)
         self.click(self.source_of_fund_input, "Source Of Fund box")
@@ -199,8 +234,13 @@ class VendorBillPayablePage(BasePage):
             self.type_with_keys(self.quantity_field, data.QUANTITY, "Quantity field")
         self.type_with_keys(self.unit_price_field, data.UNIT_PRICE, "Unit Price field")
         self.choose_from_ng_select(self.asset_item_input, data.ASSET_ITEM_SEARCH_TEXT, data.ASSET_ITEM_OPTION)
-        self.type_with_keys(self.item_specification_field, data.ITEM_SPECIFICATION, "Item Specification field")
+        self.type_with_keys(self.item_specification_field, item_specification, "Item Specification field")
         self.add_item_to_popup_list()
+
+    def choose_popup_bill_allocation(self) -> None:
+        """Choose the bill's only Bill Allocation in the Fixed Asset Details popup."""
+        self.click(self.popup_bill_allocation_input, "Bill Allocation box of the popup")
+        self.click(self.page.get_by_role("option").first, "the only Bill Allocation option")
 
     def add_item_to_popup_list(self) -> None:
         """
@@ -231,6 +271,24 @@ class VendorBillPayablePage(BasePage):
         assert shown == parent_serial, (
             f"The parent asset {parent_serial} was chosen but the box shows '{shown}'."
         )
+
+    def read_parent_serial_options(self, search_text: str) -> list:
+        """
+        Tick "Fixed Asset Addition", type `search_text` in the Fixed Asset Serial No
+        box and return the texts of the options the search offers (nothing is chosen).
+        Call it in the open popup, after `choose_popup_bill_allocation`.
+        """
+        if not self.addition_checkbox.is_checked():
+            self.addition_checkbox.check()
+        self.click(self.parent_serial_input, "Fixed Asset Serial No box")
+        self.parent_serial_input.press("Control+A")
+        self.parent_serial_input.press("Backspace")
+        # The search runs on the server: wait for the answer to the full text
+        with self.page.expect_response(f"**listForFixedAssetProfile**search={search_text}&**"):
+            self.parent_serial_input.press_sequentially(search_text)
+        options = [text.strip() for text in self.page.get_by_role("option").all_inner_texts()]
+        action_logger.info(f"Fixed Asset Serial No options for '{search_text}': {options}")
+        return options
 
     def verify_item_row(self, expected_addition: str, parent_serial: str = "") -> None:
         """
@@ -275,15 +333,36 @@ class VendorBillPayablePage(BasePage):
         Click Submit and confirm the bill was submitted: the screen changes to
         the read-only view of the bill.
         """
-        self.click(self.submit_button, "Submit button")
         assertion_logger.info("Verifying the bill was submitted")
-        try:
-            self.page.wait_for_url("**/vendor-bill-payable/view/**", timeout=SAVE_TIMEOUT)
-        except Exception:
-            dialog_text = self.page.locator("modal-container").first.inner_text(timeout=3000) if self.page.locator("modal-container").count() > 0 else "none"
-            toast_text = self.get_toast_text_or_empty(timeout=3000) or "none"
+        message = self.submit_and_read_result()
+        if message != "":
             raise AssertionError(
-                "After Submit the bill should open in view mode but the page shows "
-                f"{self.page.url}. Dialog on screen: {dialog_text}. Toast on screen: {toast_text}."
+                f"After Submit the bill should open in view mode but an error message was shown: {message}"
             )
-        self.wait_for_page_load()
+
+    def submit_and_read_result(self) -> str:
+        """
+        Click Submit and return "" when the bill opens in view mode (it was submitted),
+        or the text of the error message shown instead (e.g. "Message: <text>").
+        """
+        self.click(self.submit_button, "Submit button")
+        # Stop as soon as the bill opens in view mode or an error message shows
+        result = self.page.wait_for_function(SUBMIT_RESULT_SCRIPT, timeout=SAVE_TIMEOUT)
+        message = result.json_value()
+        if message == SUBMIT_RESULT_VIEW or self.is_view_page_reached():
+            self.wait_for_page_load()
+            return ""
+        action_logger.info(f"Submit was refused: {message}")
+        return message
+
+    def is_view_page_reached(self) -> bool:
+        """
+        Return True when the bill opens in view mode within a few seconds. Used
+        after a message was seen, because a success message can show just before
+        the screen changes.
+        """
+        try:
+            self.page.wait_for_url("**/vendor-bill-payable/view/**", timeout=VIEW_PAGE_GRACE_TIMEOUT)
+            return True
+        except Exception:
+            return False

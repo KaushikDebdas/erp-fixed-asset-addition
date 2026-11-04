@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Page class | `pages/asset_serial_global_list_page.py` → `AssetSerialGlobalListPage`; tests in `tests/test_04_asset_serial_global_list.py` |
+| Page class | `pages/asset_serial_global_list_page.py` → `AssetSerialGlobalListPage`; tests in `tests/test_04_asset_serial_global_list.py` (AAQ assets) and `tests/test_32_asset_serial_global_list_hofin_assets.py` (HOFIN assets, CR FAHOV2-643 F01) |
 | Module / menu path | Fixed Asset >> Asset Profile >> Asset Serial Global List |
 | Entry URL | `https://erpstaging.brac.net/nodef/fixedasset#!faAssetProfile/showAssetSerialGlobalList` (reach via menu click, see Notes) |
 | Role needed | ERP External User (tested with `abushoaib.asik`, branch Head Office [ BDHO ]) |
@@ -73,6 +73,15 @@
     - The three `Inventory Asset ...` columns show `1 | 1 | 1` for the Inventory expense and `0 | 0 | 0` for the Accounts expense (the ERP shows ids or flags there, not names), so they are not compared.
     - The serial link must be searched with `input[name="assetSerial"]`: while the popup is open a second read-only `#assetSerial` exists.
     - Evidence: `evidence/global_list_expenditure_tab_inventory.png`.
+  - Addition History, 2026-11-04 (env42 HOFA, as the HOFA acknowledger, VERIFIED by `tests/test_32_asset_serial_global_list_hofin_assets.py`):
+    - The tab is shown for **every parent asset**, also one with no addition; then its grid is empty and the entries text is `Showing 0 to 0 of 0 entries` (this replaces the 2026-11-01 note below that it shows only for a parent with additions).
+    - Records per page box: `#tab_addition_history` → `get_by_label("Records per page")` (a `<select name="assetAdditionHistoryList_length">` inside its label): options 10, 20, 50, 100; 10 chosen.
+    - Entries text: `#tab_addition_history` → `get_by_role("status")` (`#assetAdditionHistoryList_info`), e.g. `Showing 1 to 2 of 2 entries`.
+    - Asset Serial link of a row: `#assetAdditionHistoryList` → `get_by_role("link", name="<extended serial>", exact=True)` (`onclick="showChildAssetProfileDetailsPopupId(<id>)"`). It loads the extended asset into the SAME popup `#commonModal` (no second modal); Close then shows the parent's popup again (`#assetSerial` back to the parent), so the CR's "closing returns to the previous popup" holds.
+    - Row values for an addition of 25000: `Addition Amount 25000`, `Addition Date` = the business date dd/mm/yyyy (same as the parent's `#registrationDate` on that day), `Reference Number JV.../26`, `Item Name Sofa Set`, `Acc. Depreciation 0`, **`WDV 24999`** while the extended asset's own popup shows `#netAssetValue` 25000.00 (seen again for 20000 → 19999). Recorded as a CR deviation.
+    - Popup fields used to check a HOFIN asset: `#itemSpecification` (typed in HOFIN), `#unitPrice` (Purchase Price), `#totalAdditionRegistered` (stays 0.00 on a parent after additions), `#netAssetValue`, `#totalDepCalculated`, `#remainingLife`, `#registrationDate`, `#branchName` (`[HO - BDHO] Head Office`), `#regType` (`MRR` for a HOFIN registration). A parent has no `#parentAssetSerial` element at all.
+    - Transaction History tab: the grid is the first `table` inside `#tab_transfer_history` (read by heading: `Transaction Type`, `Transaction Status`, `New Assign Status`, ...). VERIFIED 2026-11-04 on BBDASR00227790 (`ASSIGN | APPROVED | ASSIGNED`) and by `test_32` on an auto-assigned extended asset.
+    - Utilization Status Change on a parent whose addition is acknowledged but not approved answers `Cannot Change Status, BBDASR00227787 is pending in Asset Addition From HOFIN`.
   - Addition History (grid `#assetAdditionHistoryList` in `#tab_addition_history`; read on env42 HOFA 2026-11-01, VERIFIED): shown ONLY for a parent asset that has additions, between Expenditure and Disposal Info. Columns: SL, Asset Serial, Addition Amount, Addition Date, Reference Number, Item Name, Acc. Depreciation, WDV, Impairment Status, Impairment ID. Example row of parent `BBDASR00227752`: `1 | BBDASR00227752-1 | 25000 | 13/09/2026 | JV09005680/26 | Sofa Set | 0 | 24999 | |`.
   - Parent and extended assets (FAHOV2-643, read on env42 HOFA 2026-11-01, VERIFIED): an extended asset is a separate row of the grid with serial `<parent serial>-1`, `-2`, ... and the parent's item. Its popup shows the parent in `#commonModal #parentAssetSerial` (label "Parent Asset") and has no Addition History tab. `#refAssetSerial` (label "Reference Asset") stays empty for both.
   - Grid order: before any search the grid lists the newest asset first (highest hidden Profile ID); the column headings cannot be sorted (`sorting_disabled`). `read_newest_parent_serial()` takes the first row of the item whose serial has no `-N` ending.

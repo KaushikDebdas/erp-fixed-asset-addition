@@ -108,3 +108,8 @@ Addition" checkbox).
 - URLs and logins: `HOFA_URL`, `HOFIN_URL` and the three logins are read from `.env` (see `.env.example`). The note above about a single `application_url` is closed: `project_config.yaml` has `hofa_url` and `hofin_url`; HOFA is the Fixed Asset application used by every Fixed Asset test.
 - The approver (kazi.mm@brac.net in the manual) is a different login from the creator; one browser window per role.
 - Locators: `automation/element_catalog/vendor_bill_payable.md`, `asset_registration_pending_review_list.md`, `hofin_approval_list.md`.
+
+## Automation status (2026-11-04): reusable HOFIN assets for other tests
+- `automation/utils/hofin_assets.py` (fixture `hofin_assets`) runs Sections A and B for any test and returns the REAL serials: `get_normal_asset()` → `{"serial", "transaction_no", "item_specification", "details"}`; `get_parent_with_extended()` → `{"parent", "extended": ["<parent>-1", "<parent>-2"], ...}`. Shortcuts: fixtures `hofin_normal_asset` and `hofin_parent_with_extended`. Made once per run. The AAQ helpers (`registrations`, `assets`) are unchanged; both coexist.
+- Section A Step 4 no longer takes "the newest Sofa Set": each bill types a unique Item Specification (`AUTO-SPEC_<date>_<time>`) and the asset is the parent with that specification. Section B's serial is read from the parent's Addition History (the one new serial), not computed.
+- `automation/tests/test_32_asset_serial_global_list_hofin_assets.py` checks those assets in the HOFA Asset Serial Global List as the HOFA acknowledger (fixture `hofa_logged_in_page`), covering CR F01S01 and F01S02. Results and CR deviations: `knowledge/erp-fixedasset.md` §16.12.

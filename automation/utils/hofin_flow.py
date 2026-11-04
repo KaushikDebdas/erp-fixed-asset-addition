@@ -19,6 +19,9 @@ How to use it in a test (the `hofin_flow` fixture in conftest.py creates it):
     transaction_no = hofin_flow.create_bill(invoice_no)
     hofin_flow.acknowledge(transaction_no)
     hofin_flow.approve(transaction_no)
+
+To get a registered asset and its real serial, use `utils/hofin_assets.py`
+(fixture `hofin_assets`), which runs these stages and then finds the new asset.
 """
 from config.settings import (
     HOFA_ACK_PASSWORD,
@@ -59,11 +62,12 @@ class HofinAssetFlow:
 
     # ---- stages ---------------------------------------------------------------
 
-    def create_bill(self, invoice_no: str, parent_serial: str = "") -> str:
+    def create_bill(self, invoice_no: str, parent_serial: str = "", item_specification: str = data.ITEM_SPECIFICATION) -> str:
         """
         HOFIN creator stage: fill and submit the vendor bill. Without
         `parent_serial` it registers a new asset; with it, it adds to that
-        parent asset. Returns the Transaction No. of the bill.
+        parent asset. `item_specification` is typed in the Fixed Asset Details
+        popup. Returns the Transaction No. of the bill.
         """
         self.require_logins(HOFIN_CREATOR_USERNAME, HOFIN_CREATOR_PASSWORD, "HOFIN_CREATOR")
         stage = "hofin_creator_addition" if parent_serial != "" else "hofin_creator_registration"
@@ -73,16 +77,7 @@ class HofinAssetFlow:
             hofin_login.open_login_page(HOFIN_URL)
             hofin_login.login(HOFIN_CREATOR_USERNAME, HOFIN_CREATOR_PASSWORD)
             bill = VendorBillPayablePage(page)
-            bill.open_create_form()
-            bill.fill_bill_header(invoice_no)
-            bill.fill_and_add_bill_allocation()
-            bill.open_fixed_asset_details()
-            bill.fill_fixed_asset_details(parent_serial)
-            expected_addition = "YES" if parent_serial != "" else "NO"
-            bill.verify_item_row(expected_addition, parent_serial)
-            self.take_screenshot(page, "fixed asset details item added")
-            bill.confirm_item_details()
-            transaction_no = bill.read_transaction_no()
+            transaction_no = self.fill_bill_up_to_submit(bill, invoice_no, parent_serial, item_specification)
             bill.submit_and_verify()
             self.take_screenshot(page, f"bill {transaction_no} submitted")
         except Exception:
@@ -90,6 +85,45 @@ class HofinAssetFlow:
             raise
         self.finish_role(context, page, stage, False, hofin_login.log_out)
         return transaction_no
+
+    def submit_addition_and_read_refusal(self, parent_serial: str) -> str:
+        """
+        HOFIN creator stage for a blocked addition: fill an addition bill for the parent
+        and click Submit. Returns the message HOFIN shows instead of submitting, or ""
+        when the bill WAS submitted (then the caller's check fails with that fact).
+        """
+        self.require_logins(HOFIN_CREATOR_USERNAME, HOFIN_CREATOR_PASSWORD, "HOFIN_CREATOR")
+        stage = "hofin_creator_blocked_addition"
+        context, page = self.open_role_page()
+        hofin_login = HofinLoginPage(page)
+        try:
+            hofin_login.open_login_page(HOFIN_URL)
+            hofin_login.login(HOFIN_CREATOR_USERNAME, HOFIN_CREATOR_PASSWORD)
+            bill = VendorBillPayablePage(page)
+            self.fill_bill_up_to_submit(bill, unique_name("BLK"), parent_serial, unique_name(data.ITEM_SPECIFICATION))
+            message = bill.submit_and_read_result()
+            self.take_screenshot(page, "submit of the addition answered")
+        except Exception:
+            self.finish_role(context, page, stage, True, hofin_login.log_out)
+            raise
+        self.finish_role(context, page, stage, False, hofin_login.log_out)
+        return message
+
+    def fill_bill_up_to_submit(self, bill, invoice_no: str, parent_serial: str, item_specification: str) -> str:
+        """
+        Fill the vendor bill and its Fixed Asset Details popup and confirm the item, ready
+        for Submit (see create_bill). Returns the Transaction No. of the bill.
+        """
+        bill.open_create_form()
+        bill.fill_bill_header(invoice_no)
+        bill.fill_and_add_bill_allocation()
+        bill.open_fixed_asset_details()
+        bill.fill_fixed_asset_details(parent_serial, item_specification)
+        expected_addition = "YES" if parent_serial != "" else "NO"
+        bill.verify_item_row(expected_addition, parent_serial)
+        self.take_screenshot(bill.page, "fixed asset details item added")
+        bill.confirm_item_details()
+        return bill.read_transaction_no()
 
     def acknowledge(self, transaction_no: str) -> None:
         """HOFA acknowledger stage: find the Transaction No. in the Pending/Review List and acknowledge it."""
@@ -134,39 +168,42 @@ class HofinAssetFlow:
             raise
         self.finish_role(context, page, stage, False, hofin_login.log_out)
 
-    def create_parent_asset(self) -> str:
-        """
-        Register a new parent asset through the three roles (HOFIN creator, HOFA
-        acknowledger, HOFIN approver) and return its serial, read from the Global
-        List as the newest parent asset.
-        """
-        registration_no = self.create_bill(unique_name("REG"))
-        self.acknowledge(registration_no)
-        self.approve(registration_no)
-        global_list = self.open_hofa_global_list()
-        parent_serial = global_list.read_newest_parent_serial(data.ASSET_ITEM_NAME)
-        self.close_all()
-        return parent_serial
-
-    def add_extended_asset(self, parent_serial: str) -> None:
-        """Add one extended asset to the parent asset through the three roles (the same journey as an addition)."""
-        addition_no = self.create_bill(unique_name("ADD"), parent_serial)
+    def add_extended_asset(self, parent_serial: str, item_specification: str = data.ITEM_SPECIFICATION) -> str:
+        """Add one extended asset to the parent asset through the three roles. Returns the Transaction No. of the addition."""
+        addition_no = self.create_bill(unique_name("ADD"), parent_serial, item_specification)
         self.acknowledge(addition_no)
         self.approve(addition_no)
+        return addition_no
 
-    def create_parent_with_extended_asset(self, extension_count: int = 1) -> tuple:
+    def read_addition_search_options(self, search_texts: list) -> dict:
         """
-        Register a new parent asset and add `extension_count` extended assets to it.
-        Returns (parent serial, [extended serials]): the extended serials are the
-        parent serial plus "-1", "-2", ... in the order they were added. Used by the
-        tests of other screens that need a parent asset that has extended assets.
+        HOFIN creator stage that saves no asset: open a new bill up to the Fixed
+        Asset Details popup, tick "Fixed Asset Addition" and type each text of
+        `search_texts` in the Fixed Asset Serial No box. Returns
+        {search text: [options offered]}. The bill is left unsubmitted.
         """
-        parent_serial = self.create_parent_asset()
-        extended_serials = []
-        for number in range(1, extension_count + 1):
-            self.add_extended_asset(parent_serial)
-            extended_serials.append(f"{parent_serial}-{number}")
-        return parent_serial, extended_serials
+        self.require_logins(HOFIN_CREATOR_USERNAME, HOFIN_CREATOR_PASSWORD, "HOFIN_CREATOR")
+        stage = "hofin_creator_addition_search"
+        context, page = self.open_role_page()
+        hofin_login = HofinLoginPage(page)
+        options = {}
+        try:
+            hofin_login.open_login_page(HOFIN_URL)
+            hofin_login.login(HOFIN_CREATOR_USERNAME, HOFIN_CREATOR_PASSWORD)
+            bill = VendorBillPayablePage(page)
+            bill.open_create_form()
+            bill.fill_bill_header(unique_name("SRCH"))
+            bill.fill_and_add_bill_allocation()
+            bill.open_fixed_asset_details()
+            bill.choose_popup_bill_allocation()
+            for text in search_texts:
+                options[text] = bill.read_parent_serial_options(text)
+                self.take_screenshot(page, f"addition search {text}")
+        except Exception:
+            self.finish_role(context, page, stage, True, hofin_login.log_out)
+            raise
+        self.finish_role(context, page, stage, False, hofin_login.log_out)
+        return options
 
     def open_hofa_global_list(self) -> AssetSerialGlobalListPage:
         """

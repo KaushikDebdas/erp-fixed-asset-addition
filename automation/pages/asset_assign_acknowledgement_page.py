@@ -247,12 +247,79 @@ class AssetAssignAcknowledgementPage(BasePage):
         """Confirm the open Details popup lists `extended_serials` directly below `parent`: no SL, indented."""
         self.verify_extended_rows_below_parent(self.popup_assets_table, parent, extended_serials, "Details popup")
 
+    # ---- the Details popup: parent and extended assets (CR FAHOV2-643 F07S01) ----------
+
+    def verify_popup_title(self, expected: str) -> None:
+        """Confirm the open Details popup shows the title `expected`."""
+        assertion_logger.info(f"Verifying the Details popup title is '{expected}'")
+        expect(self.popup.get_by_text(expected, exact=True)).to_be_visible()
+
+    def get_popup_asset_headers(self) -> list:
+        """Return the visible column headings of the popup's asset list."""
+        headers = self.popup_assets_table.locator("thead th:visible").all_inner_texts()
+        return [h.strip() for h in headers if h.strip()]
+
+    def read_popup_asset_rows(self) -> list:
+        """
+        Return the rows of the popup's asset list as {column heading: text}, read from the
+        visible cells. The Asset Serial keeps its leading spaces (the indent of an extended asset).
+        """
+        headers = self.get_popup_asset_headers()
+        rows = self.popup_assets_table.locator("tbody tr")
+        result = []
+        for index in range(rows.count()):
+            cells = rows.nth(index).locator("td:visible").all_inner_texts()
+            result.append(dict(zip(headers, cells)))
+        return result
+
+    def verify_popup_sl_numbers(self, expected: dict) -> None:
+        """
+        Confirm the SL of each serial in the popup ({serial: SL}); an extended asset's SL is "".
+        Names every difference.
+        """
+        assertion_logger.info(f"Verifying the SL numbers of the Details popup: {expected}")
+        found = {}
+        for row in self.read_popup_asset_rows():
+            found[row.get("Asset Serial", "").strip()] = row.get("SL", "").strip()
+        problems = []
+        for serial, sl in expected.items():
+            if found.get(serial) != sl:
+                problems.append(f"{serial}: expected SL '{sl}' but found '{found.get(serial)}'")
+        assert not problems, f"The SL numbers of the Details popup are not as expected: {problems} (all: {found})"
+
+    def verify_popup_same_status_as_parent(self, parent: str, extended_serials: list, heading: str) -> None:
+        """Confirm every extended asset in the popup shows the parent's value in the column `heading` (e.g. 'Assign Status')."""
+        assertion_logger.info(f"Verifying the extended assets of {parent} show the parent's {heading}")
+        values = {}
+        for row in self.read_popup_asset_rows():
+            values[row.get("Asset Serial", "").strip()] = row.get(heading, "").strip()
+        problems = []
+        for serial in extended_serials:
+            if values.get(serial) != values.get(parent):
+                problems.append(f"{serial}: '{values.get(serial)}'")
+        assert not problems, f"The parent {parent} shows {heading} '{values.get(parent)}' but: {problems}"
+
+    def verify_popup_does_not_list(self, serial: str) -> None:
+        """Confirm the open Details popup does not list `serial` (for example a written-off extended asset)."""
+        assertion_logger.info(f"Verifying the Details popup does not list {serial}")
+        serials = self.get_popup_asset_serials()
+        assert serial not in serials, f"Expected {serial} not to be in the Details popup but it lists {serials}."
+
+    def verify_my_assets_exclude(self, serial: str) -> None:
+        """Confirm My Assigned Asset (read after verify_my_assets_include) does not list `serial`."""
+        assertion_logger.info(f"Verifying My Assigned Asset does not list {serial}")
+        my_serials = self.get_my_assigned_serials()
+        assert serial not in my_serials, f"Expected {serial} not to be in My Assigned Asset but it is listed."
+
     def verify_my_assets_include(self, serials: list) -> None:
         """
         Confirm My Assigned Asset lists every serial in `serials` (it fills a moment after an
-        acknowledgement). The grid is first set to show 100 rows, so newer assets are not on a later page.
+        acknowledgement). The screen is opened again first, because the grid reloads itself after
+        Acknowledge and goes back to 10 rows; then it is set to show 100 rows, so newer assets are
+        not on a later page.
         """
         assertion_logger.info(f"Verifying My Assigned Asset lists {serials}")
+        self.navigate_here()
         action_logger.info("Records per page of My Assigned Asset -> 100")
         self.my_assets_page_size.select_option("100")
         try:

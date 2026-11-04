@@ -12,6 +12,8 @@ missing value, to read the validation message.
 """
 import re
 
+from playwright.sync_api import expect
+
 from pages.base_page import BasePage
 from test_data.toast_messages import STATUS_UPDATED_TOAST
 from utils.logger import action_logger, assertion_logger
@@ -81,6 +83,14 @@ class AssetSerialGlobalListPage(BasePage):
         self.status_update_button = page.locator("#updateAssetBtn")
         self.new_item_specification_field = page.locator("#newItemSpecification")
         self.item_update_button = page.locator("#updateItemSpecification")
+        # The Asset Serial Number field of the popup (it shows which asset the popup is about)
+        self.popup_serial_field = self.popup.locator("#assetSerial")
+        # Addition History tab of the popup (parent assets only): its pane, grid,
+        # "Records per page" box and the "Showing 1 to 3 of 3 entries" text
+        self.addition_history_pane = self.popup.locator("#tab_addition_history")
+        self.addition_history_grid = self.popup.locator("#assetAdditionHistoryList")
+        self.records_per_page_select = self.addition_history_pane.get_by_label("Records per page")
+        self.addition_history_info = self.addition_history_pane.get_by_role("status")
 
     # ---- search -----------------------------------------------------------
 
@@ -291,25 +301,121 @@ class AssetSerialGlobalListPage(BasePage):
 
     # ---- parent assets and extended assets --------------------------------
 
-    def read_newest_parent_serial(self, item_name: str) -> str:
+    def read_parent_serials_on_first_page(self, item_name: str) -> list:
         """
-        Return the Asset Serial of the newest PARENT asset of this item. Call it on
-        the Global List before any search: the list shows the newest asset first, and
-        an extended asset is told apart by its serial, "<parent serial>-1", "-2", ...
-        Stops with the serials shown when the first page has no such parent asset.
+        Return the Asset Serials of the PARENT assets of this item on the first page of
+        the Global List, newest first. Call it before any search: the list shows the newest
+        asset first, and an extended asset is told apart by its serial, "<parent serial>-1", ...
         """
         self.wait_for_loader_to_finish()
         headings = [h.strip() for h in self.results_table.locator("thead th").all_text_contents()]
         serial_column = headings.index(SERIAL_HEADING)
         item_column = headings.index(ITEM_NAME_HEADING)
-        shown = []
+        serials = []
         for row in self.results_table.locator("tbody tr").all():
             cells = [c.strip() for c in row.locator("td").all_text_contents()]
-            shown.append(cells[serial_column])
             if cells[item_column] == item_name and not EXTENDED_SERIAL_SUFFIX.search(cells[serial_column]):
-                action_logger.info(f"Newest parent asset of {item_name}: {cells[serial_column]}")
-                return cells[serial_column]
-        assert False, f"The first page of the Global List has no parent asset of '{item_name}'. Serials shown: {shown}"
+                serials.append(cells[serial_column])
+        return serials
+
+    def read_newest_parent_serial(self, item_name: str) -> str:
+        """
+        Return the Asset Serial of the newest PARENT asset of this item (see
+        read_parent_serials_on_first_page). Stops when the first page has none.
+        """
+        serials = self.read_parent_serials_on_first_page(item_name)
+        assert serials, f"The first page of the Global List has no parent asset of '{item_name}'."
+        action_logger.info(f"Newest parent asset of {item_name}: {serials[0]}")
+        return serials[0]
+
+    def find_newest_parent_by_specification(self, item_name: str, specification: str) -> str:
+        """
+        Return the serial of the newest parent asset of this item whose Item Specification
+        is `specification`. Other users register the same item at the same time, so each
+        parent asset on the first page is opened, newest first, until the specification
+        matches. Stops with the serials checked when none matches.
+        """
+        self.navigate_here()
+        candidates = self.read_parent_serials_on_first_page(item_name)
+        for serial in candidates:
+            self.open_asset_popup(serial)
+            found = self.get_popup_value("itemSpecification")
+            self.close_popup()
+            self.popup.wait_for(state="hidden")
+            if found == specification:
+                action_logger.info(f"Asset with Item Specification {specification}: {serial}")
+                return serial
+        assert False, (
+            f"No parent asset of '{item_name}' on the first page of the Global List has the Item "
+            f"Specification '{specification}'. Parent assets checked: {candidates}"
+        )
+
+    def read_popup_fields(self, serial: str, field_ids: list) -> dict:
+        """Search the serial, open its popup and return {field id: text} for these fields. Closes the popup."""
+        self.search_by_serial(serial)
+        self.open_asset_popup(serial)
+        values = {}
+        for field_id in field_ids:
+            values[field_id] = self.get_popup_value(field_id)
+        self.close_popup()
+        self.popup.wait_for(state="hidden")
+        return values
+
+    def is_popup_field_shown(self, field_id: str) -> bool:
+        """Return True when the open popup has a visible field with this id."""
+        field = self.popup.locator(f"#{field_id}")
+        return field.count() > 0 and field.first.is_visible()
+
+    def verify_popup_field_not_shown(self, field_id: str, rule: str) -> None:
+        """Confirm the open popup has no visible field with this id. `rule` names the CR rule in the failure text."""
+        assertion_logger.info(f"Verifying the popup has no {field_id} field")
+        assert not self.is_popup_field_shown(field_id), f"The popup should not show the field '{field_id}': {rule}"
+
+    def verify_tab_shown(self, tab_name: str, expected_shown: bool) -> None:
+        """Confirm the open popup has (True) or has not (False) the tab named `tab_name`."""
+        assertion_logger.info(f"Verifying the tab {tab_name} is {'shown' if expected_shown else 'absent'}")
+        tab_names = self.get_tab_names()
+        assert (tab_name in tab_names) == expected_shown, (
+            f"Expected the tab '{tab_name}' to be {'shown' if expected_shown else 'absent'} but the tabs are {tab_names}."
+        )
+
+    def open_addition_history(self, serial: str) -> None:
+        """Search a parent asset, open its popup and open its Addition History tab."""
+        self.search_by_serial(serial)
+        self.open_asset_popup(serial)
+        self.get_tab_text("Addition History")
+
+    def read_addition_history_headings(self) -> list:
+        """Return the column headings of the Addition History grid of the open popup."""
+        return [h.strip() for h in self.addition_history_grid.locator("thead th").all_text_contents()]
+
+    def get_records_per_page_options(self) -> list:
+        """Return the choices of the Addition History "Records per page" box."""
+        return [text.strip() for text in self.records_per_page_select.locator("option").all_inner_texts()]
+
+    def get_selected_records_per_page(self) -> str:
+        """Return the choice selected in the Addition History "Records per page" box."""
+        return self.records_per_page_select.input_value()
+
+    def get_addition_history_entries_text(self) -> str:
+        """Return the Addition History entries text, e.g. 'Showing 1 to 2 of 2 entries'."""
+        return self.addition_history_info.inner_text().strip()
+
+    def open_extended_from_addition_history(self, extended_serial: str) -> None:
+        """Click the extended asset's serial in the Addition History grid and wait until the popup shows that asset."""
+        link = self.addition_history_grid.get_by_role("link", name=extended_serial, exact=True)
+        self.click(link, f"Addition History link {extended_serial}")
+        expect(self.popup_serial_field).to_have_value(extended_serial)
+
+    def close_popup_back_to(self, serial: str) -> None:
+        """
+        Close the popup of an extended asset that was opened from the Addition History and
+        confirm the popup of `serial` (its parent) is shown again.
+        """
+        self.close_popup()
+        assertion_logger.info(f"Verifying the popup of {serial} is shown again")
+        expect(self.popup).to_be_visible()
+        expect(self.popup_serial_field).to_have_value(serial)
 
     def read_addition_history_rows(self) -> list:
         """
@@ -388,6 +494,20 @@ class AssetSerialGlobalListPage(BasePage):
                 problems.append(f"{field_id}: parent '{parent[field_id]}', extended '{extended[field_id]}'")
         assert not problems, f"{extended_serial} is not assigned like its parent {parent_serial}: {problems}"
 
+    def verify_moved_together(self, parent_serial: str, extended_serial: str, building: str) -> None:
+        """
+        After an Internal Movement of the parent: confirm the parent shows the new `building`
+        and a floor, and that its extended asset has the same assignment (employee, building,
+        floor, room). Names every difference.
+        """
+        assertion_logger.info(f"Verifying {parent_serial} and {extended_serial} moved together to {building}")
+        parent = self.read_assignment(parent_serial)
+        assert parent["buildingName"] == building, (
+            f"Expected the parent {parent_serial} in building '{building}' but it shows '{parent['buildingName']}'."
+        )
+        assert parent["floorNo"] != "", f"Expected the parent {parent_serial} to show a floor but the Floor Number is empty."
+        self.verify_same_assignment_as_parent(parent_serial, extended_serial)
+
     def verify_parent_addition_history(self, parent_serial: str, extended_serial: str, expected: dict) -> None:
         """
         Open the popup of a parent asset (already searched) and confirm its Addition History
@@ -409,6 +529,99 @@ class AssetSerialGlobalListPage(BasePage):
             if matching[0].get(heading) != wanted:
                 problems.append(f"{heading}: expected '{wanted}' but found '{matching[0].get(heading)}'")
         assert not problems, f"The Addition History row of {extended_serial} is not as expected: {problems}"
+
+    def read_transaction_history_rows(self, serial: str) -> list:
+        """
+        Search the serial, open its popup and return the rows of its Transaction History
+        tab as a list of {column heading: text}. Closes the popup.
+        """
+        self.search_by_serial(serial)
+        self.open_asset_popup(serial)
+        self.get_tab_text("Transaction History")
+        grid = self.popup.locator(TAB_PANES["Transaction History"]).locator("table").first
+        headings = [h.strip() for h in grid.locator("thead th").all_text_contents()]
+        rows = []
+        for row in grid.locator("tbody tr").all():
+            cells = [c.strip() for c in row.locator("td").all_text_contents()]
+            rows.append(dict(zip(headings, cells)))
+        self.close_popup()
+        self.popup.wait_for(state="hidden")
+        return rows
+
+    def verify_transaction_in_history(self, serial: str, transaction_type: str, status: str) -> None:
+        """Confirm the asset's Transaction History tab has a `transaction_type` transaction with Transaction Status `status`."""
+        assertion_logger.info(f"Verifying {serial} has a {status} {transaction_type} transaction")
+        rows = self.read_transaction_history_rows(serial)
+        found = [(row.get("Transaction Type"), row.get("Transaction Status")) for row in rows]
+        assert (transaction_type, status) in found, (
+            f"The Transaction History of {serial} should have a {status} {transaction_type} transaction "
+            f"but its (type, status) rows are {found}."
+        )
+
+    def verify_addition_history_empty(self) -> None:
+        """Confirm the open Addition History tab lists no extended asset ('Showing 0 to 0 of 0 entries')."""
+        assertion_logger.info("Verifying the Addition History is empty")
+        entries = self.get_addition_history_entries_text()
+        assert entries == "Showing 0 to 0 of 0 entries", (
+            f"Expected an empty Addition History but it shows '{entries}' and rows {self.read_addition_history_rows()}."
+        )
+
+    def verify_extended_serial_format(self, parent_serial: str, extended_serials: list) -> None:
+        """
+        Confirm the extended serials are the parent's serial with "-1", "-2", ... in the
+        order they were added, and that no two are the same (CR F01S01).
+        """
+        assertion_logger.info(f"Verifying the serials of the extended assets of {parent_serial}")
+        expected = []
+        for number in range(1, len(extended_serials) + 1):
+            expected.append(f"{parent_serial}-{number}")
+        assert extended_serials == expected, (
+            f"The extended assets of {parent_serial} should be {expected} but are {extended_serials}."
+        )
+        assert len(set(extended_serials)) == len(extended_serials), f"Two extended assets share a serial: {extended_serials}"
+
+    def verify_listed_on_their_own(self, serials: list, assign_status: str, utilization_status: str) -> None:
+        """Search each serial on its own and confirm it has its own row with these statuses."""
+        for serial in serials:
+            self.search_by_serial(serial)
+            self.verify_statuses(serial, assign_status, utilization_status)
+
+    def verify_extended_asset_popups(self, extended_serials: list, parent_serial: str) -> None:
+        """Search each extended asset and confirm its popup names the parent and has no Addition History tab."""
+        for serial in extended_serials:
+            self.search_by_serial(serial)
+            self.verify_extended_asset_popup(serial, parent_serial)
+
+    def read_addition_history_row(self, parent_serial: str, extended_serial: str) -> dict:
+        """Return the Addition History row of `extended_serial` in the parent's popup ({column heading: text}). Closes the popup."""
+        self.open_addition_history(parent_serial)
+        rows = self.read_addition_history_rows()
+        self.close_popup()
+        self.popup.wait_for(state="hidden")
+        for row in rows:
+            if row.get(SERIAL_HEADING) == extended_serial:
+                return row
+        assert False, f"The Addition History of {parent_serial} has no row for {extended_serial}. Rows: {rows}"
+
+    def verify_addition_history_rows(self, extended_serials: list, expected: dict, reference_prefix: str) -> None:
+        """
+        Confirm the open Addition History tab has one row per extended asset, in the order they
+        were added (SL 1, 2, ...), each with the values in `expected` ({column heading: text}) and
+        a Reference Number starting with `reference_prefix`. Names every difference.
+        """
+        assertion_logger.info("Verifying the rows of the Addition History")
+        rows = self.read_addition_history_rows()
+        listed = [row.get(SERIAL_HEADING) for row in rows]
+        assert listed == extended_serials, f"The Addition History should list {extended_serials} but lists {listed}."
+        problems = []
+        for number, row in enumerate(rows, start=1):
+            wanted = {**expected, "SL": str(number)}
+            for heading, value in wanted.items():
+                if row.get(heading) != value:
+                    problems.append(f"{row.get(SERIAL_HEADING)} {heading}: expected '{value}' but found '{row.get(heading)}'")
+            if not row.get("Reference Number", "").startswith(reference_prefix):
+                problems.append(f"{row.get(SERIAL_HEADING)} Reference Number: expected '{reference_prefix}...' but found '{row.get('Reference Number')}'")
+        assert not problems, f"The Addition History rows are not as expected: {problems}"
 
     # ---- the Change buttons -----------------------------------------------
 
@@ -453,21 +666,35 @@ class AssetSerialGlobalListPage(BasePage):
         return self.get_toast_text()
 
     def mark_asset_damaged(self, serial: str, note: str) -> None:
+        """Set the Utilization Status of an asset to DAMAGE (see change_utilization_status)."""
+        self.change_utilization_status(serial, "DAMAGE", note)
+
+    def change_utilization_status(self, serial: str, status: str, note: str) -> None:
         """
-        Set the Utilization Status of an asset to DAMAGE: search the serial, open
-        its popup, click Change next to Asset Utilization Status, choose DAMAGE,
-        write the note and click Update. Then confirm the success message.
+        Set the Utilization Status of an asset: search the serial, open its popup,
+        click Change next to Asset Utilization Status, choose `status`, write the
+        note and click Update. Then confirm the success message.
         """
         self.navigate_here()
         self.search_by_serial(serial)
         self.open_asset_popup(serial)
         self.open_status_change()
-        action_logger.info("Choose Utilization Status: DAMAGE")
-        self.new_status_select.select_option("DAMAGE")
+        action_logger.info(f"Choose Utilization Status: {status}")
+        self.new_status_select.select_option(status)
         self.type_text(self.status_note_field, note, "Utilization Status Note field")
         self.wait_for_toast_to_clear()
         self.click(self.status_update_button, "Utilization Status Update button")
-        self.verify_toast_text(self.get_toast_text(), STATUS_UPDATED_TOAST, "changing the Utilization Status to DAMAGE")
+        self.verify_toast_text(self.get_toast_text(), STATUS_UPDATED_TOAST, f"changing the Utilization Status to {status}")
+
+    def verify_utilization_statuses(self, expected: dict) -> None:
+        """Search each serial of `expected` ({serial: status}) and confirm its Utilization Status. Names every difference."""
+        problems = []
+        for serial, status in expected.items():
+            self.search_by_serial(serial)
+            found = self.get_utilization_status(serial) if self.is_serial_listed(serial) else "not listed"
+            if found != status:
+                problems.append(f"{serial}: expected {status} but found {found}")
+        assert not problems, f"The Utilization Statuses are not as expected: {problems}"
 
     def open_item_change(self) -> None:
         """Click Change next to Item and wait for its small popup."""
